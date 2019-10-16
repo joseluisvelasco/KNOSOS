@@ -1,0 +1,3 @@
+-Same 'd11.plt' can plot transport database on a flux-surface for all cases
+-In order to create profiles of transport coefficients, run KNOSOS at each flux-surface and then run 'merge.sh' at the parent folder
+-For each configuration, a 'd11_prof*.plt' gnuplot scripts exist.

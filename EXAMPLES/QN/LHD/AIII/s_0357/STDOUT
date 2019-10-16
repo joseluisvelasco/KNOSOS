@@ -1,0 +1,305 @@
+ File "input.parameters" found
+ File "input.model" found
+ File "input.surfaces" found
+ File "input.species" found
+ &MODEL
+ CALC_DB = F,
+ ONLY_DB = F,
+ INC_EXB = F,
+ TANG_VM = T,
+ CLASSICAL       = T,
+ ANISOTROPY      = F,
+ FACT_CON        =  -3.00000000000000     ,
+ SOLVE_AMB       = F,
+ SOLVE_QN        = T,
+ TRIVIAL_QN      = F,
+ D_AND_V =           5,
+ COMPARE_MODELS  = T,
+ FN      =   1.00000000000000     ,
+ FI      =   1.00000000000000     ,
+ FS      =   1.00000000000000     ,
+ FP      =   1.00000000000000     ,
+ FE      =   1.00000000000000     ,
+ FR      =   1.00000000000000     ,
+ FB      =   1.00000000000000     ,
+ TASK3D  = F,
+ SATAKE  = F,
+ ANA_NTV = F,
+ JPP     = F
+ /
+ &PARAMETERS
+ GEN_FLAG        = 4*F, T, 5*F,
+ DEBUG   = F,
+ TIME    = T,
+ I0      =          -1,
+ PLOTG   = F,
+ USE_B1  = F,
+ USE_B0PB1       = F,
+ REMOVE_DIV      = F,
+ DELTA   = T,
+ FAST_AMB        = F,
+ MLAMBDA =         256,
+ MAL     =          64,
+ TRUNCATE_B      =        -200,
+ PREC_B  =  9.999999747378752E-006,
+ PREC_EXTR       =  1.000000011686097E-007,
+ PREC_BINT       =  5.000000074505806E-002,
+ PREC_DQDV       =  5.000000074505806E-002,
+ PREC_INTV       =  9.999999776482582E-003,
+ NEFIELD =           9,
+ EFIELD  =  0.000000000000000E+000,  9.999999747378752E-006,  2.999999924213625E-005,  9.999999747378752E-005,
+   3.000000142492354E-004,  1.000000047497451E-003,  3.000000026077032E-003,  9.999999776482582E-003,  2.999999932944775E-002,
+ NCMUL   =          18,
+ CMUL    =   300.000000000000     ,   100.000000000000     ,   30.0000000000000     ,   10.0000000000000     ,
+    3.00000000000000     ,   1.00000000000000     ,  0.300000011920929     ,  0.100000001490116     ,  2.999999932944775E-002,
+   9.999999776482582E-003,  3.000000026077032E-003,  1.000000047497451E-003,  3.000000142492354E-004,  9.999999747378752E-005,
+   2.999999924213625E-005,  9.999999747378752E-006,  3.000000106112566E-006,  9.999999974752427E-007,
+ NCMAG   =           1,
+ CMAG    =  0.000000000000000E+000,
+ NER     =          21,
+ ERMIN   =   20.0000000000000     ,
+ ERMAX   =  -20.0000000000000     ,
+ ERACC   =  0.100000001490116     ,
+ NERR    =           1,
+ IPERR   =  -1.00000000000000     
+ /
+ &SURFACES
+ NS      =           1,
+ S       =  0.357000000000000     , 140*0.000000000000000E+000  ,
+ DIRDB   = ./                                                                                                  ,
+ DIRS    = ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./ 
+     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./
+      ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     .
+ /     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     
+ ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./    
+  ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./   
+   ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./  
+    ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     
+ /
+ &SPECIES
+ NBB     =           2,
+ ZB      =  -1.00000000000000     ,   1.00000000000000     , 9*0.000000000000000E+000  ,
+ AB      =  5.485799047164619E-004,   1.00794000000000     , 9*0.000000000000000E+000  ,
+ REGB    =          -1,           3, 9*0,
+ ZEFF    =  2.710849575567359E-312
+ /
+ &OTHERS
+ QN      = T,
+ TRACE_IMP       = F,
+ PLATEAU_OR_PS   = F,
+ USE_B0  = F,
+ NTV     = F,
+ FORCE_ZEROPHI1  = F,
+ IMP1NU  = F,
+ CENTERED_ALPHA  = F,
+ CLOSEST_LAMBDA  = T,
+ CLOSEST_LAMBDA1 = T
+ /
+ File "boozmn.data" found
+ File "boozmn.data" read
+ s=  0.357000000000000       0.349999994039536       0.357142865657806     
+ Automatically truncating spectrum of magnetic field strength from  (nmax,mmax)=(128,128) to ( 4, 8)
+ Reading DKES output in folder 
+ ././                                                                           
+                      
+ No DKES output found
+ File neprof_r.d read
+ File teprof_r.d read
+ File tiprof_r.d read
+ File    ph_in.d read
+ SUBROUTINE READ_SOURCES not ready
+ Calculating for Er= -5.98700E+00, kV/m
+ With tangential magnetic drift, not solving quasineutrality
+ Bulk ions, Z= 1., A= 1.008
+ Calculating source   1.00000000000000     
+ Temperature (keV) =   2.15695351396255     
+ Density (10^{19}m^{-3}) =   14.6904004461052     
+ Reference v_{th}=  6.42624E+05
+ Calculating low collisionality regimes F
+Time in routine FIND_WELLS                    . Total:      0.010 Average:        NaN. Iterations:      1
+ Calculating a total of   181 regions found following     3 lines
+Time in routine FIND_WELLS                    . Total:      0.020 Average:      0.010. Iterations:      2
+ Calculating a total of   361 regions found following     6 lines
+Time in routine CHARACTERIZE_WELLS            . Total:      0.280 Average:        NaN. Iterations:      1
+ Angular grid has size  105 in alpha and   64 in l.  Maximum helicity in B is    8
+Time in routine CREATE_ANGULAR_GRID           . Total:      0.020 Average:        NaN. Iterations:      1
+ Velocity grid has size  256 in lambda
+Time in routine CREATE_LAMBDA_GRID            . Total:      0.000 Average:        NaN. Iterations:      1
+ Global grid  14411 points
+Time in routine LABEL_GRIDPOINTS              . Total:      0.080 Average:        NaN. Iterations:      1
+Time in routine FIND_LAMBDA_NEIGHBOURS        . Total:      0.320 Average:        NaN. Iterations:      1
+Time in routine COEFFICIENTS_DKE              . Total:      5.580 Average:        NaN. Iterations:      1
+Time in routine FIND_ALPHA_NEIGHBOURS         . Total:      0.320 Average:        NaN. Iterations:      1
+Time in routine INIT_LINEAR_PROBLEM           . Total:      0.010 Average:        NaN. Iterations:      1
+Time in routine FILL_MATRIX                   . Total:      0.730 Average:        NaN. Iterations:      1
+Time in routine INVERT_MATRIX                 . Total:      1.410 Average:        NaN. Iterations:      1
+Time in routine INTEGRATE_G                   . Total:    131.590 Average:        NaN. Iterations:      1
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    143.580 Average:        NaN. Iterations:      1
+Time in routine CALC_MONOENERGETIC            . Total:    143.580 Average:        NaN. Iterations:      1
+Time in routine INTEGRATE_V                   . Total:      0.000 Average:        NaN. Iterations:      1
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      2.460 Average:      1.730. Iterations:      2
+Time in routine INVERT_MATRIX                 . Total:      2.810 Average:      1.400. Iterations:      2
+Time in routine INTEGRATE_G                   . Total:    132.470 Average:      0.880. Iterations:      2
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    147.590 Average:      4.010. Iterations:      2
+Time in routine CALC_MONOENERGETIC            . Total:    147.590 Average:      4.010. Iterations:      2
+Time in routine INTEGRATE_V                   . Total:      0.000 Average:      0.000. Iterations:      2
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      4.010 Average:      1.640. Iterations:      3
+Time in routine INVERT_MATRIX                 . Total:      4.210 Average:      1.400. Iterations:      3
+Time in routine INTEGRATE_G                   . Total:    133.360 Average:      0.885. Iterations:      3
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    151.430 Average:      3.925. Iterations:      3
+Time in routine CALC_MONOENERGETIC            . Total:    151.430 Average:      3.925. Iterations:      3
+Time in routine INTEGRATE_V                   . Total:      0.000 Average:      0.000. Iterations:      3
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      5.420 Average:      1.563. Iterations:      4
+Time in routine INVERT_MATRIX                 . Total:      5.610 Average:      1.400. Iterations:      4
+Time in routine INTEGRATE_G                   . Total:    134.290 Average:      0.900. Iterations:      4
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    155.170 Average:      3.863. Iterations:      4
+Time in routine CALC_MONOENERGETIC            . Total:    155.180 Average:      3.867. Iterations:      4
+Time in routine INTEGRATE_V                   . Total:      0.010 Average:      0.003. Iterations:      4
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      7.080 Average:      1.588. Iterations:      5
+Time in routine INVERT_MATRIX                 . Total:      7.010 Average:      1.400. Iterations:      5
+Time in routine INTEGRATE_G                   . Total:    134.920 Average:      0.833. Iterations:      5
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    158.860 Average:      3.820. Iterations:      5
+Time in routine CALC_MONOENERGETIC            . Total:    158.870 Average:      3.823. Iterations:      5
+Time in routine INTEGRATE_V                   . Total:      0.010 Average:      0.002. Iterations:      5
+ NU    2.29994E+03
+ EPS^3/2          3.32851E-02
+ RHOSTAR/EPS      7.04330E-03
+ RHOSTAR/EPS^1/2  2.26565E-03
+ RHOSTAR          7.28801E-04
+ NUSTAR           1.98485E-02
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      9.220 Average:      1.698. Iterations:      6
+Time in routine INVERT_MATRIX                 . Total:      8.410 Average:      1.400. Iterations:      6
+Time in routine INTEGRATE_G                   . Total:    135.520 Average:      0.786. Iterations:      6
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    163.000 Average:      3.884. Iterations:      6
+Time in routine CALC_MONOENERGETIC            . Total:    163.010 Average:      3.886. Iterations:      6
+Time in routine INTEGRATE_V                   . Total:      0.010 Average:      0.002. Iterations:      6
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     10.150 Average:      1.570. Iterations:      7
+Time in routine INVERT_MATRIX                 . Total:      9.810 Average:      1.400. Iterations:      7
+Time in routine INTEGRATE_G                   . Total:    136.130 Average:      0.757. Iterations:      7
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    165.950 Average:      3.728. Iterations:      7
+Time in routine CALC_MONOENERGETIC            . Total:    165.970 Average:      3.732. Iterations:      7
+Time in routine INTEGRATE_V                   . Total:      0.010 Average:      0.002. Iterations:      7
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     11.510 Average:      1.540. Iterations:      8
+Time in routine INVERT_MATRIX                 . Total:     11.210 Average:      1.400. Iterations:      8
+Time in routine INTEGRATE_G                   . Total:    136.760 Average:      0.739. Iterations:      8
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    169.340 Average:      3.680. Iterations:      8
+Time in routine CALC_MONOENERGETIC            . Total:    169.360 Average:      3.683. Iterations:      8
+Time in routine INTEGRATE_V                   . Total:      0.010 Average:      0.001. Iterations:      8
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     12.930 Average:      1.525. Iterations:      9
+Time in routine INVERT_MATRIX                 . Total:     12.610 Average:      1.400. Iterations:      9
+Time in routine INTEGRATE_G                   . Total:    137.230 Average:      0.705. Iterations:      9
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    172.630 Average:      3.631. Iterations:      9
+Time in routine CALC_MONOENERGETIC            . Total:    172.650 Average:      3.634. Iterations:      9
+Time in routine INTEGRATE_V                   . Total:      0.010 Average:      0.001. Iterations:      9
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     14.740 Average:      1.557. Iterations:     10
+Time in routine INVERT_MATRIX                 . Total:     14.010 Average:      1.400. Iterations:     10
+Time in routine INTEGRATE_G                   . Total:    137.840 Average:      0.694. Iterations:     10
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    176.450 Average:      3.652. Iterations:     10
+Time in routine CALC_MONOENERGETIC            . Total:    176.470 Average:      3.654. Iterations:     10
+Time in routine INTEGRATE_V                   . Total:      0.010 Average:      0.001. Iterations:     10
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     15.720 Average:      1.499. Iterations:     11
+Time in routine INVERT_MATRIX                 . Total:     15.420 Average:      1.401. Iterations:     11
+Time in routine INTEGRATE_G                   . Total:    138.430 Average:      0.684. Iterations:     11
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    179.430 Average:      3.585. Iterations:     11
+Time in routine CALC_MONOENERGETIC            . Total:    179.450 Average:      3.587. Iterations:     11
+Time in routine INTEGRATE_V                   . Total:      0.010 Average:      0.001. Iterations:     11
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     17.280 Average:      1.505. Iterations:     12
+Time in routine INVERT_MATRIX                 . Total:     16.820 Average:      1.401. Iterations:     12
+Time in routine INTEGRATE_G                   . Total:    139.030 Average:      0.676. Iterations:     12
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    182.990 Average:      3.583. Iterations:     12
+Time in routine CALC_MONOENERGETIC            . Total:    183.020 Average:      3.585. Iterations:     12
+Time in routine INTEGRATE_V                   . Total:      0.030 Average:      0.003. Iterations:     12
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     18.900 Average:      1.514. Iterations:     13
+Time in routine INVERT_MATRIX                 . Total:     18.220 Average:      1.401. Iterations:     13
+Time in routine INTEGRATE_G                   . Total:    139.620 Average:      0.669. Iterations:     13
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    186.600 Average:      3.585. Iterations:     13
+Time in routine CALC_MONOENERGETIC            . Total:    186.630 Average:      3.588. Iterations:     13
+Time in routine INTEGRATE_V                   . Total:      0.040 Average:      0.003. Iterations:     13
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     20.800 Average:      1.544. Iterations:     14
+Time in routine INVERT_MATRIX                 . Total:     19.620 Average:      1.401. Iterations:     14
+Time in routine INTEGRATE_G                   . Total:    140.210 Average:      0.663. Iterations:     14
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    190.490 Average:      3.608. Iterations:     14
+Time in routine CALC_MONOENERGETIC            . Total:    190.520 Average:      3.611. Iterations:     14
+Time in routine INTEGRATE_V                   . Total:      0.050 Average:      0.004. Iterations:     14
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     22.120 Average:      1.528. Iterations:     15
+Time in routine INVERT_MATRIX                 . Total:     21.020 Average:      1.401. Iterations:     15
+Time in routine INTEGRATE_G                   . Total:    140.810 Average:      0.659. Iterations:     15
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    193.810 Average:      3.588. Iterations:     15
+Time in routine CALC_MONOENERGETIC            . Total:    193.840 Average:      3.590. Iterations:     15
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.005. Iterations:     15
+ Integral in of species #2 , converged for iv=15, v/v_th= 2.9009
+ Electrons
+ Calculating source  -1.00000000000000     
+ Temperature (keV) =   2.40356806039737     
+ Density (10^{19}m^{-3}) =   14.6904004461052     
+ Reference v_{th}=  2.90778E+07
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.005. Iterations:     16
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.004. Iterations:     17
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.004. Iterations:     18
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.004. Iterations:     19
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.004. Iterations:     20
+ NU    1.75335E+05
+ EPS^3/2          3.32851E-02
+ RHOSTAR/EPS     -1.73455E-04
+ RHOSTAR/EPS^1/2 -5.57960E-05
+ RHOSTAR         -1.79481E-05
+ NUSTAR           3.34408E-02
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.003. Iterations:     21
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.003. Iterations:     22
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.003. Iterations:     23
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.003. Iterations:     24
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.003. Iterations:     25
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.003. Iterations:     26
+Time in routine INTEGRATE_V                   . Total:      0.070 Average:      0.003. Iterations:     27
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.003. Iterations:     28
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.003. Iterations:     29
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.003. Iterations:     30
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.003. Iterations:     31
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.003. Iterations:     32
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.003. Iterations:     33
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     34
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     35
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     36
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     37
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     38
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     39
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     40
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     41
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     42
+Time in routine INTEGRATE_V                   . Total:      0.080 Average:      0.002. Iterations:     43
+Time in routine CALC_QN                       . Total:      0.020 Average:        NaN. Iterations:      1
+Time in routine PRECALC_TRIG                  . Total:      0.360 Average:        NaN. Iterations:      1
+Time in routine PREPARE_IMP_CALC              . Total:      0.170 Average:        NaN. Iterations:      1
+ With tangential magnetic drift, solving quasineutrality
+ Bulk ions, Z= 1., A= 1.008
+ Calculating source   1.00000000000000     
+ Temperature (keV) =   2.15695351396255     
+ Density (10^{19}m^{-3}) =   14.6904004461052     
+ Reference v_{th}=  6.42624E+05
+Time in routine CALCULATE_WITH_VARPHI1        . Total:      0.020 Average:        NaN. Iterations:      1
+ Electrons
+ Calculating source  -1.00000000000000     
+ Temperature (keV) =   2.40356806039737     
+ Density (10^{19}m^{-3}) =   14.6904004461052     
+ Reference v_{th}=  2.90778E+07
+Time in routine PRECALC_TRIG                  . Total:      0.620 Average:      0.260. Iterations:      2
+Time in routine PREPARE_IMP_CALC              . Total:      0.220 Average:      0.050. Iterations:      2
+Time in routine CALC_FLUXES                   . Total:    195.210 Average:        NaN. Iterations:      1
+Time in routine SOLVE_DKE_QN_AMB              . Total:    195.210 Average:        NaN. Iterations:      1
+ SUBROUTINE TRANSPORT not ready
+ Simulation complete                                                            
+                      

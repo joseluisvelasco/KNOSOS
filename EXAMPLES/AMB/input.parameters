@@ -1,0 +1,10 @@
+&parameters
+ TIME=.TRUE. 
+ DEBUG=.FALSE.
+ PREC_INTV=-1
+ MAL=32
+ MLAMBDA=512
+ NER=81
+ ERMIN=-20.
+ ERMAX=+20.
+/

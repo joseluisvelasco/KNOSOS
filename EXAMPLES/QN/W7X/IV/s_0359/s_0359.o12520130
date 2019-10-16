@@ -1,0 +1,24 @@
+--------------------------------------------
+Prologue Args:
+
+Job ID: 12520130.eulmgr.ciemat.es
+User ID: u6156
+Group ID: fusion
+--------------------------------------------
+LOG/
+LOG/fort.1300
+LOG/fort.1400
+LOG/fort.1500
+
+--------------------------------------------
+Epilogue Args:
+
+Job Name :  nlambda256/s_0359
+Host/s:           eul0602.ciemat.es
+Elapsed(Wall)time:00:03:46
+Memory:           5316kb
+Virtual memory:   67972kb
+Job submitted at: Mon Jul 22 10:28:19
+Job started at:   Mon Jul 22 11:34:01
+Job ended at:     Mon Jul 22 11:37:47
+--------------------------------------------
