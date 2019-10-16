@@ -1,0 +1,84 @@
+#PBS -l walltime=04:30:00
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+ulimit -s unlimited
+
+if [ -z "$nprocs" ]
+then 
+  nprocs=`cat $PBS_NODEFILE | wc -l`
+fi
+source $HOME/KNOSOS/SCRIPTS/clean.sh
+test -e phi2d_mar*
+if [ $? -eq 0 ]
+then
+  ln -s phi2d_mar* ph1_2d.in
+fi
+mpirun -x LD_LIBRARY_PATH=${LD_LIBRARY_PATH} -np $nprocs -machinefile ${PBS_NODEFILE} $HOME/KNOSOS/SOURCES/knosos.x 
+
+test -e flux.knosos.00
+if [ $? -eq 0 ]
+then
+
+    for n in $(seq 1 10)
+    do
+    
+	if [ $n -eq 1 ]
+	then
+	    sdir=flux.knosos
+	elif [ $n -eq 2 ]
+	then
+	    sdir=flux.amb
+	elif [ $n -eq 3 ]
+	then
+	    sdir=B.map
+	elif [ $n -eq 4 ]
+	then
+	    sdir=varphi1.map
+	elif [ $n -eq 5 ]
+	then
+	    sdir=Er.map
+	elif [ $n -eq 6 ]
+	then
+	    sdir=imp.knosos
+        elif [ $n -eq 7 ]
+        then
+            sdir=knososTASK3D.flux
+	elif [ $n -eq 8 ]
+	then
+	    sdir=knososTASK3D.ambEr
+	elif [ $n -eq 9 ]
+	then
+	    sdir=knosos.dk
+	fi
+	
+	dir=$sdir.00
+	test -e $dir
+	if [ $? -eq 0 ]
+	then
+           head -1 $dir > $sdir
+	   for dir in $sdir.??
+	   do
+	       cat $dir|grep -v "\[" >> $sdir
+	   done
+	fi
+    done
+fi
+
+test -e log.tar.gz
+if [ $? -eq 1 ]
+then
+  mkdir LOG
+  for dir in *.modes B.map ???_2d.in fort.* *.[0-9][0-9]
+  do
+    test -e $dir
+    if [ $? -eq 0 ]
+    then
+	mv $dir LOG
+    fi 
+  done
+  touch LOG/*
+  tar cfz ./log.tar.gz LOG/* && rm -r LOG
+fi
+
+
