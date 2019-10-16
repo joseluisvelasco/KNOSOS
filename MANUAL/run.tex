@@ -1,0 +1,147 @@
+\chapter{Running \KNOSOS}\label{CHAP_RUN}
+
+This brief chapter describes the general workflow of the calculation and a gives step-by-step explanation on what files you need to prepare in order to run the code. More details are given in the following chapters.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{General workflow}\label{SEC_WORKFLOW}
+
+The main loop is contained in \texttt{knosos.f90}, and it takes the following steps:\footnote{In this chapter $^*$ denotes optional tasks.}
+
+\begin{itemize}
+ \item Read input files with simulation parameters. See chapter~\ref{CHAP_INPUT}. In particular:
+ \begin{itemize}
+  \item Determine the equations solved and methods to be used.
+  \item Determine the species to be calculated and their neoclassical regime(s).
+  \item Determine the flux-surfaces to be calculated.
+ \end{itemize}
+   \item Initialize \MPI, \PETSC~and the random number generator.
+  \item Allocate some transport-related quantities.
+  \item Perform a loop in samples ($^*$ if error bars are calculated, see chapter~\ref{CHAP_PROF}).
+    \begin{itemize}
+    \item Perform a loop in time steps $^*$.
+      \begin{itemize}
+      \item Perform a first loop in flux-surfaces:
+        \begin{itemize}
+        \item Read the magnetic field. See chapter~\ref{CHAP_CONF}.
+        \item Read the plasma profiles. See chapter~\ref{CHAP_PROF}.
+        \item Read and/or create database of monoenergetic transport coefficients$^*$. See appendix~\ref{CHAP_DKES}.
+        \item Calculate the flux for each flux surface (including drift-kinetic eq., ambipolarity and quasineutrality). See chapter~\ref{CHAP_OUTPUT}.
+        \item \todo{Evolve plasma profiles$^*$.}
+        \end{itemize}
+      \end{itemize}
+    \end{itemize}
+    \item Average on samples$^*$ .
+  \item End \MPI~and \PETSC.
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{How to run \KNOSOS}
+
+In order for \KNOSOS~to run, several input files should be prepared. Except otherwise, the files can be at the working directory (the folder where~\KNOSOS~is running) or at the parent folder, and~\KNOSOS~\underline{will use preferentely} the former. In some other cases, the files can only be at the working directory. In the following subsections, we show the default cases (i.e., the simulations that are done if no input is provided) and how to provide input if you want to run different cases (many more details of the input files are given in chapters~\ref{CHAP_INPUT},~\ref{CHAP_PROF}  and~\ref{CHAP_CONF}). {\todo{If you are using~\KNOSOS~from~\TASKTD~\citep{yokoyama2017task3d}, the approppriate inputs are automatically generated (in particular, note that multi-species simulations are not available yet).}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Model}\label{SEC_RUNMODEL}
+
+The default calculation solves ambipolarity and quasineutrality, including the effect of the tangential magnetic drift and the correct (compressible) $\bE\times\bB$ drift. If you want a different kind of simulation, create a {\ttfamily input.model} file and modify it as follows (more details in \S\ref{SEC_MODEL}):
+
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+\renewcommand{\arraystretch}{2}
+
+\begin{longtable}{L{9cm} | L{5.5cm}}
+{\textbf{\textit{If you}}}  & {\bf you have to} \\
+\hline
+{\it - do not want to solve ambipolarity:} & set \vlink{SOLVE\_AMB} to {\ttfamily .FALSE.}\\
+{\it - do not want to solve quasineutrality:} & set \vlink{SOLVE\_QN} to {\ttfamily .FALSE.} \\ 
+{\it - want to solve a trivial version quasineutrality:} & set \vlink{TRIVIAL\_QN} to {\ttfamily .TRUE.}  \\ 
+{\it - do not want to include the tangential magnetic drift:} & set \vlink{TANG\_VM} to {\ttfamily .FALSE.} \\ 
+{\it - want to use a \DKES-like incompressible $\bE\times\bB$ drift:} & set \vlink{INC\_EXB} to {\ttfamily .TRUE.} \\ 
+{\it - want to use a \DKES~database of transport coefficients:} & set \vlink{REGB} to {\ttfamily -1} \\ 
+{\it - want to calculate a \DKES-like database of transport coefficients:} &set \vlink{CALC\_DB} to {\ttfamily .TRUE.}  \\ 
+{\it - want to calculate \DKES-like database of transport coefficients and exit:} & set \vlink{ONLY\_DB} to {\ttfamily .TRUE.} \\ 
+{\it - want to compare several models of the quasineutrality equation:} & set \vlink{COMPARE\_MODELS} to {\ttfamily .TRUE.} \\ 
+%{\it - \todo{want to connect the different collisionality regimes in a different manner}:} & set \vlink{FACT\_CON} to \\
+{\it - want to scan in the collisionality, rotational transform, magnetic shear, number of periods, aspect ratio, major radius and/or magnetic field strength:} & set values different than 1 for \vlink{FN}, \vlink{FI}, \vlink{FS}, \vlink{FP}, \vlink{FE}, \vlink{FR} and/or \vlink{FB} \\ 
+{\it - want to solve a particular physics problem:} & set \vlink{TASK3D},  \vlink{NEOTRANSP},  \vlink{PENTA}, \vlink{SATAKE}, or \vlink{JPP} to {\ttfamily .TRUE.} \\ 
+\end{longtable}
+%\end{tabular}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Species}
+
+The default calculation uses adiabatic electrons, hydrogen at low-collisionality and no impurities: 1/$\nu$, $\sqrt{\nu}$ and sb-p (the exception is the calculation of \DKES-like coefficients, if you have set \vlink{ONLY\_DB} to {\ttfamily .TRUE.}, which does not need this information). If you want a different kind of simulation, create a {\ttfamily input.species} file and modify it as follows (more details in \S\ref{SEC_SPE}):
+
+
+\renewcommand{\arraystretch}{2}
+\begin{longtable}{L{9cm} | L{5.5cm}}
+{\textbf{\textit{If you}}}  & {\bf you have to}\\
+\hline
+{\it - want to change the main ions:} & modify \vlink{ZB} and/or \vlink{AB} \\ 
+{\it - want some species to be in a different regime (or use~\DKES:} & modify \vlink{REGB} \\ 
+{\it - want to add more species:} & increase \vlink{NBB}, add entries to \vlink{ZB}, \vlink{AB} and \vlink{REGB} and set \vlink{ZEFF}  \\ 
+\end{longtable}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Plasma profiles}
+
+You need to provide values for the density, temperature and (except if \vlink{SOLVE\_AMB} is set to  {\ttfamily  .TRUE.}), the radial electric field. Again, the exception are the calculation of \DKES-like coefficients (which does not need this information), or some specific physics problems (if~\vlink{SATAKE} or \vlink{JPP} or are set to {\ttfamily  .TRUE.}). More precisely, you need to provide the electron density (impurities, if any, are trace, and the flux-surface-averaged ion density is trivially set by quasineutrality, even if \vlink{SOLVE\_QN}~is set to \false) and the electron and ion temperature (all ions have the same temperature, and $T_e=T_i$ is set if the electron temperature is not provided). The radial electric field can be provided if ambipolarity is not solved, otherwise it is zero. All this can be done by (more details in \S\ref{SEC_FILES}) 
+
+\begin{itemize} 
+\item using files  {\ttfamily ne\_in.d}, {\ttfamily te\_in.d}, {\ttfamily ti\_in.d} and/or {\ttfamily ph\_in.d} if you want to calculate one flux-surface, or
+\item using profiles ({\ttfamily neprof\_r.d}, {\ttfamily teprof\_r.d}, {\ttfamily tiprof\_r.d} and/or {\ttfamily phprof\_r.d}) and determining the flux surface(s). The default flux-surface is $s=1$, which you can change by creating a file {\ttfamily input.surfaces} in the working directory (see \S\ref{SEC_SURF}), and modifying~\vlink{NS} and/or \vlink{S}.
+\item using file {\ttfamily //profiles.d}, {\ttfamily //profiles.txt}, {\ttfamily //prof-file.txt} or {\ttfamily //input-prof.txt}, that contain all the profiles, and determining the flux surface(s).
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Magnetic configuration}
+
+For some specific physics problems (e.g. if \vlink{JPP} is set to {\ttfamily  .TRUE.}), there is a default magnetic configuration. Otherwise, you need to provide the magnetic configuration (Fourier modes of $B$ in Boozer coordinates, rotational transform $\iota$, toroidal and poloidal components of the magnetic field $B_\theta$ and $B_\zeta$, and toroidal flux) at least at the flux-surface of interest, and at one additional close flux-surface if, as usual, you want to account for the tangential magnetic drift in the drift-kinetic equation. All this can be done by (more details in \S\ref{SEC_BINPUT})
+
+\begin{itemize} 
+\item using file {\ttfamily ddkes2.data} (and maybe {\ttfamily add\_ddkes2.data}), which must be at the working directory, or
+\item using files  {\ttfamily boozmn.data} or {\ttfamily boozer.txt}, and determining the flux surface(s). The default flux-surface is $s=1$, which you can change by creating a file {\ttfamily input.surfaces} in the working directory (see \S\ref{SEC_SURF}), and modifying~\vlink{NS} and/or \vlink{S}.
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Parameters}
+
+The default values should work for your problem: no unnecesary information is shown, well-tested algorithms are used, the magnetic field is calculated with all the modes available at the input file, and everything is done reasonable precision, However, if you think that your results have not converged or you want to do some debugging, you can create a {\ttfamily input.parameters} file and modify it as follows (more details in \S\ref{SEC_PARAM}):
+
+
+\renewcommand{\arraystretch}{2}
+\begin{longtable}{L{9cm} | L{5.5cm}}
+{\textbf{\textit{If you}}}  & {\bf you have to} \\
+\hline
+{\it - want to plot many intermediate results:} & set \vlink{DEBUG} to {\ttfamily .TRUE.} \\ 
+{\it - want to plot the time spent at every major routine:} & set \vlink{TIME} to {\ttfamily .TRUE.} \\ 
+{\it - \todo{want to plot the distribution function:}} & set \vlink{PLOTG} to {\ttfamily .TRUE.} \\ 
+{\it - \todo{want to do the bounce-averages over the underlying omnigenous magnetic field}:} & set \vlink{USE\_B0pB1} or \vlink{USE\_B1} to {\ttfamily .TRUE.} \\ 
+{\it - want to calculate analytically as much as possible of the bounce-integrals:} & set \vlink{REMOVE\_DIV} to {\ttfamily .TRUE.} \\
+{\it - do not want to use trigonometric identities to calculate the magnetic field:} & set \vlink{DELTA} to {\ttfamily .FALSE.} \\ 
+{\it - want to keep less modes of the magnetic field spectrum:} & reduce \vlink{TRUNCATE\_B} \\ 
+{\it - want to keep less modes of the magnetic field spectrum:} & increase \vlink{PREC\_B} \\ 
+{\it - want to calculate the bounce points with more precision:} & reduce \vlink{PREC\_EXTR} \\
+{\it - want to calculate the bounce integrals with more precision:} & reduce \vlink{PREC\_BINT} \\ 
+{\it - want to calculate the monoenergetic contribution to the flux with more precision}: & increase \vlink{MAL} and/or \vlink{MLAMBDA} \\ 
+{\it - \todo {want to calculate the monoenergetic contribution to the flux with more precision}:} & reduce \vlink{PREC\_DQDV} \\ 
+{\it - want to calculate the velocity convolution of monoenergetic coefficients with more precision}: & reduce \vlink{PREC\_INTV} \\ 
+{\it - want less points in your database of monoenergetic transport coefficients:} & modify \vlink{NEFIELD} and \vlink{EFIELD} and/or \vlink{NCMUL} and \vlink{CMUL} \\ 
+{\it - want to modify the number of points or the range of values when solving ambipolarity:} & modify \vlink{NER}, \vlink{ERMIN} and/or \vlink{ERMAX} \\ 
+{\it - want to calculate the ambipolar $E_r$ with more precision:} & reduce \vlink{ERACC} \\ 
+{\it - want to increase the statistics when estimating the error bars:} & increase \vlink{NERR} \\ 
+{\it - want to set error bars for the inputs:} & set \vlink{IPERR} \\ 
+\end{longtable}
+

@@ -1,0 +1,130 @@
+\chapter{High collisionalities}\label{CHAP_HIGHCOL}
+
+In this appendix we describe how the code solves transport at higher collisionalities (for which the bounce-average technique cannot be applied). For bulk species, we will recover the results of \DKES~(i.e., without momentum conservation), while for trace impurities we will obtain those of~\citep{calvo2018nf}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Bulk species in the Pfisrch-Schl\"uter regime}
+
+We repeat here the derivation of the appendix of~\citep{igitkhanov2006impurity}.  We want to calculate $h$, the deviation of the distribution function from the Maxwellian, and we assume $\varphi_1=0$. The equation that we want to solve is
+\begin{equation}
+\left(vp\frac{\bB}{B}+\frac{\bE\times\bB}{B^2}\right)\cdot\bnabla h + \bv_M\cdot\bnabla\psi \Upsilon F_M = \frac{\nu}{2}\frac{\partial}{\partial p}\left((1-p^2)\frac{\partial h}{\partial p}\right)\,.\label{EQ_DKEPS}
+\end{equation}
+where we have used a simplified collision operator that is not correct at these collisionalities. The variables in velocity space are the particle speed $v$ and the pitch-angle $p=v_\parallel/v$. Finally, we note that, for very high collisionalities, we have to keep the $\bE\times\bB$ drift. 
+
+Using the expressions derived in \S\ref{SEC_USEFUL} for right-handed Boozzer coordinates, equation~(\ref{EQ_DKEPS})  becomes
+\begin{eqnarray}
+ \left[vp\frac{B}{B_\zeta+\iota B_\theta}\left(\iota\frac{\partial}{\partial \theta}+\frac{\partial}{\partial \zeta}\right)+ \frac{1}{|B_\zeta+\iota B_\theta|}\frac{\partial \varphi}{\partial\psi}\left(B_\zeta\frac{\partial}{\partial \theta}-B_\theta\frac{\partial}{\partial \zeta}\right)\right]  h +\nonumber\\ +v_d\frac{1+p^2}{2}\frac{1}{B|B_\zeta+\iota B_\theta|}\left(B_\theta\frac{\partial B}{\partial \zeta}-B_\zeta\frac{\partial B}{\partial \theta}\right) \Upsilon F_M = \frac{\nu}{2}\frac{\partial}{\partial p}\left((1-p^2)\frac{\partial h}{\partial p}\right)\,.
+\end{eqnarray}
+We now expand $h$ (and $B$) in Fourier components
+\begin{equation}
+h(\theta,\zeta,p) = \Upsilon F_M \sum_{m,n} h_{mn}(p)\exp{[i(m\theta+nN_p\zeta)]}\,,
+\end{equation}
+and $h_{mn}(p)$ in Legendre polynomia:
+\begin{eqnarray}
+h_{mn}(p) = \sum_l h_{mnl} P_l(p) = h_{mn0} + p h_{mn1} + \frac{1}{2}(3p^2-1) h_{mn2}\,.
+\end{eqnarray}
+We keep only the two first polynomia since it is easy to show that
+\begin{eqnarray}
+\int_{-1}^{+1}\mathrm{d}p (1+p^2) P_2(p) = 0.1 \int_{-1}^{+1}\mathrm{d}p (1+p^2) P_0(p)\,.
+\end{eqnarray}
+and, at large $\nu$, $h_{mn2}\ll h_{mn0}$. We now invoke the large aspect-ratio approximation and consider variations of the magnetic field strenght to be small compared to its average. In this limit
+\begin{eqnarray}
+\frac{B}{B_\zeta+\iota B_\theta} &\approx& \frac{\Psi_t'}{R}\,,\nonumber\\
+\frac{1}{B} &\approx& \frac{1}{\overline{B}}\,,
+\end{eqnarray}
+where $R$ is the major radius of the device and $\overline{B}$ some average of the magnetic field strength\footnote{We take $\overline{B}\equiv B_{00}$.}. The drift-kinetic equation becomes, for each Fourier component
+\begin{eqnarray}
+i\left[vp\frac{\Psi_t'}{R}(\iota m  + nN_p)+\frac{1}{|B_\zeta+\iota B_\theta|}\frac{\partial \varphi}{\partial\psi}(m B_\zeta-nN_p B_\theta)\right] \left(h_{mn0} + p h_{mn1}+ \frac{1}{2}(3p^2-1) h_{mn2}\right) -\nonumber\\ +iv_d\frac{1+p^2}{2} \frac{1}{\overline{B}|B_\zeta+\iota B_\theta|} (n N_p B_\theta - m B_\zeta) B_{mn}  = \frac{\nu}{2} \left( -2 p h_{mn1} - 3(3p^2-1) h_{mn2}\right)\,.
+\end{eqnarray}
+and we have to solve a system of three equations
+\begin{eqnarray}
+i\omega_{mn}h_{mn0} + \left(-\frac{3}{2}\nu -i\frac{1}{2}\omega_{mn}\right)h_{mn2} = iv_{d,mn}\,,\nonumber\\
+iu_{mn}h_{mn0} + (i\omega_{mn}+\nu) h_{mn1} = 0 \,,\nonumber\\
+iu_{mn}h_{mn1}+\left(\frac{9}{2}\nu+i\frac{3}{2}\omega_{mn}\right)h_{mn2} = iv_{d,mn}\,,
+\end{eqnarray}
+where
+\begin{eqnarray}
+u_{mn} &=& v\frac{\Psi_t'}{R}(\iota m  + nN_p)\,,\nonumber\\
+\omega_{mn} &=& \frac{\partial \varphi}{\partial\psi}(m B_\zeta-nN_p B_\theta)\,,\nonumber\\
+v_{d,mn} & = &\frac{v_d}{2} \frac{1}{\overline{B}|B_\zeta+\iota B_\theta|} (m B_\zeta-n N_p B_\theta) B_{mn}  \,,
+\end{eqnarray}
+These equations can be combined into two:
+\begin{eqnarray}
+iu_{mn}h_{mn1} +i3\omega_{mn}h_{mn0} &=& i4v_{d,mn}\,,\nonumber\\
+iu_{mn}h_{mn0} + (i\omega_{mn}+\nu) h_{mn1} &=& 0 \,,
+\end{eqnarray}
+and we can solve for $h_{mn0}$, the only one that contributes the the radial flux:
+\begin{eqnarray}
+h_{mn0} =i\frac{4v_{d,mn}u_{mn}^2\nu}{(u_{mn}^2-3\omega_{mn}^2)^2+(3\nu\omega_{mn})^2}\approx i\frac{4v_{d,mn}\nu}{u_{mn}^2\left[1+\left(\frac{3\nu\omega_{mn}}{u_{mn}^2}\right)^2\right]}\,,
+\end{eqnarray}
+where we have only kept the stellarator-asymmetric part and we have used that $u_{mn}^2\gg 3\omega_{mn}^2$. We can now calculate the neoclassical transport coefficient $D_{11}$ (note that we drop the species index):
+\begin{equation}
+D_{11}= -\frac{1}{2}\left(\frac{\partial r}{\partial\psi}\right)^2\fsa{\int_{-1}^{+1}\mathrm{d}p \frac{h}{\Upsilon F_M} \bv_M\cdot\bnabla\psi}\,,
+\end{equation}
+where the brackets denote flux-surface-average. Thanks to the large aspect-ratio approximation, we can take the Jacobian to be approximately constant and obtain 
+\begin{eqnarray}
+D_{11} \approx -\frac{1}{2}\left(\frac{\partial r}{\partial\psi}\right)^2\frac{1}{4\pi^2}\int_0^{2\pi}\mathrm{d}\theta\int_0^{2\pi}\mathrm{d}\zeta\int_{-1}^{+1}\mathrm{d}p \frac{h_{mn}}{\Upsilon F_M} \bv_M\cdot\bnabla \psi = \nonumber \\ = -\frac{1}{2}\left(\frac{\partial r}{\partial\psi}\right)^2 \sum_{m,n}\int_{-1}^{+1}\mathrm{d}\,p \frac{h_{mn}}{\Upsilon F_M}(\bv_M\cdot\bnabla\psi)_{-m,-n} =\nonumber \\ = \sum_{m,n}\exp{[i(m\theta+nN_p\zeta)]} (D_{11})_{mn}\,,
+\end{eqnarray}
+with
+\begin{equation}
+(D_{11})_{mn} \equiv -\frac{1}{2}\left(\frac{\partial r}{\partial\psi}\right)^2\int_{-1}^{+1}\mathrm{d}p\,\frac{h_{mn}}{\Upsilon F_M}(\bv_M\cdot\bnabla\psi)_{-m,-n}\,,
+\end{equation}
+and
+\begin{equation}
+ (\bv_M\cdot\bnabla\psi)_{mn} = -i(1+p^2)v_{d,mn}\,.
+\end{equation}
+Our expressions can be rewritten as
+\begin{eqnarray}
+(D_{11})_{mn}= -\frac{16}{3}\left(\frac{\partial r}{\partial\psi}\right)^2\frac{v_{d,mn}v_{d,-m,-n}\nu}{u_{mn}^2\left[1+\left(\frac{3\nu\omega_{mn}}{u_{mn}^2}\right)^2\right]}\,.\label{EQ_D11PS}
+\end{eqnarray}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Bulk species in the plateau regime}\label{SEC_PLATEAU}
+
+We repeat here the derivation of~section 2 of~\citep{notes_plateau}. We want to calculate $h$, the deviation of the distribution function from the Maxwellian, described by the next equation:
+ \begin{equation}
+ vp\frac{\bB}{B}\cdot\bnabla h + \nu h = -\bv_M\cdot\bnabla\psi \Upsilon F_M\,.\label{EQ_DKEPLATEAU}
+ \end{equation}
+ The variables in velocity space are again the particle speed $v$ and the pitch-angle $p=v_\parallel/v$. In Boozer coordinates,  equation~(\ref{EQ_DKEPLATEAU}) becomes:
+\begin{eqnarray}
+vp\frac{B}{B_\zeta+\iota B_\theta}\left(\iota\frac{\partial}{\partial \theta}+\frac{\partial}{\partial \zeta}\right) h +\nonumber\\ +v_d\frac{1+p^2}{2}\frac{1}{B|B_\zeta+\iota B_\theta|}\left(B_\theta\frac{\partial B}{\partial \zeta}-B_\zeta\frac{\partial B}{\partial \theta}\right) \Upsilon F_M = \frac{\nu}{2}\frac{\partial}{\partial p}\left((1-p^2)\frac{\partial h}{\partial p}\right)\,.
+\end{eqnarray}
+ which by using the large aspect-ratio approximation, becomes
+ \begin{equation}
+ vp\frac{\Psi_t'}{R}\left(\iota\frac{\partial}{\partial \theta} +\frac{\partial}{\partial \zeta}\right) h + \nu h = v_d\frac{1+p^2}{2}\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|}\left(B_\zeta\frac{\partial B}{\partial \theta}-B_\theta\frac{\partial B}{\partial \zeta}\right) \Upsilon F_M\,.
+ \end{equation}
+ If we now expand $h$ and $B$ in Fourier components, we have, for each component
+ \begin{equation}
+vp\frac{\Psi_t'}{R}i(\iota m + nN_p) h_{mn} + \nu h_{mn} = v_d\frac{1+p^2}{2}\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|} i(mB_\zeta -nN_pB_\theta)B_{mn}\Upsilon F_M\,,
+ \end{equation}
+ and thus
+ \begin{eqnarray}
+ h_{mn} &=& v_d\frac{1+p^2}{2}\Upsilon F_M\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|}\frac{i(mB_\zeta-nN_pB_\theta)B_{mn}}{\frac{\Psi_t'vp}{R}i(\iota m + nN_p)+\nu} = \nonumber \\ &=&  v_d\frac{1+p^2}{2}\Upsilon F_M\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|}\frac{i(mB_\zeta-nN_pB_\theta)B_{mn}\left(\nu-i\frac{\Psi_t'vp}{R}(\iota m + nN_p)\right)}{\left(\frac{vp}{R}\right)^2(\iota m + nN_p)^2+\nu^2}\,.
+ \end{eqnarray}
+ Since we are going to calculate the particle and energy flux, we drop the term which is odd in $p$:
+ \begin{eqnarray}
+ h_{mn} =  v_d\frac{1+p^2}{2}\Upsilon F_M\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|}\frac{i(mB_\zeta-nN_pB_\theta)B_{mn}\nu}{\left(\frac{vp}{R}\right)^2(\iota m + nN_p)^2+\nu^2}\,.
+ \end{eqnarray}
+ We can rearrange this expression
+ \begin{equation}
+ \frac{h_{mn}}{\Upsilon F_M} = \frac{v_d}{v}\frac{R}{\overline{B}|B_\zeta+\iota B_\theta|}\frac{i(mB_\zeta-nN_pB_\theta)B_{mn}}{|\iota m+nN_p|}\frac{1+p^2}{2}\frac{\nu^*}{p^2+(\nu^*)^2}\,,
+ \end{equation}
+ where $\nu^*=\frac{R\nu}{v|\iota m +nN_p|}$ in a way that allows us to calculate the neoclassical transport coefficient $D_{11}$, as in the previous section. Since we are interested in the lowest order (i.e. $O(\nu^0)$) contribution to the flux~\citep{notes_plateau}, we can use the fact that
+ \begin{equation}
+ \pi \delta(p)=\lim_{\nu^*\rightarrow 0}\frac{\nu^*}{p^2+(\nu^*)^2}\,,
+ \end{equation}
+ in order to integrate in the pitch angle and obtain the final expression:
+ \begin{eqnarray}
+ (D_{11})_{mn}&=& \frac{1}{8}\left(\frac{\partial r}{\partial\psi}\right)^2 \frac{v_d^2}{v}\frac{R}{\overline{B}^2|B_\zeta+\iota B_\theta|^2}\frac{(mB_\zeta-nN_pB_\theta)^2B_{mn}B_{-m,-n}}{|\iota m+nN_p|}\int_{-1}^{+1}\mathrm{d}p\,(1+p^2)\frac{\nu^*}{p^2+(\nu^*)^2} = \nonumber\\ &=& \frac{\pi}{8} \frac{v_d^2}{v}\frac{R}{\overline{B}^2|B_\zeta+\iota B_\theta|^2}\frac{(mB_\zeta-nN_pB_\theta)^2B_{mn}B_{-m,-n}}{|\iota m+nN_p|}\,.\label{EQ_D11PLATEAU}
+ \end{eqnarray}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Classical flux and neoclassical flux of trace impurities species in the presence of bulk ions at low collisionalities}\label{SEC_CLANC}.
+
+Here we follow~\citep{calvo2018nf,calvo2019anis}.
+
+

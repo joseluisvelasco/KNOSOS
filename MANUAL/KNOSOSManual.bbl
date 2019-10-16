@@ -1,0 +1,678 @@
+\begin{thebibliography}{67}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Alonso et~al.()Alonso, Calvo, and {J L Velasco}]{notes_plateau}
+J~A Alonso, I~Calvo, and {J L Velasco}.
+\newblock Calculation of impurity density asymmetries and radial transport in a
+  large aspect ratio stellarator in plateau regime.
+\newblock In \emph{02/02/2013}.
+
+\bibitem[Alonso et~al.(2017)Alonso, Beidler, Calvo, Dinklage, Feng, Fuchert,
+  Hirsch, Landreman, Langenberg, Maa{\ss}berg, Pablant, Smith, Velasco, Weir,
+  Zhang, and {the W7-X Team}]{alonso2017eps}
+J~A Alonso, C~D Beidler, I~Calvo, A~Dinklage, Y~Feng, G~Fuchert, M~Hirsch,
+  M~Landreman, A~Langenberg, H~Maa{\ss}berg, N~Pablant, H~Smith, J~L Velasco,
+  G~Weir, D~Zhang, and {the W7-X Team}.
+\newblock {Ion heat transport in low-density Wendelstein 7-X plasmas}.
+\newblock In \emph{44th European Physical Society Conference on Plasma Physics,
+  Belfast, United Kingdom}, 2017.
+
+\bibitem[Ascas{\'{\i}}bar et~al.(2019)Ascas{\'{\i}}bar, Alba, Alegre, Alonso,
+  Alonso, de~Arag{\'{o}}n, Baciero, Barcala, Blanco, Botija, Bueno, Cabrera,
+  de~la Cal, Calvo, Cappa, Carralero, Carrasco, Carreras, Castej{\'{o}}n,
+  Castro, de~Castro, Catal{\'{a}}n, Chmyga, Chamorro, Cooper, Dinklage,
+  Eliseev, Estrada, Ezzat, Fern{\'{a}}ndez-Marina, Fontdecaba, Garc{\'{\i}}a,
+  Garc{\'{\i}}a-Cort{\'{e}}s, Garc{\'{\i}}a-G{\'{o}}mez,
+  Garc{\'{\i}}a-Rega{\~{n}}a, Gonz{\'{a}}lez-Jerez, Grenfell, Guasp,
+  Hern{\'{a}}ndez-S{\'{a}}nchez, Hernanz, Hidalgo, Hollmann,
+  Jim{\'{e}}nez-Denche, Khabanov, Kharchev, Kirpitchev, Kleiber, Kozachek,
+  Krupnik, Lapayese, Liniers, Liu, L{\'{o}}pez-Bruna, L{\'{o}}pez-Fraguas,
+  L{\'{o}}pez-Miranda, L{\'{o}}pez-R{\'{a}}zola, Losada, de~la Luna,
+  de~Aguilera, Mart{\'{\i}}n-D{\'{\i}}az, Mart{\'{\i}}nez-Fuentes,
+  Mart{\'{\i}}n-G{\'{o}}mez, Mart{\'{\i}}n-Rojo,
+  Mart{\'{\i}}nez-Fern{\'{a}}ndez, McCarthy, Medina, Medrano, Mel{\'{o}}n,
+  Melnikov, M{\'{e}}ndez, Merino, Miguel, van Milligen, Molinero, Momo,
+  Monreal, Mulas, Narushima, Navarro, Ochando, Ohshima, Olivares,
+  Oyarz{\'{a}}bal, de~Pablos, Pacios, Panadero, Parra, Pastor, de~la
+  Pe{\~{n}}a, Pereira, Pinz{\'{o}}n, Portas, Poveda, Quintana, Ramos,
+  Ratt{\'{a}}, Redondo, Rinc{\'{o}}n, R{\'{\i}}os,
+  Rodr{\'{\i}}guez-Fern{\'{a}}ndez, Rodr{\'{\i}}guez-Rodrigo, Rojo, Ros, Rosa,
+  S{\'{a}}nchez, S{\'{a}}nchez, S{\'{a}}nchez, S{\'{a}}nchez-Sarabia, Satake,
+  Sebasti{\'{a}}n, Sharma, Silva, Solano, Soleto, Sun, Tabar{\'{e}}s, Tafalla,
+  Takahashi, Tamura, Tolkachev, Vega, Velasco, {{J. L. Velasco}}, Yamamoto, and
+  and]{ascasibar2019iaea}
+E.~Ascas{\'{\i}}bar, D.~Alba, D.~Alegre, A.~Alonso, J.~Alonso,
+  F.~de~Arag{\'{o}}n, A.~Baciero, J.M. Barcala, E.~Blanco, J.~Botija, L.~Bueno,
+  S.~Cabrera, E.~de~la Cal, I.~Calvo, A.~Cappa, D.~Carralero, R.~Carrasco,
+  B.~Carreras, F.~Castej{\'{o}}n, R.~Castro, A.~de~Castro, G.~Catal{\'{a}}n,
+  A.A. Chmyga, M.~Chamorro, A.W. Cooper, A.~Dinklage, L.~Eliseev, T.~Estrada,
+  M.~Ezzat, F.~Fern{\'{a}}ndez-Marina, J.M. Fontdecaba, L.~Garc{\'{\i}}a,
+  I.~Garc{\'{\i}}a-Cort{\'{e}}s, R.~Garc{\'{\i}}a-G{\'{o}}mez, J.M.
+  Garc{\'{\i}}a-Rega{\~{n}}a, A.~Gonz{\'{a}}lez-Jerez, G.~Grenfell, J.~Guasp,
+  J.~Hern{\'{a}}ndez-S{\'{a}}nchez, J.~Hernanz, C.~Hidalgo, E.~Hollmann,
+  A.~Jim{\'{e}}nez-Denche, P.~Khabanov, N.~Kharchev, I.~Kirpitchev, R.~Kleiber,
+  A.S. Kozachek, L.~Krupnik, F.~Lapayese, M.~Liniers, B.~Liu,
+  D.~L{\'{o}}pez-Bruna, A.~L{\'{o}}pez-Fraguas, B.~L{\'{o}}pez-Miranda,
+  J.~L{\'{o}}pez-R{\'{a}}zola, U.~Losada, E.~de~la Luna, A.~Mart{\'{\i}}n
+  de~Aguilera, F.~Mart{\'{\i}}n-D{\'{\i}}az, M.~Mart{\'{\i}}nez-Fuentes,
+  G.~Mart{\'{\i}}n-G{\'{o}}mez, A.B. Mart{\'{\i}}n-Rojo,
+  J.~Mart{\'{\i}}nez-Fern{\'{a}}ndez, K.J. McCarthy, F.~Medina, M.~Medrano,
+  L.~Mel{\'{o}}n, A.V. Melnikov, P.~M{\'{e}}ndez, R.~Merino, F.J. Miguel,
+  B.~van Milligen, A.~Molinero, B.~Momo, P.~Monreal, S.~Mulas, Y.~Narushima,
+  M.~Navarro, M.~Ochando, S.~Ohshima, J.~Olivares, E.~Oyarz{\'{a}}bal, J.L.
+  de~Pablos, L.~Pacios, N.~Panadero, F.~Parra, I.~Pastor, A.~de~la Pe{\~{n}}a,
+  A.~Pereira, J.R. Pinz{\'{o}}n, A.B. Portas, E.~Poveda, J.A. Quintana, F.J.
+  Ramos, G.A. Ratt{\'{a}}, M.~Redondo, E.~Rinc{\'{o}}n, L.~R{\'{\i}}os,
+  C.~Rodr{\'{\i}}guez-Fern{\'{a}}ndez, L.~Rodr{\'{\i}}guez-Rodrigo, B.~Rojo,
+  A.~Ros, E.~Rosa, E.~S{\'{a}}nchez, J.~S{\'{a}}nchez, M.~S{\'{a}}nchez,
+  E.~S{\'{a}}nchez-Sarabia, S.~Satake, J.A. Sebasti{\'{a}}n, R.~Sharma,
+  C.~Silva, E.R. Solano, A.~Soleto, B.J. Sun, F.L. Tabar{\'{e}}s, D.~Tafalla,
+  H.~Takahashi, N.~Tamura, A.~Tolkachev, J.~Vega, G.~Velasco, {{J. L.
+  Velasco}}, S.~Yamamoto, and B.~Zurro and.
+\newblock Overview of recent {TJ}-{II} stellarator results.
+\newblock \emph{Nuclear Fusion}, 59\penalty0 (11):\penalty0 112019, 2019.
+\newblock \doi{10.1088/1741-4326/ab205e}.
+\newblock URL \url{https://doi.org/10.1088%2F1741-4326%2Fab205e}.
+
+\bibitem[Balay et~al.(1997)Balay, Gropp, McInnes, and Smith]{petsc-efficient}
+Satish Balay, William~D. Gropp, Lois~Curfman McInnes, and Barry~F. Smith.
+\newblock Efficient management of parallelism in object oriented numerical
+  software libraries.
+\newblock In E.~Arge, A.~M. Bruaset, and H.~P. Langtangen, editors,
+  \emph{Modern Software Tools in Scientific Computing}, pages 163--202.
+  Birkh{\"{a}}user Press, 1997.
+
+\bibitem[Balay et~al.(2019{\natexlab{a}})Balay, Abhyankar, Adams, Brown, Brune,
+  Buschelman, Dalcin, Dener, Eijkhout, Gropp, Karpeyev, Kaushik, Knepley, May,
+  McInnes, Mills, Munson, Rupp, Sanan, Smith, Zampini, Zhang, and
+  Zhang]{petsc-web-page}
+Satish Balay, Shrirang Abhyankar, Mark~F. Adams, Jed Brown, Peter Brune, Kris
+  Buschelman, Lisandro Dalcin, Alp Dener, Victor Eijkhout, William~D. Gropp,
+  Dmitry Karpeyev, Dinesh Kaushik, Matthew~G. Knepley, Dave~A. May,
+  Lois~Curfman McInnes, Richard~Tran Mills, Todd Munson, Karl Rupp, Patrick
+  Sanan, Barry~F. Smith, Stefano Zampini, Hong Zhang, and Hong Zhang.
+\newblock {PETS}c {W}eb page.
+\newblock \url{https://www.mcs.anl.gov/petsc}, 2019{\natexlab{a}}.
+\newblock URL \url{https://www.mcs.anl.gov/petsc}.
+
+\bibitem[Balay et~al.(2019{\natexlab{b}})Balay, Abhyankar, Adams, Brown, Brune,
+  Buschelman, Dalcin, Dener, Eijkhout, Gropp, Karpeyev, Kaushik, Knepley, May,
+  McInnes, Mills, Munson, Rupp, Sanan, Smith, Zampini, Zhang, and
+  Zhang]{petsc-user-ref}
+Satish Balay, Shrirang Abhyankar, Mark~F. Adams, Jed Brown, Peter Brune, Kris
+  Buschelman, Lisandro Dalcin, Alp Dener, Victor Eijkhout, William~D. Gropp,
+  Dmitry Karpeyev, Dinesh Kaushik, Matthew~G. Knepley, Dave~A. May,
+  Lois~Curfman McInnes, Richard~Tran Mills, Todd Munson, Karl Rupp, Patrick
+  Sanan, Barry~F. Smith, Stefano Zampini, Hong Zhang, and Hong Zhang.
+\newblock {PETS}c users manual.
+\newblock Technical Report ANL-95/11 - Revision 3.11, Argonne National
+  Laboratory, 2019{\natexlab{b}}.
+\newblock URL \url{https://www.mcs.anl.gov/petsc}.
+
+\bibitem[Barnes et~al.(2019)Barnes, Parra, and Landreman]{barnes2019stella}
+M.~Barnes, F.I. Parra, and M.~Landreman.
+\newblock stella: An operator-split, implicit--explicit delta-f-gyrokinetic
+  code for general magnetic field configurations.
+\newblock \emph{Journal of Computational Physics}, 391:\penalty0 365 -- 380,
+  2019.
+\newblock ISSN 0021-9991.
+\newblock \doi{https://doi.org/10.1016/j.jcp.2019.01.025}.
+\newblock URL
+  \url{http://www.sciencedirect.com/science/article/pii/S002199911930066X}.
+
+\bibitem[Beidler et~al.(2007)Beidler, Isaev, Kasilov, Kernbichler, Murakami,
+  Nemov, Spong, and Tribaldos]{beidler2007icnts}
+C~D Beidler, M~Yu Isaev, S~V Kasilov, W~Kernbichler, H~Maa{\ss}berg~S Murakami,
+  V~V Nemov, D~Spong, and V~Tribaldos.
+\newblock {ICNTS-Impact of Incompressible E$\times$ B Flow in Estimating
+  Mono-Energetic Transport Coefficients}.
+\newblock In \emph{Proceedings of the 16th Int. Stellarator/Heliotron Workshop,
+  Toki}, volume NIFS-PROC-69, page P2.O31, 2007.
+\newblock URL
+  \url{http://www.nifs.ac.jp/itc/itc17/file/PDF_proceedings/poster2/P2-031.pdf}.
+
+\bibitem[Beidler et~al.(2011)Beidler, Allmaier, Isaev, Kasilov, Kernbichler,
+  Leitold, Maa{\ss}berg, Mikkelsen, Murakami, Schmidt, Spong, Tribaldos, and
+  Wakasa]{beidler2011icnts}
+C~D Beidler, K~Allmaier, M~Yu Isaev, S~V Kasilov, W~Kernbichler, G~O Leitold,
+  H~Maa{\ss}berg, D~R Mikkelsen, S~Murakami, M~Schmidt, D~A Spong, V~Tribaldos,
+  and A~Wakasa.
+\newblock {Benchmarking of the mono-energetic transport coefficients. Results
+  from the International Collaboration on Neoclassical Transport in
+  Stellarators (ICNTS)}.
+\newblock \emph{Nuclear Fusion}, 51\penalty0 (7):\penalty0 076001, 2011.
+\newblock URL \url{http://stacks.iop.org/0029-5515/51/i=7/a=076001}.
+
+\bibitem[Boozer(1983)]{boozer1983qs}
+A~H Boozer.
+\newblock Transport and isomorphic equilibria.
+\newblock \emph{The Physics of Fluids}, 26\penalty0 (2):\penalty0 496--499,
+  1983.
+\newblock \doi{10.1063/1.864166}.
+\newblock URL \url{https://aip.scitation.org/doi/abs/10.1063/1.864166}.
+
+\bibitem[Buller et~al.(2018)Buller, Smith, Helander, Moll{\'e}n, Newton, and
+  Pusztai]{buller2018jpp}
+S.~Buller, H.~M. Smith, P.~Helander, A.~Moll{\'e}n, S.~L. Newton, and
+  I.~Pusztai.
+\newblock Effects of flux-surface impurity density variation on collisional
+  transport in stellarators.
+\newblock \emph{Journal of Plasma Physics}, 84\penalty0 (4):\penalty0
+  905840409, 2018.
+
+\bibitem[Calvo et~al.(2013)Calvo, Parra, {J L Velasco}, and
+  Alonso]{calvo2013er}
+I~Calvo, F~I Parra, {J L Velasco}, and J~A Alonso.
+\newblock {Stellarators close to quasisymmetry}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 55\penalty0
+  (12):\penalty0 125014, 2013.
+\newblock URL \url{http://stacks.iop.org/0741-3335/55/i=12/a=125014}.
+
+\bibitem[Calvo et~al.(2014)Calvo, Parra, Alonso, and {J L
+  Velasco}]{calvo2014er}
+I~Calvo, F~I Parra, J~A Alonso, and {J L Velasco}.
+\newblock {Optimizing stellarators for large flows}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 56\penalty0
+  (9):\penalty0 094003, 2014.
+\newblock URL \url{http://stacks.iop.org/0741-3335/56/i=9/a=094003}.
+
+\bibitem[Calvo et~al.(2015)Calvo, Parra, {J L Velasco}, and
+  Alonso]{calvo2015flowdamping}
+I~Calvo, F~I Parra, {J L Velasco}, and J~A Alonso.
+\newblock {Flow damping in stellarators close to quasisymmetry}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 57\penalty0
+  (1):\penalty0 014014, 2015.
+\newblock URL \url{http://stacks.iop.org/0741-3335/57/i=1/a=014014}.
+
+\bibitem[Calvo et~al.(2017)Calvo, Parra, Velasco, and Alonso]{calvo2017sqrtnu}
+I~Calvo, F~I Parra, J~L Velasco, and A~Alonso.
+\newblock The effect of tangential drifts on neoclassical transport in
+  stellarators close to omnigeneity.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 59\penalty0
+  (5):\penalty0 055014, 2017.
+\newblock URL \url{http://stacks.iop.org/0741-3335/59/i=5/a=055014}.
+
+\bibitem[Calvo et~al.(2018{\natexlab{a}})Calvo, Parra, Velasco, Alonso, and
+  Garc{\'\i}a-Rega{\~n}a]{calvo2018nf}
+I~Calvo, F~I Parra, J~L Velasco, J~A Alonso, and J~M Garc{\'\i}a-Rega{\~n}a.
+\newblock Stellarator impurity flux driven by electric fields tangent to
+  magnetic surfaces.
+\newblock \emph{Nuclear Fusion}, 58\penalty0 (12):\penalty0 124005,
+  2018{\natexlab{a}}.
+\newblock URL \url{http://stacks.iop.org/0029-5515/58/i=12/a=124005}.
+
+\bibitem[Calvo et~al.(2018{\natexlab{b}})Calvo, Velasco, Parra, Alonso, and
+  Garc\'ia-Regana]{calvo2018jpp}
+I~Calvo, J~L Velasco, F~I Parra, J~A Alonso, and J~M Garc\'ia-Regana.
+\newblock Electrostatic potential variations on stellarator magnetic surfaces
+  in low collisionality regimes.
+\newblock \emph{Journal of Plasma Physics}, 84\penalty0 (4):\penalty0
+  905840407, 2018{\natexlab{b}}.
+
+\bibitem[Calvo et~al.(2019)Calvo, Parra, Velasco, and
+  Garc{\'\i}a-Rega{\~n}a]{calvo2019anis}
+I~Calvo, F~I Parra, J~L Velasco, and J~M Garc{\'\i}a-Rega{\~n}a.
+\newblock Impact of main ion pressure anisotropy on stellarator impurity
+  transport.
+\newblock \emph{Nuclear Fusion}, https://arxiv.org/abs/1907.08482, 2019.
+\newblock URL \url{https://arxiv.org/abs/1907.08482}.
+
+\bibitem[Carralero et~al.(2019)Carralero, Estrada, Windisch, Velasco, Alonso,
+  Beurskens, Bozhenkov, Damm, Fuchert, Pasch, Weir, and {the W7-X
+  Team}]{carralero2019irw}
+D~Carralero, T~Estrada, T~Windisch, J~L Velasco, J~A Alonso, M~Beurskens,
+  S~Bozhenkov, H~Damm, G~Fuchert, E~Pasch, G~Weir, and {the W7-X Team}.
+\newblock {First V-band Doppler reflectometer results from the OP1.2b campaign
+  in Wendelstein 7-X}.
+\newblock In \emph{14th International Reflectometry Workshop, Lausanne,
+  Switzerland}, 2019.
+
+\bibitem[Cary and Shasharina(1997)]{cary1997omni}
+J~R Cary and S~G Shasharina.
+\newblock {Helical plasma confinement devices with good confinement
+  properties}.
+\newblock \emph{Physical Review Letters}, 78:\penalty0 674--677, 1997.
+\newblock URL \url{http://link.aps.org/doi/10.1103/PhysRevLett.78.674}.
+
+\bibitem[Dinklage and {the W7-X Team}(2018)]{dinklage2018np}
+A~Dinklage and {the W7-X Team}.
+\newblock {Magnetic configuration effects on the Wendelstein 7-X stellarator}.
+\newblock \emph{Nature Physics}, 14\penalty0 (8):\penalty0 855--860, 2018.
+\newblock \doi{10.1038/s41567-018-0141-9}.
+\newblock URL \url{https://doi.org/10.1038/s41567-018-0141-9}.
+
+\bibitem[Dinklage et~al.(2013)Dinklage, Yokoyama, Tanaka, Velasco,
+  L\'opez-Bruna, Beidler, Satake, Ascas\'ibar, Ar\'evalo, Baldzuhn, Feng,
+  Gates, Geiger, Ida, Jakubowski, L\'opez-Fraguas, Maassberg, Miyazawa,
+  Morisaki, Murakami, Pablant, Kobayashi, Seki, Suzuki, Suzuki, Turkin, Wakasa,
+  Wolf, Yamada, Yoshinuma, {LHD Exp. Group}, {TJ-II Team}, and {W7-AS
+  Team}]{dinklage2013ncval}
+A~Dinklage, M~Yokoyama, K~Tanaka, J~L Velasco, D~L\'opez-Bruna, C~D Beidler,
+  S~Satake, E~Ascas\'ibar, J~Ar\'evalo, J~Baldzuhn, Y~Feng, D~Gates, J~Geiger,
+  K~Ida, M~Jakubowski, A~L\'opez-Fraguas, H~Maassberg, J~Miyazawa, T~Morisaki,
+  S~Murakami, N~Pablant, S~Kobayashi, R~Seki, C~Suzuki, Y~Suzuki, Yu~Turkin,
+  A~Wakasa, R~Wolf, H~Yamada, M~Yoshinuma, {LHD Exp. Group}, {TJ-II Team}, and
+  {W7-AS Team}.
+\newblock {Inter-machine validation study of neoclassical transport modelling
+  in medium- to high-density stellarator-heliotron plasmas}.
+\newblock \emph{Nuclear Fusion}, 53\penalty0 (6):\penalty0 063022, 2013.
+\newblock URL \url{http://stacks.iop.org/0029-5515/53/i=6/a=063022}.
+
+\bibitem[Estrada et~al.(2019)Estrada, S\'anchez, na, Alonso, Ascas\'ibar,
+  Calvo, Cappa, Carralero, Hidalgo, Liniers, Pastor, and
+  Velasco]{estrada2019phi1}
+T~Estrada, E~S\'anchez, J~M Garc\'ia-Rega\ na, J~A Alonso, E~Ascas\'ibar,
+  I~Calvo, A~Cappa, D~Carralero, C~Hidalgo, M~Liniers, I~Pastor, and J~L
+  Velasco.
+\newblock Turbulence and perpendicular plasma flow asymmetries measured at
+  {TJ}-{II} plasmas.
+\newblock \emph{Nuclear Fusion}, 59:\penalty0 076021, 2019.
+\newblock \doi{10.1088/1741-4326/ab1940}.
+\newblock URL \url{https://doi.org/10.1088%2F1741-4326%2Fab1940}.
+
+\bibitem[Fuchert et~al.(2018)Fuchert, Bozhenkov, Pablant, Rahbarnia, Turkin,
+  Alonso, Andreeva, Beidler, Beurskens, Dinklage, Geiger, Hirsch, H{\"o}fel,
+  Knauer, Langenberg, Laqua, Niemann, Pasch, Pedersen, Stange, Svensson, Mora,
+  Wurden, Zhang, and and]{fuchert2018taue}
+G.~Fuchert, S.A. Bozhenkov, N.~Pablant, K.~Rahbarnia, Y.~Turkin, A.~Alonso,
+  T.~Andreeva, C.D. Beidler, M.~Beurskens, A.~Dinklage, J.~Geiger, M.~Hirsch,
+  U.~H{\"o}fel, J.~Knauer, A.~Langenberg, H.P. Laqua, H.~Niemann, E.~Pasch,
+  T.~Sunn Pedersen, T.~Stange, J.~Svensson, H.~Trimino Mora, G.A. Wurden,
+  D.~Zhang, and R.C.~Wolf and.
+\newblock {Global energy confinement in the initial limiter configuration of
+  Wendelstein 7-X}.
+\newblock \emph{Nuclear Fusion}, 58\penalty0 (10):\penalty0 106029, aug 2018.
+\newblock \doi{10.1088/1741-4326/aad78b}.
+\newblock URL \url{https://doi.org/10.1088%2F1741-4326%2Faad78b}.
+
+\bibitem[Fujita et~al.(2019)Fujita, Satake, Kanno, Nunami, Nakata, and
+  na]{fujita2019phi1}
+K~Fujita, S~Satake, R~Kanno, M~Nunami, M~Nakata, and J~M Garc\'ia-Rega\ na.
+\newblock Global effects on the variation of ion density and electrostatic
+  potential on the flux surface in helical plasmas.
+\newblock \emph{Plasma and Fusion Research}, 14:\penalty0 3403102, 2019.
+
+\bibitem[Garc\'ia-Rega{\~n}a et~al.(2013)Garc\'ia-Rega{\~n}a, Kleiber, Beidler,
+  Turkin, Maassberg, and Helander]{regana2013euterpe}
+J~M Garc\'ia-Rega{\~n}a, R~Kleiber, C~D Beidler, Y~Turkin, H~Maassberg, and
+  P~Helander.
+\newblock {On neoclassical impurity transport in stellarator geometry}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 55\penalty0
+  (7):\penalty0 074008, 2013.
+\newblock URL \url{http://stacks.iop.org/0741-3335/55/i=7/a=074008}.
+
+\bibitem[Garc{\'\i}a-Rega{\~n}a et~al.(2018)Garc{\'\i}a-Rega{\~n}a, Estrada,
+  Calvo, Velasco, Alonso, Carralero, Kleiber, Landreman, Moll{\'e}n,
+  S{\'a}nchez, Slaby, Team, and Team]{regana2018phi1}
+J~M Garc{\'\i}a-Rega{\~n}a, T~Estrada, I~Calvo, J~L Velasco, J~A Alonso,
+  D~Carralero, R~Kleiber, M~Landreman, A~Moll{\'e}n, E~S{\'a}nchez, C~Slaby,
+  TJ-II Team, and W7-X Team.
+\newblock On-surface potential and radial electric field variations in electron
+  root stellarator plasmas.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 60\penalty0
+  (10):\penalty0 104002, 2018.
+\newblock URL \url{http://stacks.iop.org/0741-3335/60/i=10/a=104002}.
+
+\bibitem[Garc{\'\i}a-Rega{\~n}a et~al.(2017)Garc{\'\i}a-Rega{\~n}a, Beidler,
+  Kleiber, Helander, Moll{\'e}n, Alonso, Landreman, Maa{\ss}berg, Smith,
+  Turkin, and Velasco]{regana2017phi1}
+J.M. Garc{\'\i}a-Rega{\~n}a, C.D. Beidler, R.~Kleiber, P.~Helander,
+  A.~Moll{\'e}n, J.A. Alonso, M.~Landreman, H.~Maa{\ss}berg, H.M. Smith,
+  Y.~Turkin, and J.L. Velasco.
+\newblock Electrostatic potential variation on the flux surface and its impact
+  on impurity transport.
+\newblock \emph{Nuclear Fusion}, 57\penalty0 (5):\penalty0 056004, 2017.
+\newblock URL \url{http://stacks.iop.org/0029-5515/57/i=5/a=056004}.
+
+\bibitem[Geiger et~al.(2015)Geiger, Beidler, Feng, Maa{\ss}berg, Marushchenko,
+  and Turkin]{geiger2014w7x}
+J~Geiger, C~D Beidler, Y~Feng, H~Maa{\ss}berg, N~B Marushchenko, and Y~Turkin.
+\newblock {Physics in the magnetic configuration space of W7-X}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 57\penalty0
+  (1):\penalty0 014004, 2015.
+\newblock URL \url{http://stacks.iop.org/0741-3335/57/i=1/a=014004}.
+
+\bibitem[Hirshman and Whitson(1983)]{hirshman1983vmec}
+S~P Hirshman and J~C Whitson.
+\newblock {Steepest-descent moment method for three-dimensional
+  magnetohydrodynamic equilibria}.
+\newblock \emph{The Physics of Fluids}, 26\penalty0 (12):\penalty0 3553--3568,
+  1983.
+\newblock \doi{10.1063/1.864116}.
+\newblock URL \url{https://aip.scitation.org/doi/abs/10.1063/1.864116}.
+
+\bibitem[Hirshman et~al.(1986)Hirshman, Shaing, van Rij, Beasley, and
+  Crume]{hirshman1986dkes}
+S~P Hirshman, K~C Shaing, W~I van Rij, C~O Beasley, and E~C Crume.
+\newblock {Plasma transport coefficients for nonsymmetric toroidal confinement
+  systems}.
+\newblock \emph{Physics of Fluids}, 29\penalty0 (9):\penalty0 2951--2959, 1986.
+\newblock URL \url{http://link.aip.org/link/?PFL/29/2951/1}.
+
+\bibitem[Ho and Kulsrud(1987)]{hokulsrud1986neo}
+Darwin~D.‐M. Ho and Russell~M. Kulsrud.
+\newblock Neoclassical transport in stellarators.
+\newblock \emph{The Physics of Fluids}, 30\penalty0 (2):\penalty0 442--461,
+  1987.
+\newblock \doi{10.1063/1.866395}.
+\newblock URL \url{https://aip.scitation.org/doi/abs/10.1063/1.866395}.
+
+\bibitem[Igitkhanov et~al.(2006)Igitkhanov, Polunovsky, and
+  Beidler]{igitkhanov2006impurity}
+Y~Igitkhanov, E~Polunovsky, and C~D Beidler.
+\newblock {Impurity dynamics in nonaxisymmetric plasmas}.
+\newblock \emph{Fusion science and technology}, 50\penalty0 (2):\penalty0 268,
+  2006.
+\newblock URL \url{http://epubs.ans.org/?a=1245}.
+
+\bibitem[Kernbichler et~al.(2016)Kernbichler, Kasilov, Kapper, Martitsch,
+  Nemov, Albert, and Heyn]{kernbichler2016neo2}
+W~Kernbichler, S~Kasilov, G~Kapper, A~Martitsch, V~Nemov, C~Albert, and M~Heyn.
+\newblock {Solution of drift kinetic equation in stellarators and tokamaks with
+  broken symmetry using the code NEO-2}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 58:\penalty0 104001,
+  2016.
+
+\bibitem[Klinger and {the W7-X Team}(2019)]{klinger2019op12}
+T.~Klinger and {the W7-X Team}.
+\newblock {Overview of first Wendelstein 7-X high-performance operation}.
+\newblock \emph{Nuclear Fusion}, 59\penalty0 (11):\penalty0 112004, 2019.
+\newblock \doi{10.1088/1741-4326/ab03a7}.
+\newblock URL \url{https://doi.org/10.1088%2F1741-4326%2Fab03a7}.
+
+\bibitem[Klinger et~al.(2017)Klinger, Alonso, Bozhenkov, Burhenn, Dinklage,
+  Fuchert, Geiger, Grulke, Langenberg, Hirsch, Kocsis, Knauer,
+  Kr{\"a}mer-Flecken, Laqua, Lazerson, Landreman, Maa{\ss}berg, Marsen, Otte,
+  Pablant, Pasch, Rahbarnia, Stange, Szepesi, Thomsen, Traverso, Velasco,
+  Wauters, Weir, Windisch, and {the Wendelstein 7-X Team}]{klinger2017op11}
+T~Klinger, A~Alonso, S~Bozhenkov, R~Burhenn, A~Dinklage, G~Fuchert, J~Geiger,
+  O~Grulke, A~Langenberg, M~Hirsch, G~Kocsis, J~Knauer, A~Kr{\"a}mer-Flecken,
+  H~Laqua, S~Lazerson, M~Landreman, H~Maa{\ss}berg, S~Marsen, M~Otte,
+  N~Pablant, E~Pasch, K~Rahbarnia, T~Stange, T~Szepesi, H~Thomsen, P~Traverso,
+  J~L Velasco, T~Wauters, G~Weir, T~Windisch, and {the Wendelstein 7-X Team}.
+\newblock {Performance and properties of the first plasmas of Wendelstein 7-X}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 59\penalty0
+  (1):\penalty0 014018, 2017.
+\newblock URL \url{http://stacks.iop.org/0741-3335/59/i=1/a=014018}.
+
+\bibitem[Kotschenreuther et~al.(1995)Kotschenreuther, Rewoldt, and
+  Tang]{kotschenreuther1995response}
+Mike Kotschenreuther, G.~Rewoldt, and W.M. Tang.
+\newblock Comparison of initial value and eigenvalue codes for kinetic toroidal
+  plasma instabilities.
+\newblock \emph{Computer Physics Communications}, 88\penalty0 (2):\penalty0 128
+  -- 140, 1995.
+\newblock ISSN 0010-4655.
+\newblock \doi{https://doi.org/10.1016/0010-4655(95)00035-E}.
+\newblock URL
+  \url{http://www.sciencedirect.com/science/article/pii/001046559500035E}.
+
+\bibitem[Landreman and Catto(2012)]{landreman2012omni}
+M~Landreman and P~J Catto.
+\newblock {Omnigenity as generalized quasisymmetry}.
+\newblock \emph{Physics of Plasmas}, 19:\penalty0 056103, 2012.
+
+\bibitem[Landreman and Ernst(2013)]{landreman2013intv}
+M~Landreman and D~R Ernst.
+\newblock {New velocity-space discretization for continuum kinetic calculations
+  and Fokker--Planck collisions}.
+\newblock \emph{Journal of Computational Physics}, 243:\penalty0 130 -- 150,
+  2013.
+\newblock ISSN 0021-9991.
+\newblock \doi{https://doi.org/10.1016/j.jcp.2013.02.041}.
+\newblock URL
+  \url{http://www.sciencedirect.com/science/article/pii/S0021999113001605}.
+
+\bibitem[Landreman et~al.(2014)Landreman, Smith, Moll\'en, and
+  Helander]{landreman2014sfincs}
+M~Landreman, H~Smith, A~Moll\'en, and P~Helander.
+\newblock {Comparison of particle trajectories and collision operators for
+  collisional transport in nonaxisymmetric plasmas}.
+\newblock \emph{Physics of Plasmas}, 21\penalty0 (4):\penalty0 042503, 2014.
+\newblock URL
+  \url{http://scitation.aip.org/content/aip/journal/pop/21/4/10.1063/1.4870077}.
+
+\bibitem[Maa{\ss}berg et~al.(1999)Maa{\ss}berg, Beidler, and
+  Simmet]{maassberg1999densitycontrol}
+H~Maa{\ss}berg, C~D Beidler, and E~E Simmet.
+\newblock {Density control problems in large stellarators with neoclassical
+  transport}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 41\penalty0
+  (9):\penalty0 1135, 1999.
+\newblock URL \url{http://stacks.iop.org/0741-3335/41/i=9/a=306}.
+
+\bibitem[Maa{\ss}berg et~al.(2009)Maa{\ss}berg, Beidler, and
+  Turkin]{maassberg2009momentum}
+H~Maa{\ss}berg, C~D Beidler, and Y~Turkin.
+\newblock {Momentum correction techniques for neoclassical transport in
+  stellarators}.
+\newblock \emph{Physics of Plasmas}, 16\penalty0 (7):\penalty0 072504, 2009.
+\newblock URL \url{http://link.aip.org/link/?PHP/16/072504/1}.
+
+\bibitem[Matsuoka et~al.(2015)Matsuoka, Satake, Kanno, and
+  Sugama]{matsuoka2015tangential}
+Seikichi Matsuoka, Shinsuke Satake, Ryutaro Kanno, and Hideo Sugama.
+\newblock Effects of magnetic drift tangential to magnetic surfaces on
+  neoclassical transport in non-axisymmetric plasmas.
+\newblock \emph{Physics of Plasmas}, 22\penalty0 (7):\penalty0 072511, 2015.
+\newblock \doi{10.1063/1.4923434}.
+\newblock URL \url{http://dx.doi.org/10.1063/1.4923434}.
+
+\bibitem[Moll{\'e}n et~al.(2018)Moll{\'e}n, Landreman, Smith,
+  Garc{\'\i}a-Rega{\~n}a, and Nunami]{mollen2018phi1}
+A~Moll{\'e}n, M~Landreman, H~M Smith, J~M Garc{\'\i}a-Rega{\~n}a, and M~Nunami.
+\newblock Flux-surface variations of the electrostatic potential in
+  stellarators: impact on the radial electric field and neoclassical impurity
+  transport.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 60\penalty0
+  (8):\penalty0 084001, 2018.
+\newblock URL \url{http://stacks.iop.org/0741-3335/60/i=8/a=084001}.
+
+\bibitem[Mynick et~al.(1982)Mynick, Chu, and Boozer]{mynick1982omni}
+H~E Mynick, T~K Chu, and A~H Boozer.
+\newblock Class of model stellarator fields with enhanced confinement.
+\newblock \emph{Phyics Review Letters}, 48:\penalty0 322--326, 1982.
+\newblock URL \url{http://link.aps.org/doi/10.1103/PhysRevLett.48.322}.
+
+\bibitem[Nemov et~al.(1999)Nemov, Kasilov, Kernbichler, and Heyn]{nemov1999neo}
+V~V Nemov, S~V Kasilov, W~Kernbichler, and M~F Heyn.
+\newblock {Evaluation of 1/$\nu$ neoclassical transport in stellarators}.
+\newblock \emph{Physics of Plasmas}, 6:\penalty0 4622, 1999.
+
+\bibitem[Pablant and {et al}(2019)]{pablant2019ionroot}
+N~A Pablant and {et al}.
+\newblock {Investigations of the role of neoclassical transport in ion-root
+  plasmas on W7-X}.
+\newblock \emph{Nuclear Fusion}, submitted, 2019.
+
+\bibitem[Parra et~al.(2015)Parra, Calvo, Helander, and
+  Landreman]{parra2015omni}
+F~I Parra, I~Calvo, P~Helander, and M~Landreman.
+\newblock {Less constrained omnigenous stellarators}.
+\newblock \emph{Nuclear Fusion}, 55:\penalty0 033005, 2015.
+
+\bibitem[Pedersen et~al.(2015)Pedersen, Andreeva, Bosch, Bozhenkov, Effenberg,
+  Endler, Feng, Gates, Geiger, Hartmann, H\"olbe, Jakubowski, K\"onig, Laqua,
+  Lazerson, Otte, Preynas, Schmitz, Stange, Turkin, and {the W7-X
+  Team}]{sunnpedersen2015op11}
+T~Sunn Pedersen, T~Andreeva, H-S Bosch, S~Bozhenkov, F~Effenberg, M~Endler,
+  Y~Feng, D~A Gates, J~Geiger, D~Hartmann, H~H\"olbe, M~Jakubowski, R~K\"onig,
+  HP~Laqua, S~Lazerson, M~Otte, M~Preynas, O~Schmitz, T~Stange, Y~Turkin, and
+  {the W7-X Team}.
+\newblock {Plans for the first plasma operation of Wendelstein 7-X}.
+\newblock \emph{Nuclear Fusion}, 55\penalty0 (12):\penalty0 126001, 2015.
+\newblock URL \url{http://stacks.iop.org/0029-5515/55/i=12/a=126001}.
+
+\bibitem[Pedrosa et~al.(2015)Pedrosa, Alonso, Garc\'ia-Rega{\~n}a, Hidalgo,
+  Velasco, Calvo, Silva, and Helander]{pedrosa2015phi1}
+M~A Pedrosa, J~A Alonso, J~M Garc\'ia-Rega{\~n}a, C~Hidalgo, J~L Velasco,
+  I~Calvo, C~Silva, and P~Helander.
+\newblock {Electrostatic potential variations along flux surfaces in
+  stellarators}.
+\newblock \emph{Nuclear Fusion}, 55\penalty0 (5):\penalty0 052001, 2015.
+\newblock URL \url{http://stacks.iop.org/0029-5515/55/i=5/a=052001}.
+
+\bibitem[Press et~al.(1996)Press, Teukolsky, Vetterling, and
+  Flannery]{numericalrecipes}
+W~H Press, S~A Teukolsky, W~T Vetterling, and B~P Flannery.
+\newblock \emph{{Numerical Recipes in Fortran 77: the Art of Scientific
+  Computing. Second Edition}}, volume~1.
+\newblock Cambridge University Press, 1996.
+\newblock ISBN 052143064X.
+
+\bibitem[Sagara et~al.(2010)Sagara, Igitkhanov, and
+  Najmabadi]{sagara2010reactors}
+A~Sagara, Y~Igitkhanov, and F~Najmabadi.
+\newblock Review of stellarator/heliotron design issues towards mfe demo.
+\newblock \emph{Fusion Engineering and Design}, 85\penalty0 (7):\penalty0 1336
+  -- 1341, 2010.
+\newblock ISSN 0920-3796.
+\newblock \doi{https://doi.org/10.1016/j.fusengdes.2010.03.041}.
+\newblock URL
+  \url{http://www.sciencedirect.com/science/article/pii/S0920379610001122}.
+\newblock Proceedings of the Ninth International Symposium on Fusion Nuclear
+  Technology.
+
+\bibitem[Sanchez et~al.(2000)Sanchez, Hirshman, Ware, Berry, and
+  Spong]{sanchez2000boozerxform}
+R~Sanchez, S~P Hirshman, A~S Ware, L~A Berry, and D~A Spong.
+\newblock Ballooning stability optimization of low-aspect-ratio stellarators.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 42\penalty0
+  (6):\penalty0 641, 2000.
+\newblock URL \url{http://stacks.iop.org/0741-3335/42/i=6/a=303}.
+
+\bibitem[Satake et~al.(2006)Satake, an~N~Nakajima, Sugama, and
+  Yokoyama]{satake2006fortec3d}
+S~Satake, M~Okamoto an~N~Nakajima, H~Sugama, and M~Yokoyama.
+\newblock {Non-local simulation of the formation of neoclassical ambipolar
+  electric field in non-axisymmetric configurations}.
+\newblock \emph{Plasma and Fusion Research}, 1:\penalty0 002, 2006.
+\newblock URL
+  \url{https://www.jstage.jst.go.jp/article/pfr/1/0/1_0_002/_article}.
+
+\bibitem[Satake et~al.(2018)Satake, Matsuoka, {J L Velasco}, Calvo, and
+  Honda]{satake2018iaea}
+S~Satake, S~Matsuoka, {J L Velasco}, I~Calvo, and M~Honda.
+\newblock {Effect of magnetic shear and the finite banana-orbit width on the
+  neoclassical toroidal viscosity in perturbed tokamaks }.
+\newblock In \emph{27th IAEA Fusion Energy Conference (FEC 2018)}, 2018.
+
+\bibitem[Spong(2005)]{spong2005flow}
+D~A Spong.
+\newblock {Generation and damping of neoclassical plasma flows in
+  stellarators}.
+\newblock \emph{Physics of Plasmas}, 12\penalty0 (5):\penalty0 056114, 2005.
+\newblock URL \url{http://link.aip.org/link/?PHP/12/056114/1}.
+
+\bibitem[Sunn-Pedersen et~al.(2016)Sunn-Pedersen, Otte, Lazerson, Helander,
+  Bozhenkov, Biedermann, Klinger, Wolf, Bosch, and {the Wendelstein 7-X
+  Team}]{sunnpedersen2016nature}
+T~Sunn-Pedersen, M~Otte, S~Lazerson, P~Helander, S~Bozhenkov, C~Biedermann,
+  T~Klinger, R~Wolf, H~S Bosch, and {the Wendelstein 7-X Team}.
+\newblock {Confirmation of the topology of the Wendelstein 7-X magnetic field
+  to better than 1:100,000}.
+\newblock \emph{Nature Communications}, 7\penalty0 (13493), 2016.
+
+\bibitem[Takeiri and {the LHD team}(2017)]{takeiri2017iaea}
+Y.~Takeiri and {the LHD team}.
+\newblock {Extension of the operational regime of the LHD towards a deuterium
+  experiment}.
+\newblock \emph{Nuclear Fusion}, 57\penalty0 (10):\penalty0 102023, 2017.
+\newblock URL \url{http://stacks.iop.org/0029-5515/57/i=10/a=102023}.
+
+\bibitem[Turkin et~al.(2011)Turkin, Beidler, Maa{\ss}berg, Murakami, Tribaldos,
+  and Wakasa]{turkin2011predictive}
+Y~Turkin, C~D Beidler, H~Maa{\ss}berg, S~Murakami, V~Tribaldos, and A~Wakasa.
+\newblock {Neoclassical transport simulations for stellarators}.
+\newblock \emph{Physics of Plasmas}, 18\penalty0 (2):\penalty0 022505, 2011.
+\newblock URL \url{http://link.aip.org/link/?PHP/18/022505/1}.
+
+\bibitem[van Milligen et~al.(2011)van Milligen, Estrada, Ascas\'ibar, Tafalla,
+  L\'opez-Bruna, Fraguas, Jim\'enez, Garc\'ia-Cort\'es, Dinklage, and
+  Fischer]{milligen2011bayes}
+B.~Ph. van Milligen, T.~Estrada, E.~Ascas\'ibar, D.~Tafalla, D.~L\'opez-Bruna,
+  A.~L\'opez Fraguas, J.~A. Jim\'enez, I.~Garc\'ia-Cort\'es, A.~Dinklage, and
+  R.~Fischer.
+\newblock {Integrated data analysis at TJ-II: The density profile}.
+\newblock \emph{Review of Scientific Instruments}, 82\penalty0 (7):\penalty0
+  073503, 2011.
+\newblock URL \url{http://dx.doi.org/10.1063/1.3608551}.
+
+\bibitem[Velasco et~al.(2011)Velasco, Allmaier, Fraguas, Beidler, Maa{\ss}berg,
+  Kernbichler, Castej\'on, and Jim\'enez]{velasco2011bootstrap}
+J~L Velasco, K~Allmaier, A~L\'opez Fraguas, C~D Beidler, H~Maa{\ss}berg,
+  W~Kernbichler, F~Castej\'on, and J~A Jim\'enez.
+\newblock {Calculation of the bootstrap current profile for the TJ-II
+  stellarator}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 53\penalty0
+  (11):\penalty0 115014, 2011.
+\newblock URL \url{http://stacks.iop.org/0741-3335/53/i=11/a=115014}.
+
+\bibitem[Velasco et~al.(2018)Velasco, Calvo, Garc{\'\i}a-Rega{\~n}a, Parra,
+  Satake, Alonso, and the LHD~team]{velasco2018phi1}
+J~L Velasco, I~Calvo, J~M Garc{\'\i}a-Rega{\~n}a, F~I Parra, S~Satake, J~A
+  Alonso, and the LHD~team.
+\newblock Large tangential electric fields in plasmas close to temperature
+  screening.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 60\penalty0
+  (7):\penalty0 074004, 2018.
+\newblock URL \url{http://stacks.iop.org/0741-3335/60/i=7/a=074004}.
+
+\bibitem[Velasco et~al.(2019)Velasco, Calvo, Parra, and na]{velasco2019knosos}
+J~L Velasco, I~Calvo, F~I Parra, and J~M Garc\'ia-Rega\ na.
+\newblock {KNOSOS: a fast orbit-averaging neoclassical code for arbitrary
+  stellarator geometry}.
+\newblock \emph{in preparation}, 2019.
+
+\bibitem[Wolf and {et al.}(2017)]{wolf2017op11}
+R~C Wolf and {et al.}
+\newblock {Major results from the first plasma campaign of the Wendelstein 7-X
+  stellarator}.
+\newblock \emph{Nuclear Fusion}, 57\penalty0 (10):\penalty0 102020, 2017.
+\newblock URL \url{http://stacks.iop.org/0029-5515/57/i=10/a=102020}.
+
+\bibitem[Yamada et~al.(2005)Yamada, Harris, Dinklage, Ascasibar, Sano, Okamura,
+  Talmadge, Stroth, Kus, Murakami, Yokoyama, Beidler, Tribaldos, Watanabe, and
+  Suzuki]{yamada2005taue}
+H~Yamada, JH~Harris, A~Dinklage, E~Ascasibar, F~Sano, S~Okamura, J~Talmadge,
+  U~Stroth, A~Kus, S~Murakami, M~Yokoyama, CD~Beidler, V~Tribaldos,
+  KY~Watanabe, and Y~Suzuki.
+\newblock {Characterization of energy confinement in net-current free plasmas
+  using the extended International Stellarator Database}.
+\newblock \emph{Nuclear Fusion}, 45\penalty0 (12):\penalty0 1684, 2005.
+\newblock URL \url{http://stacks.iop.org/0029-5515/45/i=12/a=024}.
+
+\bibitem[Yokoyama et~al.(2017)Yokoyama, Seki, Suzuki, Sato, Emoto, Murakami,
+  Osakabe, Tsujimura, Yoshimura, Ido, Ogawa, Satake, Suzuki, Goto, Ida,
+  Pablant, Gates, Warmer, Vincenzi, and and]{yokoyama2017task3d}
+M.~Yokoyama, R.~Seki, C.~Suzuki, M.~Sato, M.~Emoto, S.~Murakami, M.~Osakabe,
+  T.Ii. Tsujimura, Y.~Yoshimura, T.~Ido, K.~Ogawa, S.~Satake, Y.~Suzuki,
+  T.~Goto, K.~Ida, N.~Pablant, D.~Gates, F.~Warmer, P.~Vincenzi, and and.
+\newblock {Extended capability of the integrated transport analysis suite,
+  {TASK}3D-a, for {LHD} experiment}.
+\newblock \emph{Nuclear Fusion}, 57\penalty0 (12):\penalty0 126016, 2017.
+\newblock \doi{10.1088/1741-4326/aa800a}.
+\newblock URL \url{https://doi.org/10.1088%2F1741-4326%2Faa800a}.
+
+\bibitem[Zarnstorff et~al.(2001)Zarnstorff, Berry, Brooks, Fredrickson, Fu,
+  Hirshman, Hudson, Ku, Lazarus, Mikkelsen, Monticello, Neilson, Pomphrey,
+  Reiman, Spong, Strickler, Boozer, Cooper, Goldston, Hatcher, Isaev, Kessel,
+  Lewandowski, Lyon, Merkel, Mynick, Nelson, Nuehrenberg, Redi, Reiersen,
+  Rutherford, Sanchez, Schmidt, and White]{zarnstorff2001ncsx}
+M~C Zarnstorff, L~A Berry, A~Brooks, E~Fredrickson, G-Y Fu, S~Hirshman,
+  S~Hudson, L-P Ku, E~Lazarus, D~Mikkelsen, D~Monticello, G~H Neilson,
+  N~Pomphrey, A~Reiman, D~Spong, D~Strickler, A~Boozer, W~A Cooper, R~Goldston,
+  R~Hatcher, M~Isaev, C~Kessel, J~Lewandowski, J~F Lyon, P~Merkel, H~Mynick,
+  B~E Nelson, C~Nuehrenberg, M~Redi, W~Reiersen, P~Rutherford, R~Sanchez,
+  J~Schmidt, and R~B White.
+\newblock Physics of the compact advanced stellarator {NCSX}.
+\newblock \emph{Plasma Physics and Controlled Fusion}, 43\penalty0
+  (12A):\penalty0 A237--A249, 2001.
+\newblock \doi{10.1088/0741-3335/43/12a/318}.
+\newblock URL \url{https://doi.org/10.1088%2F0741-3335%2F43%2F12a%2F318}.
+
+\end{thebibliography}

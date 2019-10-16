@@ -1,0 +1,698 @@
+\chapter{Inputs}\label{CHAP_INPUT}
+
+
+In this chapter, we describe all the variables that can be included in four input files:
+\begin{itemize}
+\item {\ttfamily input.model}.
+\item {\ttfamily input.parameters}.
+\item {\ttfamily input.surfaces}.
+\item {\ttfamily input.species}. 
+\end{itemize}
+
+Each of them contains a namelist: {\ttfamily model}, {\ttfamily parameters}, {\ttfamily surfaces}, and {\ttfamily species}, respectively. The plasma profiles and magnetic configuration are set by reading different files, as described in chapters~\ref{CHAP_PROF} and~\ref{CHAP_CONF} respectively. Note that the variables of these namelist are given specific values if \vlink{TASK3D} is set to \true, and the values set by the corresponding files are mosty overwritten. We recommend that you read chapters~\ref{CHAP_EQ} and ~\ref{CHAP_SOL} in order to understand better what the variables do. Examples of these files are provided later, so that the user can reproduce the results of chapter~\ref{CHAP_EX}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The {\ttfamily model} namelist}\label{SEC_MODEL}
+
+This namelist is contained in file {\ttfamily input.model}, and it  determines what physics equations are solved (what version of the drift-kinetic equation, ambipolarity, quasineutrality...). This means that you should decide the values of all the variables (a summary is available in \S\ref{SEC_RUNMODEL}); otherwise, \KNOSOS~gives them default values which means that you may end up with a simulation different than what you wanted.
+
+\ivarl{SOLVE\_AMB}
+{Determine the electrostatic potential}
+{LOGICAL}
+{The ambipolarity equation is solved}
+{\true}
+{-}
+{Chapter~\ref{CHAP_EQ}}
+
+\ivarl{TRIVIAL\_AMB}
+{Determine the electrostatic potential}
+{LOGICAL}
+{The radial electric field is the ion root value, according to the input density and ion temperature, with ions in the $1/\nu$ regime}
+{\false}
+{Overwrites \vlink{SOLVE\_AMB}}
+{e.g. \citep{maassberg1999densitycontrol}}
+
+\ivarl{SOLVE\_QN}
+{Determine the electrostatic potential}
+{LOGICAL}
+{The quasineutrality equation is solved}
+{\true}
+{-}
+{\S\ref{SEC_SOLQN}, \S\ref{SEC_EUTERPE}}
+
+\ivarl{TRIVIAL\_QN}
+{Determine the electrostatic potential}
+{LOGICAL}
+{A simplified version of the quasineutrality equation is solved very fast, without including $\varphi_1$ in the source of the DKE, and only $\pmb{\varphi_1^{0}}$ is obtained}
+{\false}
+{Overwrites \vlink{SOLVE\_QN}. Correct for the $\sqrt{\nu}$ and approximately regime valid for others~\citep{calvo2018jpp}}
+{\S\ref{SEC_SOLQN}}
+
+\ivarl{TRIVIAL\_QN}
+{Determine the electrostatic potential}
+{LOGICAL}
+{A simplified version of the quasineutrality equation is solved very fast, without including $\varphi_1$ in the source of the DKE, and only $\pmb{\varphi_1^{0}}$ is obtained}
+{\false}
+{Correct for the $\sqrt{\nu}$ and approximately regime valid for others~\citep{calvo2018jpp}}
+{\S\ref{SEC_SOLQN}}
+
+\ivarl{ZERO\_PHI1}
+{Determine the electrostatic potential}
+{LOGICAL}
+{Set $\varphi_1=0$}
+{\false}
+{}
+{\S\ref{SEC_SOLQN}}
+
+\ivarl{ONLY\_PHI1}
+{Determine the electrostatic potential}
+{LOGICAL}
+{Quasineutrality equation is solved, but time is saved by not calculating the radial flux of bulk species}
+{\false}
+{-}
+{}
+
+\ivarl{TANG\_VM}
+{Set details of the drift-kinetic equation}
+{LOGICAL}
+{The tangential magnetic drift is included}
+{\true}
+{-}
+{Chapter~\ref{CHAP_EQ}, \S\ref{SEC_USEFUL}, \S\ref{SEC_TANGVM}, \citep{calvo2017sqrtnu}}
+
+\ivarl{INC\_EXB}
+{Set details of the drift-kinetic equation}
+{LOGICAL}
+{A \DKES-like incompresible $\bE\times\bB$ drift is used}
+{\false}
+{-}
+{\S\ref{SEC_USEFUL}, \S\ref{SEC_TANGVM}, \citep{hirshman1986dkes,beidler2007icnts}}
+
+\ivarl{CLASSICAL}
+{Set details of the drift-kinetic equation}
+{LOGICAL}
+{Add classical contribution to neoclassical impurity transport}
+{\true}
+{Ignored for bulk species; negligible in many cases}
+{\S\ref{SEC_CLANC}}
+
+\ivarl{FRICTION}
+{Set details of the drift-kinetic equation}
+{LOGICAL}
+{Add the contribution of interspecies friction to neoclassical impurity transport}
+{\true}
+{Ignored for bulk species; negligible in some cases}
+{\S\ref{SEC_CLANC}}
+
+\ivarl{ANISOTROPY}
+{Set details of the drift-kinetic equation}
+{LOGICAL}
+{Add the contribution of pressure anisotropy to neoclassical impurity transport}
+{\true}
+{Ignored for bulk species; negligible in some cases}
+{\S\ref{SEC_CLANC}}
+
+\ivar{D\_AND\_V}
+{Determine the electrostatic potential and set details of the drift-kinetic equation}
+{INTEGER}
+{Depending on the value, different quantities characterizing the impurity flux are determined:
+\begin{itemize}
+\item ~2: flux driven by pressure anisotropy and by friction
+\item ~3: flux driven by pressure anisotropy and diffusive coefficient and pinch caused by friction
+\item ~5: flux driven by pressure anisotropy and coefficients corresponding to $E_r/T_i$, $T_i'/T_i$ and $n_i'/n_i$.
+\end{itemize}}
+{5}
+{-}
+{-}
+
+\ivarl{COMPARE\_MODELS}
+{Determine the electrostatic potential and set details of the drift-kinetic equation}
+{LOGICAL}
+{If \vlink{SOLVE\_QN}, the calculation is done as specified by \vlink{TANG\_VM} and \vlink{REGB} and, additionally, with some simplifications from that case: with one adiabatic species (if both \vlink{REGB}(1) and \vlink{REGB}(2) are set to 3) and as if \vlink{TRIVIAL\_QN}.}
+{\false}
+{-}
+{Chapter~\ref{CHAP_OUTPUT}}
+
+%\ivar{FACT\_CON}
+%{Set details of the drift-kinetic equation}
+%{INTEGER}
+%{\todo{The different collisionality regimes are connected:}}
+%{}
+%{-}
+%{-}
+
+\ivarl{CALC\_DB}
+{Set details of the drift-kinetic equation}
+{LOGICAL}
+{A \DKES-like database of monoenergetic coefficients is calculated with \KNOSOS}
+{\false}
+{-}
+{\S\ref{SEC_DKES}, appendix~\ref{CHAP_DKES}}
+
+\ivarl{ONLY\_DB}
+{Set details of the drift-kinetic equation}
+{LOGICAL}
+{Only the \DKES-like database of monoenergetic coefficients is calculated, not the flux}
+{\false}
+{Ignored if \notf\vlink{CALC\_DB}}
+{\S\ref{SEC_DKES}, appendix~\ref{CHAP_DKES}}
+
+\ivar{FN}
+{Scan in parameters}
+{REAL*8}
+{The collisionality is artificially multiplied by \vlink{FN} keeping the densities and temperatures constant}
+{1.0}
+{-}
+{\S\ref{SEC_SCAN}, \citep{satake2018iaea}}
+
+\ivar{FI}
+{Scan in parameters}
+{REAL*8}
+{The rotational transform is multiplied by \vlink{FI}, keeping the toroidal flux $\Psi_t$ constant}
+{1.0}
+{The poloidal flux $\Psi_p$ changes accordingly}
+{\S\ref{SEC_SCAN}}
+
+\ivar{FS}
+{Scan in parameters}
+{REAL*8}
+{The magnetic shear is multiplied by \vlink{FS} keeping the rotational transform $\iota$ constant}
+{1.0}
+{Set to 0 if~\vlink{ONLY\_DB}. Ignored if \notf\vlink{TANG\_VM}}
+{\S\ref{SEC_SCAN}, citep{satake2018iaea}}
+
+\ivar{FP}
+{Scan in parameters}
+{REAL*8}
+{The number of periods is multiplied by \vlink{FP} keeping the rotational transform $\iota$ constant}
+{1.0}
+{The number of periods needs to be integer}
+{\S\ref{SEC_SCAN}}
+
+
+\ivar{FE}
+{Scan in parameters}
+{REAL*8}
+{The inverse aspect ratio is multiplied by \vlink{FS}, keeping the major radius $R$ constant}
+{1.0}
+{The minor radius $a$, the toroidal and poloidal fluxes $\Psi_t$ and $\Psi_p$, the radial derivatives and the modes of $B$ different than $B_{00}$ change accordingly}
+{\S\ref{SEC_SCAN}, \citep{calvo2018jpp}}
+
+
+\ivar{FR}
+{Scan in parameters}
+{REAL*8}
+{The major radius is multiplied by \vlink{FR}, keeping the aspect ratio constant}
+{1.0}
+{The minor radius $a$, the toroidal and poloidal fluxes $\Psi_t$ and $\Psi_p$, the radial derivatives and covariant components of the magnetic field $B_\zeta$ and $B_\theta$ change accordingly}
+{\S\ref{SEC_SCAN}, \citep{calvo2018jpp}}
+
+
+\ivar{FB}
+{Scan in parameters}
+{REAL*8}
+{The magnetic field is multiplied by \vlink{FB}, keeping the size constant}
+{1.0}
+{The toroidal and poloidal fluxes $\Psi_t$ and $\Psi_p$, the radial derivatives and covariant components of the magnetic field $B_\zeta$ and $B_\theta$ change accordingly}
+{\S\ref{SEC_SCAN}}
+
+\ivar{FNE}
+{Scan in parameters}
+{REAL*8}
+{The density of all species $n_b$ is artificially multiplied by \vlink{FNE} keeping its normalized radial derivative $\partial_\psi\mathrm{log}n_b$ constant}
+{1.0}
+{-}
+{}
+
+\ivar{FTE}
+{Scan in parameters}
+{REAL*8}
+{The electron temperature $T_e$ is artificially multiplied by \vlink{FTE} keeping its normalized radial derivative $\partial_\psi\mathrm{log}T_e$ constant}
+{1.0}
+{-}
+{}
+
+\ivar{FTI}
+{Scan in parameters}
+{REAL*8}
+{The ion temperature $T_i$ is artificially multiplied by \vlink{FTI} keeping its normalized radial derivative $\partial_\psi\mathrm{log}T_i$ constant}
+{1.0}
+{-}
+{}
+
+\ivar{FDLNE}
+{Scan in parameters}
+{REAL*8}
+{The normalized radial derivative of the density of all species $\partial_\psi\mathrm{log}n_b$ is artificially multiplied by \vlink{FDLNE} keeping the density $n_b$ constant}
+{1.0}
+{-}
+{}
+
+\ivar{FDLTE}
+{Scan in parameters}
+{REAL*8}
+{The normalized radial derivative of the electron temperature $\partial_\psi\mathrm{log}T_e$ is artificially multiplied by \vlink{FDLTE} keeping the temperature $T_e$ constant}
+{1.0}
+{-}
+{}
+
+\ivar{FDLTI}
+{Scan in parameters}
+{REAL*8}
+{The normalized radial derivative of the electron temperature $\partial_\psi\mathrm{log}T_i$ is artificially multiplied by \vlink{FDLTI} keeping the temperature $T_i$ constant}
+{1.0}
+{-}
+{}
+
+\ivar{FER}
+{Scan in parameters}
+{REAL*8}
+{The radial electric field $E_r$ is artificially multiplied by \vlink{FER}}
+{1.0}
+{-}
+{}
+
+\ivarl{TASK3D}
+{Particular physics problem}
+{LOGICAL}
+{\todo{\KNOSOS~is used from~\TASKTD}}
+{\false}
+{If you are running~\KNOSOS~from~\TASKTD, this variable is set to~\true~automatically. But you may want to set \vlink{TASK3D} to~\true~if you want to run~\KNOSOS~separately and reproduce~\TASKTD~results.}
+{\citep{yokoyama2017task3d}}
+
+\ivarl{PENTA}
+{Particular physics problem}
+{LOGICAL}
+{\todo{\KNOSOS~is used from~\PENTA}}
+{\false}
+{If you are running~\KNOSOS~from~\PENTA, this variable is set to~\true~automatically. But you may want to set \vlink{PENTA} to~\true~if you want to run~\KNOSOS~separately and reproduce~\PENTA~results.}
+{\citep{spong2005flow}}
+
+\ivarl{NEOTRANSP}
+{Particular physics problem}
+{LOGICAL}
+{\todo{\KNOSOS~is used from~\NEOTRANSP}}
+{\false}
+{If you are running~\KNOSOS~from~\NEOTRANSP, this variable is set to~\true~automatically. But you may want to set \vlink{NEOTRANSP} to~\true~if you want to run~\KNOSOS~separately and reproduce~\NEOTRANSP~results.}
+{}
+
+\ivarl{SATAKE}
+{Particular physics problem}
+{LOGICAL}
+{The shear-dependence of neoclassical toroidal viscosity in a perturbed tokamak is studied}
+{\false}
+{-}
+{\citep{satake2018iaea}}
+
+%\ivarl{ANA\_NTV}
+%{Particular physics problem}
+%{LOGICAL}
+%{Analytical formulas for the neoclassical toroidal viscosity are employed}
+%{\false}
+%{\todo{Not working}}
+%{\citep{satake2018iaea} and references therein}
+
+\ivarl{JPP}
+{Particular physics problem}
+{LOGICAL}
+{The quasineutrality equation in solved in several regimes}
+{\false}
+{-}
+{\citep{calvo2018jpp}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The {\ttfamily parameters} namelist}\label{SEC_PARAM}
+
+This namelist is contained in file {\ttfamily input.parameters} and it includes simulation parameters, such us decisions on how to solve some equations and what to plot. The default values should be a good starting point for your simulation.
+
+\ivarl{GEN\_FLAG}
+{Debug}
+{array of LOGICAL}
+{Certain, non consolidated, parts of the code are used}
+{\false}
+{-}
+{-}
+
+\ivarl{DEBUG}
+{Debug}
+{LOGICAL}
+{Additional information is plotted in files {\ttfamily fort.????}:\begin{itemize}
+\item The first figure denotes the type of information:\begin{itemize}
+\item {\ttfamily fort.1???}: magnetic fied;
+\item {\ttfamily fort.2???}: bounce-averages;
+\item {\ttfamily fort.3???}: discretization of the equation;
+\item {\ttfamily fort.4???}: solution of DKE, ambipolarity and quasineutrality.\end{itemize}
+\item The second figure determines more specifically the type of information.
+\item The two last figures denote the {\ttfamily MPI} process that has written the file.
+\end{itemize}
+(e.g. {\ttfamily fort.2003} contains the extreme points of $B$ found by process {\ttfamily myrank=3})}
+{\false}
+{If \MPI~is not used, only {\ttfamily fort.??00} exist. This manual does not describe the content of these files, but if you want to switch \vlink{DEBUG} to \true, you probably know it already}
+{-}
+
+\ivarl{TIME}
+{Debug}
+{LOGICAL}
+{The time spent at several routines is calculated and plot}
+{\true}
+{-}
+{-}
+
+\ivar{I0}
+{Debug}
+{INTEGER}
+{Information about line integral is plotted:\begin{itemize}
+\item If \vlink{I0}{\ttfamily .GT.0}, those in well/point \vlink{I0}
+\item If \vlink{I0}{\ttfamily .EQ.0}, those in all wells/points
+\end{itemize}}
+{\false}
+{Ignored if \notf\vlink{DEBUG}}
+{-}
+
+\ivarl{PLOTG}
+{Debug}
+{LOGICAL}
+{\todo{The distribution function is plotted}}
+{\false}
+{-}
+{}
+
+\ivarl{USE\_B0pB1}
+{Describe the magnetic field structure}
+{LOGICAL}
+{\todo{Bounce integrals are done over $B_0$ but the radial drift comes from $B_0+B_1$}}
+{\false}
+{For the moment, $B_0$ and $B_1$ have to be provided explicitly}
+{\S\ref{SEC_BINPUT}, \citep{calvo2017sqrtnu,velasco2018phi1}}
+
+\ivarl{USE\_B1}
+{Describe the magnetic field structure}
+{LOGICAL}
+{\todo{Bounce integrals are done over $B_0$ but the radial drift comes from $B_1$}}
+{\false}
+{For the moment, $B_0$ and $B_1$ have to be provided explicitly}
+{\S\ref{SEC_BINPUT}, \citep{calvo2017sqrtnu,velasco2018phi1}}
+
+%\ivarl{QS\_B0}
+%{Describe the magnetic field structure}
+%{LOGICAL}
+%{Closeness to quasisymmetry is used as in~\citep{velasco2018phi1}}
+%{\false}
+%{Ignored if \notf\vlink{FIND\_B0}}
+
+%\ivarl{ONEHEL\_B0}
+%{Describe the magnetic field structure}
+%{LOGICAL}
+%{Closeness to quasisymmetry is used as in~\citep{velasco2018phi1}, but with only one helicity in $B_0$}
+%{\false}
+%{Ignored if \notf\vlink{QS\_B0}}
+
+%\ivarl{PRE\_INTV}
+%{Determine algorithms to be used}
+%{LOGICAL}
+%{Coefficients for velocity integration are pre-calculated}
+%{\true if (\vlink{SOLVE\_QN}{\ttfamily AND.NOT.}\vlink{TRIVIAL\_QN}) or \vlink{SOLVE\_AMB} or \vlink{NERR}{\ttfamily .NE.0}, \false otherwise}
+%{It takes a few seconds, depending on the size of the grid, so it only pays off if many velocity integrals are done}
+%{}
+
+\ivarl{REMOVE\_DIV}
+{Determine algorithms to be used}
+{LOGICAL}
+{Infinities are removed from the integrands when calculating bounce integrals}
+{\false}
+{In cases with many different regions (ripple wells, etc), it does not save much time. It is useful if \vlink{USE\_B0pB1} or \vlink{USE\_B1}}
+{\S\ref{SEC_DIV}}
+
+\ivarl{DELTA}
+{Determine algorithms to be used}
+{LOGICAL}
+{Algebraic identities are used to calculate the magnetic field strength along the field line}
+{\true}
+{-}
+{\S\ref{SEC_DELTA}}
+
+\ivar{TRUNCATE\_B}
+{Set numerical resolution}
+{INTEGER}
+{If positive, a maximum of \vlink{TRUNCATE\_B} modes of the Fourier representation of $B(\theta,\zeta)$ are kept.}
+{-200}
+{Less modes than \vlink{TRUNCATE\_B} may be kept, depending of on~\vlink{PREC\_B}}
+{\S\ref{SEC_DELTA}}
+
+\ivar{PREC\_B}
+{Set numerical resolution}
+{REAL*8}
+{Neglect modes of the Fourier representation of $B(\theta,\zeta)$ whose amplitude is smaller than~\vlink{PREC\_B}}
+{$10^{-5}$}
+{Modes larger than \vlink{PREC\_B} may be neglected as well, depending of on~\vlink{TRUNCATE\_B}}
+{\S\ref{SEC_DELTA}}
+
+\ivar{PREC\_EXTR}
+{Set numerical resolution}
+{REAL*8}
+{When finding bounce points or integrating along the field line, minimum step is $\Delta\zeta=$\vlink{PREC\_EXTR}}
+{$10^{-7}$}
+{Extremely small numbers might get the code stuck in infinite loops}
+{\S\ref{SEC_COEFFICIENTS}}
+
+\ivar{PREC\_BINT}
+{Set numerical resolution}
+{REAL*8}
+{Bounce-integrals are considered to be converged when the relative variation (of the worst-behaving one) is smaller than \vlink{PREC\_BINT}}
+{0.05}
+{-}
+{\S\ref{SEC_COEFFICIENTS}}
+
+\ivar{MAL}
+{Set numerical resolution}
+{INTEGER}
+{Number of points in the $\alpha$ grid}
+{64}
+{\todo{Will be ignored if \vlink{PREC\_DQDV}>0}}
+{\S\ref{SEC_GRID}}
+
+\ivar{MLAMBDA}
+{Set numerical resolution}
+{INTEGER}
+{Number of points in the $\lambda$ grid}
+{128}
+{\todo{Will be ignored if \vlink{PREC\_DQDV}>0}}
+{\S\ref{SEC_GRID}}
+
+\ivar{PREC\_DQDV}
+{Set numerical resolution}
+{REAL*8}
+{\todo{Monoenergetic calculations are considered to be converged when the relative variation (of the most representative of them) is smaller than \vlink{PREC\_DQDV}}}
+{0.05}
+{-}
+{\S\ref{SEC_GRID}}
+
+\ivar{PREC\_INTV}
+{Set numerical resolution}
+{REAL*8}
+If positive, monoenergetic calculations for large values of $v$ (and thus low collisionality and harder to converge) are skipped once their relative contribution to the velocity convolution (in particular, to the transport coefficient proportional to the temperature gradient) is smaller than \vlink{PREC\_INTV}
+{-1}
+{It is assumed that the size of this contribution decreases with $v$. Note that the error in the fluxes maybe (probably not much) larger than \vlink{PREC\_INTV}}
+{\S\ref{SEC_GRID}}
+
+\ivar{NEFIELD}
+{Set details of monoenergetic database}
+{INTEGER}
+{\vlink{NEFIELD} values of $E_r/v$ are calculated}
+{9}%{10}
+{Ignored if \notf\vlink{CALC\_DB}. The default value is the maximum possible value (hardwired in the source code)}
+{\S\ref{SEC_DKES}, appendix~\ref{CHAP_DKES}}
+
+\ivar{EFIELD}
+{Set details of monoenergetic database}
+{REAL*8}
+{Calculated values of $E_r/v$ T)}
+{/0E-0,1E-5,3E-5,1E-4,3E-4,1E-3,3E-3,1E-2,3E-2/}%,1E-1/}
+{Ignored if \notf\vlink{CALC\_DB}}
+{\S\ref{SEC_DKES}, appendix~\ref{CHAP_DKES}}
+
+\ivar{NCMUL}
+{Set details of monoenergetic database}
+{INTEGER}
+{\vlink{NCMUL} values of $\nu/v$ are calculated}
+{18}
+{Ignored if \notf\vlink{CALC\_DB}. The default value is the maximum possible value (hardwired in the source code)}
+{\S\ref{SEC_DKES}, appendix~\ref{CHAP_DKES}}
+
+\ivar{CMUL}
+{Set details of monoenergetic database}
+{REAL*8}
+{Calculated values of $\nu/v$ ($m^{-1}$)}
+{/3E+2,1E+2,3E+1,1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6/}
+{Ignored if \notf\vlink{CALC\_DB}}
+{\S\ref{SEC_DKES}, appendix~\ref{CHAP_DKES}}
+
+\ivar{NER}
+{Set details of ambipolarity}
+{INTEGER}
+{\vlink{NER} evaluations of the drift-kinetic equation in the $E_r$ scan previous to bisection}
+{21}
+{Ignored if \notf\vlink{SOLVE\_AMB}}
+{}%\S\ref{SEC_AMB}}
+
+\ivar{ERMIN}
+{Set details of ambipolarity}
+{REAL*8}
+{Minimum value of $E_r$ (kV/m) in the scan previous to bisection}
+{Twice the expected value, according to the input values of density and temperature, with adiabatic electrons and with ions in the $1/\nu$ regime}
+{Ignored if \notf\vlink{SOLVE\_AMB}}
+{e.g. \citep{maassberg1999densitycontrol}}
+
+\ivar{ERMAX}
+{Set details of ambipolarity}
+{REAL*8}
+{Maximum value of $E_r$ (kV/m) in the scan previous to bisection}
+{Twice the expected value, according to the input values of density and temperature,  with adiabatic ions and with electrons in the $1/\nu$ regime}
+{Ignored if \notf\vlink{SOLVE\_AMB}}
+{e.g. \citep{maassberg1999densitycontrol}}
+
+\ivar{ERACC}
+{Set details of ambipolarity}
+{REAL*8}
+{Accuracy in the calculation of $E_r$ (kV/m)}
+{0.1}
+{Ignored if \notf\vlink{SOLVE\_AMB}}
+{}%\S\ref{SEC_AMB}}
+
+\ivar{NERR}
+{\todo{Estimate error bars}}
+{INTEGER}
+{If larger than 1, \vlink{NERR} samples of the same calculation are done; otherwise, 1 calculation.}
+{0}
+{Should be larger than 10, typically 16 works fine}
+{\S\ref{SEC_ERROR}}
+
+\ivar{IPERR}
+{Estimate error bars}
+{REAL*8}
+{Input profiles $q$ are left to vary in the interval $(1\pm $\vlink{IPERR}$)*q$}
+{0.2}
+{Ignored if \vlink{NERR}$<$1}
+{\S\ref{SEC_ERROR}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The {\ttfamily surfaces} namelist}\label{SEC_SURF}
+
+This namelist is contained in file {\ttfamily input.surfaces}, and it determines what flux-surfaces are computed. 
+
+\ivar{NS}
+{Determine flux-surfaces}
+{INTEGER}
+{\vlink{NS} flux-surfaces are calculated}
+{1}% if {\ttfamily .NOT.}\vlink{TASK3D}, 40 otherwise}
+{Must be smaller than the number of surfaces contained in {\ttfamily boozmn.data} or {\ttfamily boozer.txt} ($\sim$100). Ignored if using magnetic field from {\ttfamily ddkes2.data}}
+{}
+
+\ivar{S}
+{Determine flux-surfaces}
+{array of REAL*8}
+{Surfaces s(1) to s(\vlink{NS}) are determined}
+{1.0}% if {\ttfamily .NOT.\vlink{TASK3D}}, (0.5/40)$^2$,(1.5/40)$^2$,...,(38.5/40)$^2$ otherwise}
+{Ignored if using magnetic field from {\ttfamily ddkes2.data}}
+{}
+
+\ivar{DIRDB}
+{Determine flux-surfaces}
+{array of CHARACTER*100}
+{The monoenergetic coefficients are read from directories \vlink{DIRDB}\vlink{DIRS}(1) to \vlink{DIRDB}\vlink{DIRS}(\vlink{NS})}
+{`''./''}
+{Ignored if \vlink{REGB}>-1 for all species}
+{Appendix~\ref{CHAP_DKES}, \S\ref{SEC_DKES}, \$\ref{SEC_TANGVM}}
+  
+\ivar{DIRS}
+{Determine flux-surfaces}
+{array of CHARACTER*7}
+{The monoenergetic coefficients are read from directories \vlink{DIRDB}\vlink{DIRS}(1) to \vlink{DIRDB}\vlink{DIRS}(\vlink{NS})}
+{`''./''}
+{Ignored if \vlink{REGB}>-1 for all species}
+{Appendix~\ref{CHAP_DKES}, \S\ref{SEC_DKES}, \$\ref{SEC_TANGVM}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The {\ttfamily species} namelist}\label{SEC_SPE}
+
+This namelist is contained in file {\ttfamily input.species}, and it determines what species are calculated and how. This is ignored if \vlink{ONLY\_DB} is set to \true. Species 1 must be electrons (even if you want them adiabatic) and 2 must be bulk ions, because this information is used later by~\KNOSOS, e.g., when calculating the transport of trace impurities. 
+ 
+
+\ivar{NBB}
+{Determine species}
+{INTEGER}
+{\vlink{NBB} species are included in the calculation}
+{2}% if {\ttfamily .NOT.\vlink{TASK3D}}, 6 otherwise}
+{Must be larger than 1 and smaller than 12. The name ``NB'' was taken by the density of species b}
+{-}
+
+\ivar{ZB}
+{Determine species}
+{REAL*8}
+{The charge number of species 1 to \vlink{NBB} is set}
+{/-1.0, +1.0/}% if {\ttfamily .NOT.}\vlink{TASK3D}, /-1.0,+1.0,+3,+19,+20,+23/ otherwise (impurities are fully ionized Li and Li-like Ti, V and Fe)}
+{Species 1 has to corresponds to electrons and 2 to bulk ions. Make sure you use a real number, not a integer number. The charge of the bulk ions is overwritten if \vlink{TASK3D}, with input from {\ttfamily //input-prof.txt}}
+{-}
+
+\ivar{AB}
+{Determine species}
+{REAL*8}
+{The mass number of species 1 to \vlink{NBB} is set}
+{/5.4858$\times 10^{-4}$, 1.00727/}% if {\ttfamily .NOT.}\vlink{TASK3D}, /5.4858$\times 10^{-4}$, 1.00727,6.941,47.867,50.9415,55.847/ otherwise (impurities are fully ionized Li and Li-like Ti, V and Fe)}
+{Species 1 has to corresponds to electrons and 2 to bulk ions. For the electrons, \vlink{AB} is the electron mass in amu. If you set \vlink{AB} value smaller than 1, electron mass is used (this means that you do not need to memorize it). The mass of the bulk ions is overwritten if \vlink{TASK3D},~with input from {\ttfamily //input-prof.txt})}
+{-}
+
+\ivar{REGB}
+{Determine species}
+{INTEGER}
+{The \textit{regime} of species 1 to \vlink{NBB} is set:
+\begin{itemize}
+\item  -2: adiabatic
+\item  -1: from~\DKES~database (complemented with~\KNOSOS~if~\vlink{TANG\_VM})
+\item   0: several connected regimes (+1, +2 and +3, see below)
+\item  +1: Pfirsch-Schlueter
+\item  +2: plateau
+\item  +3: low-collisionality (1/$\nu$, $\sqrt{\nu}$, sb-p)
+\item +10: several connected trace impurity regimes (+11, +12 and +13, see below)
+\item +11: trace impurities in the Pfirsch-Schlueter regime
+\item +12: trace impurities in the plateau regime
+\item +13: trace impurities in the 1/$\nu$ regime
+\end{itemize}}
+{/-2, +3/}
+{Chapter~\ref{CHAP_EQ} and appendices~\ref{CHAP_HIGHCOL} and~\ref{CHAP_DKES}} 
+{For the calculation of the flux of  trace impurities, bulk species are assumed to be in the 1/$\nu$, $\sqrt{\nu}$ or sb-p regimes}
+
+\ivar{ZEFF}
+{Determine species}
+{REAL*8}
+{Effective charge \vlink{ZEFF} is used to set impurity density (and to modify bulk ion density enforcing quasineutrality)}
+{1.0000001}
+{Ignored if \vlink{NBB}$<$3. Impurities have to be trace unless their \vlink{REGB} is -1.}
+{-}
+
+\
+
+\
+
+If \vlink{TASK3D} is set to \true, file {\ttfamily //input-prof.txt}~is read instead. At the end of the file (after the profile coefficients, see \S\ref{SEC_FILES}), there is a line with the following data:
+
+\
+
+{\ttfamily  B0     R0      a0      zi      nmass   a99     dfac    tfac}
+
+\
+
+with \vlink{ZB}={\ttfamily REAL(zi)} and \vlink{AB}={\ttfamily REAL(ai)}% * proton mass}.
+
+
+
+

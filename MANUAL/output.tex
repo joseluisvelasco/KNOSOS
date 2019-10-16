@@ -1,0 +1,203 @@
+\chapter{Output parameters}\label{CHAP_OUTPUT}
+
+In this chapter, we list the output files of the code and their content. Generally speaking, the name of the file (e.g. {\ttfamily flux.amb}) indicates the quantities contained (e.g. particle and energy fluxes), and the extension of the file indicates the kind of data contained (e.g. dependence on $E_r$). Additionally:
+
+\begin{itemize}
+
+\item If \vlink{COMPARE\_MODELS} is set to~\true, several files are produced calculated as determined by the {\ttfamily model} namelist, but also with additional simplifications). If this is the case, an extension  {\ttfamily .comp} is added (e.g. {\ttfamily flux.amb.comp}) and a first column with an integer that indicates the model (instead of the radial flux-surface):
+\begin{itemize}
+\item 01: Without tangential magnetic drift, not solving quasineutrality.
+\item 02: With tangential magnetic drift, not solving quasineutrality.
+\item 11: Without tangential magnetic drift, solving quasineutrality.
+\item 12: With tangential magnetic drift, solving quasineutrality.
+\item 21: Without tangential magnetic drift, solving quasineutrality, all kinetic.
+\item 22: With tangential magnetic drift, solving quasineutrality, all kinetic.
+\end{itemize}
+(e.g., if \vlink{TANG\_VM} is set to~\true, and quasineutrality is solved with adiabatic electrons, cases 12 and 02 are plotted).
+
+
+\item In parallel runs, several processes may produce the same output file for, e.g., different flux-surfaces or profile samples. If this is the case, an extension is added with the rank number (e.g. {\ttfamily varphi1.map.comp.08}).
+\end{itemize}
+
+\section{Standard output and standard error, warnings}
+
+Files~{\ttfamily STDOUT} and~{\ttfamily STDERR} contain the standard output and error respectively. The amount of information shown is larger if flags~\vlink{DEBUG} and/or \vlink{TIME} are set to {\ttfamily .TRUE.}. File~{\ttfamily STDERR} algo contains warnings (e.g., if you are calculating the flux in the plateau regime but your species are collisionless).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{{\ttfamily B.map}}
+
+\KNOSOS~reads the Fourier modes of the magnetic field in Boozer left-handed coordinates and changes it to a right-handed system (see chapter~\ref{CHAP_CONF}). File {\ttfamily B.map}, contains bidimensional maps of $B(\zeta,\theta)$ and of the radial magnetic drift for one value of $\lambda$. The first line lists all the variables, one per column:
+
+\
+
+{\ttfamily s \tbl zeta\_\{Boozer\} \tbl theta\_\{Boozer\}(right-handed)  B[T]  (v\_B.\tbl nabla\tbl psi)[A.U.]}
+
+\
+
+Note that the radial magnetic drift has the right sign and it is normalized to be comparable to the map of the $\bE\times\bB$ radial drift of {\ttfamily varphi1.map} for protons.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{{\ttfamily results.knosos}: monoenergetic transport coefficients}\label{SEC_ODKES}
+
+If \vlink{CALC\_DB} is set to~\true, \KNOSOS~performs monoenergetic calculations for a set of values of \vlink{CMUL} and \vlink{EFIELD}, either predetermined (see \S\ref{SEC_IDKES}) or input in {\ttfamily parameters} namelist (via \vlink{NEFIELD}, \vlink{EFIELD}, \vlink{NCMUL} and \vlink{CMUL}). These results can be directly compared with those of~\DKES~(see \S\ref{SEC_DKES}). The results should be the same in all cases only if \vlink{INC\_EXB} is true, see~\cite{beidler2007icnts}. File {\ttfamily results.knosos}, similarly to {\ttfamily results.data}, contains one or several lines, corresponding to different values of \vlink{CMUL} (first column) and \vlink{EFIELD} (second column). The first line lists all the variables, one per column:
+
+\
+
+{\ttfamily cmul efield weov wtov L11m L11p L31m L31p L33m L33p scal11 scal13 scal33}\\
+{\ttfamily max\_residual chip psip btheta bzeta vp}
+
+\
+
+The result of such \KNOSOS~calculation (defined explicitly in equation~\ref{EQ_NORMDKES}) is written in columns 5 and 6 (same value, so no error estimate is provided), and the rest of the columns, not used for the moment, contain {\ttfamily NaN}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{\ttfamily knosos.dk}
+
+If \vlink{NEOTRANSP} is set to \true, \KNOSOS~writes in {\ttfamily knosos.dk} the same monoenergetic coefficients than {\ttfamily results.knosos} in a format compatible with \NEOTRANSP. %The first line lists all the variables, one per column:
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{{\ttfamily varphi1.map}}
+
+If \vlink{SOLVE\_QN} or \vlink{TRIVIAL\_QN}  is set to {\ttfamily .TRUE.}, \KNOSOS~solves some version of the quasineutrality equation  (see \S\ref{SEC_SOLQN}). File {\ttfamily varphi1.map}  contains bidimensional maps of $\varphi_1(\zeta,\theta)$, the variation of the species density on the flux-surface (with the adiabatic component removed, but it can be estimated from the other columns), and the $\bE\times\bB$ radial drift. The first line lists all the variables, one per column:
+
+\
+
+{\ttfamily s \tbl zeta\_\{Boozer\} \tbl theta\_\{Boozer\}(right-handed)  \tbl varphi\_1[V]  e\tbl varphi\_1/T\_i}\\
+{\ttfamily (v\_E.\tbl nabla\tbl psi)[A.U.] n\_\{e1\}/n\_\{e0\} n\_\{i1\}/n\_\{i0\}}
+
+\
+
+Note that the radial $\bE\times\bB$ drift has the right sign and it is normalized to be comparable to the map of the radial magnetic drift of {\ttfamily B.map} for protons.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{{\ttfamily varphi1.modes}}
+
+If \vlink{SOLVE\_QN} or \vlink{TRIVIAL\_QN}  are set to {\ttfamily .TRUE.}, \KNOSOS~solves some version of the quasineutrality equation  (see \S\ref{SEC_SOLQN}). File {\ttfamily varphi1.modes},  contains the Fourier decomposition of the maps $\varphi_1(\zeta,\theta)$ of file {\ttfamily varphi1.map}. The first line lists all the variables, one per column:
+
+\
+
+{\ttfamily s  cosine(0)/sine(1)  n  m  \tbl varphi\_\{nm\}}
+
+\
+
+Cosines are indicated by a "0" in the second column, while sines are indicated by a "1".
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\ttfamily flux.amb}
+
+If \vlink{SOLVE\_AMB} is set to \true, \KNOSOS~solves the ambipolarity equation. File {\ttfamily flux.amb}, contains flux-related quantities as a function of $E_r$. The first line lists all the variables, one per column:
+
+\
+
+{\ttfamily s E\_r[V/m] (\tbl Gamma\_b/n\_b[m/s]  Q\_b/n\_b/T\_b[m/s]  L\_1\^{}b[m\^{}2/s] L\_2\^{}b[m\^{}2/s]  n\_b[10\^{}\{19\}m\^{}\{-3\}] dlnn\_b/dr T\_b[eV]  dlnT\_b/dr Z\_b , b=1,NBB), size(e\tbl varphi\_1/T\_i)}
+
+
+\
+
+Note that the number of columns varies, depending on the number of species \vlink{NBB}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\ttfamily knososTASK3D.flux}
+
+If \vlink{TASK3D} is set to \true, \KNOSOS~writes in {\ttfamily knososTASK3D.flux} flux-related quantities as a function of $E_r$ (some of them already contained in file {\ttfamily flux.amb}) in a format compatible with \TASKTD. %The first line lists all the variables, one per column:
+
+%\
+
+%{\ttfamily rho   n\_e[10\^{}\{19\}m\^{}\{-3\}]   n\_i1[10\^{}\{19\}m\^{}\{-3\}]   n\_i2[10\^{}\{19\}m\^{}\{-3\}]   T\_e[eV]   T\_i1[eV]   T\_i2[eV] \\
+%E\_r[kV/im]   Gamma[m\^\{-2\}s\^\{-1\}]   Q\_e[Wm\^{-2}]   Q\_i[Wm\^{-2}]   Chi\_e[m\^{}2/s]   Chi\_i[m\^{}2/s]} 
+%
+%\
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\ttfamily flux.modes}
+
+If \vlink{SOLVE\_QN} is set to \true,~\KNOSOS~solves the quasineutrality equation and calculates the radial fluxes accordingly. Since the radial $\bE\times\bB$ drift is only a source in the drift-kinetic equation, the fluxes depend quadratically, $\sim \left[(\mathbf{v_M}+\mathbf{v_E})\cdot\nabla\psi\right]^2$, on $\varphi_1$. This typically gives a leading contribution from the radial magnetic drift, and then smaller terms with linear and quadratic dependence on $\varphi_1$. It is thus easy to calculate the contribution to radial transport of each mode of the Fourier decomposition of $\varphi_1(\theta,\zeta)$. The first line lists all the variables, one per column:
+
+\
+
+{\ttfamily s E\_r[V/m] cosine(0)/sine(1)  n  m (\tbl Gamma\_b/n\_b[m/s]  Q\_b/n\_b/T\_b[m/s]  L\_1\^{}b[m\^{}2/s] L\_2\^{}b[m\^{}2/s] b=1,NBB)}
+
+
+\
+
+Cosines are indicated by a "0" in the thired column, while sines are indicated by a "1". The first line corresponds to the contribution of the radial magnetic drift to the fluxes (and it is typically the largest); other lines contain the sum of linear and quadratic terms associated to each mode. Note that the number of columns varies, depending on the number of species \vlink{NBB}.
+          
+          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\ttfamily flux.knosos}
+
+File {\ttfamily flux.knosos}, contains flux-related quantities for one value of $E_r$, that may be fixed from the input or the solution of ambipolarity. The first line lists all the variables, one per column:
+
+\
+
+{\ttfamily s E\_r[V/m] (\tbl Gamma\_b/n\_b[m/s]  Q\_b/n\_b/T\_b[m/s]  L\_1\^{}b[m\^{}2/s] L\_2\^{}b[m\^{}2/s]  n\_b[10\^{}\{19\}m\^{}\{-3\}] dlnn\_b/dr T\_b[eV]  dlnT\_b/dr Z\_b , b=1,NBB), size(e\tbl varphi\_1/T\_i)}
+
+\
+
+Note that the number of columns varies, depending on the number of species \vlink{NBB}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{\ttfamily knososTASK3D.ambEr}
+
+If \vlink{TASK3D} is set to \true, \KNOSOS~writes in {\ttfamily knososTASK3D.ambEr} flux-related quantities evaluated at $E_r$ given by ambipolarity (some of them already contained in file {\ttfamily flux.knosos}) in a format compatible with \TASKTD. %The first line lists all the variables, one per column:
+
+%\
+
+%{\ttfamily rho   E\_r[kV/m]   Gamma\_e[m\^{}\{-2\}s\^{}\{-1\}]   Gamma\_i1[m\^{}\{-2\}s\^{}\{-1\}]   Gamma\_i2[m\^{}\{-2\}s\^{}\{-1\}]   Gamma\_i[m\^{}\{-2\}s\^{}\{-1\}]  Q\_e[Wm\^{}{-2}]   Q\_i1[Wm\^{}{-2}]   Q\_i2[Wm\^{}{-2}]   Q\_i[Wm\^{}{-2}]} 
+%\
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\ttfamily flux.av}
+
+If \vlink{NERR} is greater than 0, error bars are calculated (see \S\ref{SEC_ERROR}). File {\ttfamily flux.av}, contains averages and error estimates of flux-related quantities for one value of $E_r$, that may be fixed from the input or the solution of ambipolarity. The first line lists all the variables, one per column:
+
+\
+
+{\ttfamily s E\_r[V/m] err(E\_r[V/m]) (\tbl Gamma\_b/n\_b[m/s]  err(Gamma\_b/n\_b)[m/s]  Q\_b/n\_b/T\_b[m/s]  err(Q\_b/n\_b/T\_b)[m/s], b=1,NBB)}
+
+
+\
+
+Note that the number of columns varies, depending on the number of species \vlink{NBB}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\ttfamily imp.knosos}
+
+File {\ttfamily imp.knosos}, contains quantities related to the impurity flux. The first line lists all the variables, one per column:
+
+\
+
+{\ttfamily s Z\_z  A\_z  Gamma\_z/n\_z[m/s]  V\_z[m/s]  D\_z[m\^{}\{2\}/s]  dlnn\_z/dr[m\^{}\{-1\}]  D\_\{E\_r\}[m\^{}\{2\}/s] eE\_r/T\_z[m\^{}\{-1\}]  D\_T[m\^{}\{2\}/s]  dlnT\_z/dr[m\^{}\{-1\}]  D\_n[m\^{}\{2\}/s]  dlnn\_i/dr[m\^{}\{-1\}] Gamma\_\{anisot\}/n\_z[m/s]}
+
+\
+
+In particular, the lasts columns allow to estimate the contribution to the flux of the impurity density gradient, the radial electric field, the temperature gradient, the main density gradient and the pressure anisotropy. The number of columns is fixed and each line corresponds to an iteration, value of $E_r$ o impurity state.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\ttfamily ????\_2d.in}
+
+When evaluating transport of trace impurities, \KNOSOS~calculates $\varphi_1$ and the tensor $\overset\leftrightarrow{M}$ in one period. Files {\ttfamily ph1\_2d.in},{\ttfamily Mbb\_2d.in}, {\ttfamily trM\_2d.in} contain the quantities $\varphi_1$, $\overset\leftrightarrow{\mathbf{M_1}}::\hat{\bb}\hat{\bb})$, $\overset\leftrightarrow{\mathbf{M_2}}::\hat{\bb}\hat{\bb})$ and $tr(\overset\leftrightarrow{M_2})$ respectively, evaluated in a square grid in \textit{left-handed} Boozer angles $\zeta$, $\theta$. These files have a header with the flux-surface label $s$, the size of the grid, and the number of periods, and are written in the \EUTERPE~format.

@@ -1,0 +1,333 @@
+\chapter{Magnetic configuration}\label{CHAP_CONF}
+
+This chapter describes how the magnetic geometry is read and how it is processed.
+
+\section{Workflow}
+
+The main loop is contained in file {\ttfamily configuration.f90} (subroutine {\ttfamily read\_BFIELD(s0)}), and it takes the following steps:
+
+\begin{itemize}
+\item Read the input files.
+\begin{itemize}
+\item Read the quantities at {\ttfamily s0} and (if available) neighbour surfaces.
+\end{itemize}
+\item Calculate missing quantities (e.g. due to different definitions of different possible inputs).
+\item Keep the largest \vlink{TRUNCATE\_B} modes of the Fourier spectra of $B$.
+\item Add an extra magnetic field $B_1$ to the previously read $B_0$ $^*$.
+\item Change from a left-handed to a right-handed coordinate system. See \S\ref{SEC_VMEC}.
+\item For specific physics studies (if ~\vlink{JPP} or~\vlink{SATAKE} are true), do some manipulations to the magnetic configuration.
+\item Calculate some radial derivatives.
+\item Copy information to arrays with only one index.
+\item Calculate several other flux-surface quantities.
+\item Set, according to the required precision \vlink{PREC\_EXTR}, step size along the Boozer angles, etc.
+\item Plot map of the magnetic field on the flux surface.
+\end{itemize}
+
+
+
+\section{Input magnetic field}\label{SEC_BINPUT}
+
+
+The magnetic configuration, which does not need to by stellarator-symmetric, can be read from three different kind of files:
+
+\begin{itemize}
+
+\item {\ttfamily boozmn.data}
+
+  This unformatted file is produced by \BOOZERXFORM. It contains information of several flux-surfaces, and {\ttfamily READ\_BFIELD} reads and interpolates the information of the two closest surfaces to {\ttfamily s0}. If you are using~\KNOSOS~from~\TASKTD, this is the file that is read.
+
+ 
+
+\item {\ttfamily boozer.txt}
+
+This text file is produced by \COTRANS~(IPP). It contains basically the same information than {\ttfamily boozmn.data} (although units and definitions may slightly differ).
+
+\item {\ttfamily ddkes2.data}
+
+This text file is produced by \DKES, in routine {\ttfamily dkes\_input\_prepare}, and it contains a namelist with information of a single flux-surface. In case radial derivatives are needed, the major and local minor radius $R$ and $a$ (note that $s=1$ so $r=a$) are calculated using expressions valid for large-aspect ratio, or they can be read from namelist {\ttfamily radius}. It is included in file {\ttfamily input.radius} and it contains:
+
+\ivar{R}
+{Set radius}
+{REAL*8}
+{Major radius in meters}
+{$B_\zeta/B_{00}$}
+{\S\ref{SEC_USEFUL}}
+
+\ivar{a}
+{Set radius}
+{REAL*8}
+{Minor radius in meters}
+{$\partial_{\hat{r}}\psi/B_{00}$, with $\hat{r}$ the \DKES~radial coordinate}
+{$s=1$, so $r=a$}
+{\S\ref{SEC_USEFUL}}
+
+\item {\ttfamily add\_ddkes2.data}
+
+This text file has a similar format than {\ttfamily ddkes2.data}, and it contains a namelist with additional modes of the magnetic field. If \vlink{USE\_B0pB1} or \vlink{USE\_B1}, these modes go to $B_1$, and the modes read before go to $B_0$.
+
+\end{itemize}
+
+\
+
+Different inputs include different quantities, e.g. the radial derivatives of the toroidal and poloidal flux instead of the rotational transform, or use different normalization), so some processing is done in subroutine {\ttfamily READ\_BFIELD} after reading.
+
+
+
+
+\section{Some useful quantities in Boozer coordinates}\label{SEC_USEFUL}
+
+In Boozer coordinates $(\psi, \theta, \zeta)$, the magnetic field can be expressed in its covariant representation
+
+\begin{equation}
+\bB = B_\psi\mathbf{\nabla\psi} + B_\theta\mathbf{\nabla \theta} + B_\zeta\mathbf{\nabla \zeta} = B_\theta\mathbf{\nabla \theta}+ B_\zeta\mathbf{\nabla \zeta}\,,
+\end{equation}
+where $B_\psi=0$ for low $\beta$. \VMEC\footnote{With \VMEC, we will refer to \VMEC~\citep{hirshman1983vmec} and additional codes (such as \BOOZERXFORM~\citep{sanchez2000boozerxform} or \COTRANS), that write the equilibrium in Boozer coordinates.} provides $B_\zeta = \frac{I_p}{2\pi}$, where $I_P$ is the poloidal current, and $B_\theta = \frac{I_T}{2\pi}$, where $I_T$ is the toroidal current. The contravariant representation of $\bB$, in terms of the radial derivatives of the toroidal and poloidal fluxes, is simply
+\begin{equation}
+\bB = \frac{\Psi_t'}{\sqrt{g}}(\iota\epol + \etor),\label{EQ_CONTRAV}
+\end{equation}
+where $2\pi\iota$ is the rotational transform. \VMEC~provides $\iota$ or $\partial_{\hat{r}}\Psi_t$ and $\partial_{\hat{r}}\Psi_p$, where $\Psi_p$ is the poloidal flux and $\hat{r}$ the \DKES~radial coordinate, and $\iota=\partial_r\Psi_p/\partial_r\Psi_t$.
+
+%Since we have set $\psi=|\Psi_t|$, being $2\pi\Psi_t$ the toroidal flux, t
+
+The Jacobian of the magnetic coordinate system $\sqrt{g}$ can be calculated in terms of known quantities by multiplying the covariant and contravariant representations of the magnetic field:
+\begin{equation}
+\sqrt{g} = \Psi_t'\frac{B_\theta\iota + B_\zeta}{B^2} = \frac{|B_\theta\iota + B_\zeta|}{B^2} \,.
+\end{equation}
+since we have set $\psi=|\Psi_t|$, being $2\pi\Psi_t$ the toroidal flux, and $\sqrt{g}$ is defined positive in a right-handed coordinate system. 
+
+We have seen that we are interested in the set of spatial coordinates $(\psi, \alpha, l)$, where $\alpha$ is an angular coordinate that labels a magnetic field line and $l$ is the arc length over the magnetic field line. The magnetic field can then be written
+\begin{equation}
+\bB = \nabla\psi\times\nabla\alpha\,.
+\end{equation}
+
+\
+
+The parallel derivative (i.e., the derivative along the magnetic field lines) can be written
+\begin{eqnarray}
+\frac{\bB}{B}\cdot\nabla &=& \frac{\Psi_t'}{B}\frac{1}{\sqrt{g}}\left[(\iota\epol + \etor)\cdot\left(\frac{\partial}{\partial s}\bnabla s+\frac{\partial}{\partial \theta}\bnabla\theta+\frac{\partial}{\partial \zeta}\bnabla\zeta\right)\right]\nonumber\\  &=&  \frac{\Psi_t'}{B\sqrt{g}}\left(\iota\frac{\partial}{\partial \theta} +\frac{\partial}{\partial \zeta}\right) = \frac{B}{\iota B_\theta+B_\zeta}\left(\iota\frac{\partial}{\partial \theta} +\frac{\partial}{\partial \zeta}\right) \,,
+\end{eqnarray}
+and the unit element along the magnetic field line is
+\begin{eqnarray}
+\mathrm{d}l=\frac{\iota B_\theta+B_\zeta}{B}\mathrm{d}\zeta \,.
+\end{eqnarray}
+
+We will also use the first and second derivative of the magnetic field strength along the magnetic field line:
+\begin{eqnarray}
+\frac{\partial B}{\partial l} &=& \frac{B}{\iota B_\theta+B_\zeta}\left(\iota\frac{\partial B}{\partial \theta} +\frac{\partial B}{\partial \zeta}\right)\,,\nonumber\\
+\frac{\partial^2 B}{\partial l^2} &=& \frac{B^2}{(\iota B_\theta+B_\zeta)^2}\left[\left(\iota^2\frac{\partial^2 B}{\partial \theta^2}+\frac{\partial^2 B}{\partial \zeta^2}+2\iota\frac{\partial^2 B}{\partial \zeta\partial\theta}\right)\right] +\nonumber\\
+ &+&\frac{B}{(\iota B_\theta+B_\zeta)^2}\left[\iota^2\left(\frac{\partial B}{\partial \theta}\right)^2+\left(\frac{\partial B}{\partial \zeta}\right)^2+2\iota\left(\frac{\partial B}{\partial \theta}\frac{\partial B}{\partial \zeta}\right)\right]\,.
+\end{eqnarray}
+
+The magnetic drift $\mathbf{v_M}$ in low-$\beta$ approximation is:
+\begin{equation}
+\bv_M = \frac{mv^2}{2Ze}(1+p^2)\frac{\bB\times\nabla B}{B^3} =  v_d \frac{1+p^2}{2}\frac{\bB\times\nabla B}{B^3}\,,
+\end{equation}
+where $p$ is the pitch-angle variable and we defined $v_d\equiv mv^2/Ze$. In our coordinate system the magnetic drift reads
+\begin{eqnarray}
+\bv_M = v_d\frac{1+p^2}{2}\frac{1}{B^3} (B_\theta\bnabla\theta+B_\zeta\bnabla\zeta)\times \left(\frac{\partial B}{\partial\psi}\bnabla\psi+\frac{\partial B}{\partial \theta}\bnabla\theta+\frac{\partial B}{\partial \zeta}\bnabla\zeta\right) = \nonumber\\=  v_d\frac{1+p^2}{2}\frac{1}{B^3\sqrt{g}}\left[\frac{\partial B}{\partial\psi}(B_\zeta\epol-B_\theta\etor) + \left(B_\theta\frac{\partial B}{\partial \zeta}-B_\zeta\frac{\partial B}{\partial \theta}\right)\epsi\right]\,.
+\end{eqnarray}
+The \VMEC~equilibrium contains all the information required for calculating the derivatives of $B$: the Fourier decomposition of $B(\theta,\zeta)$ at several radial positions. The radial component of the magnetic drift is
+\begin{equation}
+\bv_M\cdot\bnabla\psi= v_d\frac{1+p^2}{2}\frac{1}{B^3\sqrt{g}}\left(B_\theta\frac{\partial B}{\partial \zeta}-B_\zeta\frac{\partial B}{\partial \theta}\right)\,,
+\end{equation}
+and, since we define\footnote{Other definitions are possible, differing only by a constant factor.} $\alpha=\theta-\iota\zeta$, so that
+\begin{equation}
+\bnabla \alpha = \bnabla \theta - \iota\bnabla\zeta - \frac{\partial\iota}{\partial \psi}\zeta\nabla\psi\,,
+\end{equation}
+the tangential component of the magnetic drift is
+\begin{eqnarray}
+\bv_M\cdot\bnabla \alpha &=&  v_d\frac{1+p^2}{2}\frac{1}{B^3\sqrt{g}}\left[\frac{\partial B}{\partial\psi}(B_\zeta+\iota B_\theta)-\left(B_\theta\frac{\partial B}{\partial\zeta}-B_\zeta\frac{\partial B}{\partial\theta}\right)\frac{\partial\iota}{\partial\psi}\zeta\right]=\\
+&=&  v_d\frac{1+p^2}{2B}\left[\Psi_t'\frac{\partial B}{\partial\psi}-\frac{1}{|B_\zeta+\iota B_\theta|}\left(B_\theta\frac{\partial B}{\partial\zeta}-B_\zeta\frac{\partial B}{\partial\theta}\right)\frac{\partial\iota}{\partial\psi}\zeta\right]\,.
+\end{eqnarray}
+We note that we have been able to keep the effect of the magnetic shear $\partial_\psi\iota$.
+
+The $\bE\times\bB$ drift, caused by $\varphi=\varphi_0(\psi)+\varphi_1(\psi,\theta,\zeta)$ with $\varphi_1\ll\varphi_0$, can be written
+\begin{eqnarray}
+\bv_E = \frac{1}{B^2}(\bE \times \bB) = \frac{1}{B^2}(B_\theta\bnabla\theta+B_\zeta\bnabla\zeta)\times \left(\frac{\partial \varphi}{\partial \psi}\bnabla \psi+\frac{\partial \varphi}{\partial \theta}\bnabla\theta+\frac{\partial \varphi}{\partial \zeta}\bnabla\zeta\right) = \nonumber\\= \frac{1}{|B_\zeta+\iota B_\theta|}\left[\frac{\partial \varphi_0}{\partial \psi}(B_\zeta\epol-B_\theta\etor) + \left(B_\theta\frac{\partial \varphi_1}{\partial \zeta}-B_\zeta\frac{\partial \varphi_1}{\partial \theta}\right)\epsi\right]\,.
+\end{eqnarray}
+Its radial component is
+\begin{eqnarray}
+\bv_E\cdot \bnabla\psi= \frac{1}{|B_\zeta+\iota B_\theta|}\left(B_\theta\frac{\partial \varphi_1}{\partial \zeta}-B_\zeta\frac{\partial \varphi_1}{\partial \theta}\right)\,,
+\end{eqnarray}
+and its tangential component is:
+\begin{eqnarray}
+\bv_E\cdot\bnabla \alpha = \frac{B_\zeta+\iota B_\theta}{|B_\zeta+\iota B_\theta|}\frac{\partial \varphi_0}{\partial\psi}=\Psi_t'\frac{\partial \varphi_0}{\partial\psi}\,.\label{EQ_EXB}
+\end{eqnarray}
+In the incompressible limit (that used by \DKES), equation (\ref{EQ_EXB}) is simplified to
+\begin{eqnarray}
+\bv_E\cdot\bnabla \alpha = \Psi_t'\frac{B^2}{\fsa{B^2}}\frac{\partial \varphi_0}{\partial \psi}\,.\label{EQ_INCOMP}
+\end{eqnarray}
+
+
+
+\section{From \VMEC~lef-handed coordinates to standard right-handed coordinates}\label{SEC_VMEC}
+
+\VMEC~provides the following quantities for every flux surface:  $B_\zeta$, $B_\theta$, $\Psi_t$, $\iota$, $B_{mn}$, $R_{mn}$, $Z_{mn}$, $\Phi_{mn}$, where the expressions
+\begin{eqnarray}
+B(\psi,\theta,\zeta) &=& \sum_{m,n}B_{mn}^{(c)}\cos{(m\theta-nN_p\zeta)}\,,\nonumber\\
+&+& \sum_{m,n}B_{mn}^{(s)}\sin{(m\theta-nN_p\zeta)}\,,\nonumber\\
+R(\psi,\theta,\zeta) &=& \sum_{m,n}R_{mn}^{(c)}\cos{(m\theta-nN_p\zeta)}\,,\nonumber\\
+&+& \sum_{m,n}R_{mn}^{(s)}\sin{(m\theta-nN_p\zeta)}\,,\nonumber\\
+\Phi(\psi,\theta,\zeta) &=& \sum_{m,n}\Phi_{mn}^{(c)}\cos{(m\theta-nN_p\zeta)}\,,\nonumber\\
+&+& \sum_{m,n}\Phi_{mn}^{(s)}\sin{(m\theta-nN_p\zeta)}\,,\nonumber\\
+Z(\psi,\theta,\zeta) &=& \sum_{m,n}Z_{mn}^{(c)}\cos{(m\theta-nN_p\zeta)}\,,\nonumber\\
+&+& \sum_{m,n}Z_{mn}^{(s)}\sin{(m\theta-nN_p\zeta)}\,,
+\end{eqnarray}
+provide the position in cylindrical coordinates of a point $(\psi,\theta,\zeta)$, and the value of the magnetic field. $N_p$ is the number of field periods. We also have, as usual:
+\begin{eqnarray}
+\bB &=& B_\theta\mathbf{\nabla \theta} + B_\zeta\mathbf{\nabla \zeta}\,,\nonumber\\
+\bB &=& \frac{\Psi_t'}{\sqrt{g}}(\iota\epol + \etor),\nonumber\\
+\sqrt{g} &=& \frac{B_\theta\iota + B_\zeta}{B^2}\,.
+\end{eqnarray}
+In a left-handed system such as that of \VMEC~we have
+\begin{eqnarray}
+\epsi &=&-\sqrt{g}(\nabla\theta\times\nabla\zeta)\,,\nonumber\\
+\nabla\psi &=&\frac{-\Psi_t'}{\sqrt{g}}(\epol\times\etor)\,.
+\end{eqnarray}
+We prefer to work in a right-handed coordinate system $(\psi,\tilde{\theta},\zeta)$, with $\tilde{\theta}=-\theta$, so that
+\begin{eqnarray}
+\epsi &=&\sqrt{g}(\nabla\tilde{\theta}\times\nabla\zeta)\,,\nonumber\\
+\nabla\psi &=&\frac{\Psi_t'}{\sqrt{g}}(\epolt\times\etor)\,.\nonumber
+\end{eqnarray}
+
+We then can now write
+\begin{eqnarray}
+B(\psi,\tilde{\theta},\zeta) &=& \sum_{m,n}B_{mn}^{(c)}\cos{(m\theta+nN_p\zeta)}\nonumber\\
+&+& \sum_{m,n}\tilde{B}_{mn}^{(s)}\sin{(m\theta+nN_p\zeta)}\,,\nonumber\\
+R(\psi,\tilde{\theta},\zeta) &=& \sum_{m,n}R_{mn}^{(c)}\cos{(m\theta+nN_p\zeta)}\nonumber\\
+&+& \sum_{m,n}\tilde{R}_{mn}^{(s)}\sin{(m\theta+nN_p\zeta)}\,,\nonumber\\
+\Phi(\psi,\tilde{\theta},\zeta) &=& \sum_{m,n}\Phi_{mn}^{(c)}\cos{(m\theta+nN_p\zeta)}\nonumber\\
+&+& \sum_{m,n}\tilde{\Phi}_{mn}^{(s)}\sin{(m\theta+nN_p\zeta)}\,,\nonumber\\
+Z(\psi,\tilde{\theta},\zeta) &=& \sum_{m,n}Z_{mn}^{(c)}\cos{(m\theta+nN_p\zeta)}\nonumber\\
+&+& \sum_{m,n}\tilde{Z}_{mn}^{(s)}\sin{(m\theta+nN_p\zeta)}\,,
+\end{eqnarray}
+and
+\begin{eqnarray}
+\bB &=& B_{\tilde{\theta}}\mathbf{\nabla \tilde{\theta}} + B_\zeta\mathbf{\nabla \zeta}\,,\nonumber\\
+\bB &=& \frac{\Psi_t'}{\sqrt{g}}(\tilde{\iota}\epolt + \etor),
+\end{eqnarray}
+with
+\begin{eqnarray}
+\epolt &=& -\epol\,,\nonumber\\
+B_{\tilde{\theta}} &=& -B_\theta\,,\nonumber\\
+\tilde{\iota} &=& -\iota\,,\nonumber\\
+\tilde{B}_{mn}^{(s)} &=& -B_{mn}^{(s)}\,,\nonumber\\
+\tilde{R}_{mn}^{(s)} &=& -R_{mn}^{(s)}\,,\nonumber\\
+\tilde{\Phi}_{mn}^{(s)} &=& -\Phi_{mn}^{(s)}\,,\nonumber\\
+\tilde{Z}_{mn}^{(s)} &=& -Z_{mn}^{(s)}\,.\label{EQ_FOURIER}
+\end{eqnarray}
+Since the radial coordinate $\psi=\Psi_t$ does not change, we have $\tilde{\Psi_p} = -\Psi_p$ as well.
+
+\
+
+\KNOSOS~works in the right-handed coordinate system, and all along this document we drop the tilde~$\tilde{}$.
+
+
+\section{Relation between Fourier expansions}\label{SEC_FOURIER}
+
+In some cases, we are going to deal (e.g. when performing fast-Fourier transforms) with Fourier expansions such as\footnote{The expressions in this section are valid for stellarator-symmetric equilibria, but can be straightforwardly generalized.}
+\begin{equation}
+B(\theta,\zeta) = \sum_{-\infty<n<\infty}\sum_{-\infty<m<\infty} B_{mn}\exp{[i(m\theta+nN_p\zeta)]}\,,
+\end{equation}
+but the information of the magnetic field is given by \VMEC~(after changing to a right-handed coordinate system, see \S\ref{SEC_VMEC}) as a summatory of cosines with $m\geq 0$:
+\begin{eqnarray}
+B(\theta,\zeta) &=& \sum_{-\infty<n<\infty}\sum_{0\leq m<\infty} \beta_{mn}^{(c)}\cos{(m\theta+nN_p\zeta)}\nonumber\\
+&+& \sum_{-\infty<n<\infty}\sum_{0\leq m<\infty} \beta_{mn}^{(s)}\sin{(m\theta+nN_p\zeta)}\,.
+\end{eqnarray}
+It is easy to show that the relation between $B_{mn}$ and $\beta_{mn}$ is:
+\begin{eqnarray}
+B_{mn} &=& \frac{1}{2}(\beta_{mn}^{(c)}+i\beta_{mn}^{(s)})~\mathrm{if}~m>0\,, \nonumber\\
+B_{0n} &=& \frac{1}{2}(\beta_{0n}^{(c)}+\beta_{0,-n}^{(c)}+i\beta_{0n}^{(s)}+i\beta_{0,-n}^{(s)})\,, \nonumber\\
+B_{mn} &=& \frac{1}{2}(\beta_{-m,-n}^{(c)}+i\beta_{-m,-n}^{(s)})~\mathrm{if}~m<0\,.
+\end{eqnarray}
+
+
+
+\section{Scan in the magnetic configuration parameters}\label{SEC_SCAN}
+
+The {\ttfamily model} namelist allows to modify the magnetic configuration in order to perform an scan (in different runs of \KNOSOS) in several 0-D parameters:
+\begin{itemize}
+\item \vlink{FI}:  the rotational transform (keeping the shear constant).
+\item \vlink{FS}: the magnetic shear (keeping the rotational transform constant).
+\item \vlink{FP}: the number of field periods  (keeping the rotational transform constant).
+\item \vlink{FE}: the inverse aspect ratio (keeping the major radius constant).
+\item \vlink{FR}: the size of the device (keeping the aspect ratio and magnetic field strength constant).
+\item \vlink{FB}: the magnetic field strength (keeping the size of the device constant).
+\end{itemize}
+As we have already advanced, scanning in a parameter of the configuration requires that we take a decision on which parameters are kept constant and which ones change accordingly during the scan. This is automatically done by \KNOSOS, and this is the complete list of changes in all the relevant variables (where the hats correspond to the old values and $*$ denotes multiplication, in Fortran style):
+\begin{eqnarray}
+  N_p&=& \hat{N_p} *\mathrm{FP}\,,\nonumber\\
+   s  &=& \hat{s}  *\mathrm{FS}\,,\nonumber\\
+  \iota  &=& \hat{\iota}  *\mathrm{FI}\,,\nonumber\\
+  \Psi_p'    &=& \hat{\Psi_p'}*\mathrm{FI*FB*FE*FR}\,,\nonumber\\
+  \Psi_t'    &=& \hat{\Psi_t' }*\mathrm{FB*FE *FR}\,,\nonumber\\
+  \partial_\psi    &=& \hat{\partial_\psi} / \mathrm{(FB*FE*FE*FR*FR)}\,,\nonumber\\
+    B_\theta  &=& \hat{B_\theta}*\mathrm{FB*FR}\,,\nonumber\\
+  B_\zeta   &=& \hat{B_\zeta}*\mathrm{FB*FR}\,,\nonumber\\
+  R   &=& \hat{R}*\mathrm{FR}\,,\nonumber\\
+  a   &=& \hat{a}*\mathrm{FE*FR}\,,\nonumber\\
+  B_{0,0} &=& \hat{B}_{0,0}*\mathrm{FB}\,,\nonumber\\
+  B_{m,n} &=& \hat{B}_{m,n} *\mathrm{FB*FE}\,,\mathrm{if}~m\neq 0~\mathrm{or}~n\neq 0\,.
+\end{eqnarray}
+
+
+
+\newpage
+
+
+%
+%\section{Change of Boozer coordinates}\label{SEC_COORD}
+%
+%We have the magnetic field strength expressed in Boozer coordinates:
+%\begin{equation}
+%B(\theta,\zeta) = \sum_{-\infty<n<\infty}\sum_{0\leq m<\infty} B_{mn}\cos{(m\theta+nN_p\zeta)}\,.
+%\end{equation}
+%
+%We we want to work in a coordinate system $(\tilde{\theta},\tilde{\zeta})$, with $\tilde\theta$ and $\tilde\zeta$ between $0$ and $2\pi$, such that $B _0= B_\text{Max}$ corresponds to $\tilde{\zeta}=0$ and $\tilde{\zeta}=2\pi$ ($B_0$ here denotes an omnigenous stellarator close to $B$). We can do that by setting:
+%
+%\begin{eqnarray}
+%\tilde\theta&=&\theta\,,\nonumber\\
+%\tilde\zeta&=&(N_pN\zeta+M\theta)+k\pi\,,\nonumber
+%\end{eqnarray}
+%where $k$ is 0 (1) if $B$ has a minimum (maximum) at $(\theta,\zeta)=(\pi,\pi)$. Since we don't know $B_0$ in advance, $N$, $M$ and $N_p$ have to be chosen by inspection of $B$. Choosing them according to the largest helicity present in $B(\theta,\zeta)$ is usually a good idea, but sometimes there are several alternative options.
+%
+%\
+%
+%Several changes have to be made so that the expressions derived in \S\ref{SEC_BOOZER} look the same in the new variables. From the covariant form of the magnetic field,
+%\begin{equation}
+%B_\zeta\nabla\zeta + B_\theta\nabla\theta = B_{\tilde\zeta}\nabla{\tilde\zeta} + B_{\tilde\theta}\nabla\tilde\theta 
+%\end{equation}
+%we have:
+%\begin{eqnarray}
+%B_{\tilde\zeta}&=&\frac{B_\zeta}{N_pN}\,\nonumber\,,\\
+%B_{\tilde\theta}&=&B_\theta-\frac{M}{N_pN}B_{\zeta}\,.
+%\end{eqnarray}
+%The contravariant representation of $\bB$ is:
+%\begin{equation}
+%\bB = \Psi_t'(\iota\nabla\zeta\times\nabla\psi + \nabla\psi\times\nabla\theta) = \tilde\Psi_t'(\tilde\iota\nabla\tilde\zeta\times\nabla\psi + \nabla\psi\times\nabla\tilde\theta)\,,
+%\end{equation}
+%and we can see that:
+%\begin{eqnarray}
+%\tilde\Psi_t'&=&\left(1+\frac{M\iota}{N_pN}\right)\Psi_t'\,,\nonumber\\
+%\tilde\iota&=&\frac{\iota}{N_pN+M\iota}\,.
+%\end{eqnarray}
+%This automatically gives:
+%\begin{eqnarray}
+%\sqrt{\tilde g} &=& \frac{\tilde\Psi_t'}{B^2}(B_{\tilde\theta}\tilde\iota + B_{\tilde\zeta}) = \frac{\sqrt{g}}{N_pN}\,,\nonumber\\
+%\tilde\Psi_t'&=&\left(1+\frac{M\iota}{N_pN}\right)\Psi_t'\,,\nonumber\\
+%\tilde\Psi_p'&=&\frac{1}{N_pN}\Psi_p'\,.
+%\end{eqnarray}
+%Finally:
+%\begin{equation}
+%B(\tilde\theta,\tilde\zeta) = \sum_{-\infty<n<\infty}\sum_{0\leq m<\infty} B_{mn}\cos{(\tilde m\tilde\theta+\tilde n\tilde N_p\tilde \zeta)}\,.
+%\end{equation}
+%with:
+%\begin{eqnarray}
+%\tilde N_p&=&1\,\nonumber\\
+%\tilde n&=&\frac{n}{N}\,\nonumber\\
+%\tilde m&=&m-\frac{nM}{N}\,.
+%\end{eqnarray}
+%
+%We can drop the tildes and use the expressions in \S\ref{SEC_BOOZER}. We must not forget that $B_\theta$ is not zero anymore, even for a vacuum field. Also, this is not valid for $N\!=\!0$.
+
+

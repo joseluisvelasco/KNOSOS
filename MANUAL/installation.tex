@@ -1,0 +1,94 @@
+\chapter{Installing {\ttfamily KNOSOS}}\label{CHAP_INST}
+
+This chapter describes the steps that you have to take, from the moment when you decide to download \KNOSOS, in order to have a correctly working version of the code. At the moment, \KNOSOS~is being developed at the {\ttfamily euler} cluster at CIEMAT. This means that, if you have access to an account there, everything (compiling, running, etc) will probably be much easier. Note that many problems can be run in your personal computer, as long as you have installed the approppriate libraries.
+
+
+\section{Public repository}
+
+The source code for \KNOSOS~is \todo{hosted in a {\ttfamily GitHub} repository} at:
+
+\
+
+ \url{https://github.com/joseluisvelasco/KNOSOS}
+
+\
+
+You can obtain the \KNOSOS~source code by:
+\begin{itemize}
+\item Downloading all the files one by one.
+\item Logging in {\ttfamily GitHub} and cloning the repository, as described in\\ \url{https://help.github.com/articles/cloning-a-repository/}.
+\end{itemize}
+
+The latter option is preferable, since it makes faster the download of future updates of the code and, if you are a collaborator with writing permissions, allows you to upload your source code.
+
+
+\section{Setting up \KNOSOS~on a new system}
+
+The first time that you try to run~\KNOSOS, you may need to install some software, and to set a few environment variables.
+
+\subsection{System requirements}
+
+In order to compile and run \KNOSOS, your system administrator should have installed:
+
+\begin{itemize}
+\item The \href{http://www.mcs.anl.gov/petsc/}{\PETSC} library for solving large linear systems.
+\item An implementation of \MPI~for parallel runs.
+\item \href{http://www.fftw.org}{\FFTW} for computing the discrete Fourier transform.
+\item \href{http://www.netlib.org/lapack/}{LAPACK} and \href{http://www.netlib.org/blas/}{BLAS} for algebra of small matrices.
+\end{itemize}
+
+
+You need to determine the {\ttfamily intel} compiler and include \PETSC~in {\ttfamily LD\_LIBRARY\_PATH}. At {\ttfamily euler}, you can do that by executing
+
+\
+
+{\ttfamily \hskip-0.6cm export LD\_LIBRARY\_PATH=\$LD\_LIBRARY\_PATH:/home/localsoft/petsc-3.7.4/real/lib/}
+
+\
+
+ \hskip-0.6cm and
+
+\
+
+{\ttfamily  \hskip-0.6cm  source /home/localsoft/intel-12/bin/compilervars.sh intel64}
+
+\
+
+Note that \KNOSOS~can still run without the two first libraries (\PETSC~and \MPI), although limited to sequential runs and small enough problems. 
+
+\
+
+In a laptop or desktop computer under {\ttfamily macOS}, you will need to take at least the following steps (if you have not before) from a Terminal:
+
+\begin{itemize}
+\item Install {\ttfamily brew} by executing 
+
+{\hskip-2.4cm\ttfamily /usr/bin/ruby\ -e\ }"{\ttfamily \$(curl\ -fsSL\ https://raw.githubusercontent.com/Homebrew/install/master/install)}"
+
+\item Install the {\ttfamily gfortran} compiler by executing ~{\ttfamily brew\ install\ gcc}
+
+\item Install the {\ttfamily LAPACK} and {\ttfamily BLAS} libraries by executing ~~~~~{\ttfamily brew\ install\ lapack}
+
+\item Install the {\ttfamily FFTW} libraries by executing ~~~~~~~~{\ttfamily brew\ install\ fftw}
+
+\item Copy file {\ttfamily libfftw3.a} with the sources (and rename with your system name, e.g. {\ttfamily libfftw3\_Darwin.a}).
+
+
+\end{itemize}
+
+There is an identical procedure for {\ttfamily Linux} if you first install \href{http://linuxbrew.sh}{\nolinkurl{Linuxbrew}}. Nevertheless, you may prefer the more standard commands: {\ttfamily sudo apt-get install gcc}, {\ttfamily sudo apt-get install fftw}, etc.
+
+
+
+
+\subsection{{\ttfamily Makefile}}
+
+At the moment, \KNOSOS~runs on the clusters {\ttfamily euler}, {\ttfamily fusc3} and {\ttfamily dirac} at CIEMAT, and at workstation {\ttfamily TASK3D-l} and server {\ttfamily egcalc} at NIFS at cluster {ttfamilyl draco} at IPP Greifswald, and at several computers, both under {\ttfamily macOS} and under {\ttfamily xUbuntu Linux}.  {\ttfamily Makefile} detects the system where it is running and sets the compiler, compiler flags, library paths, etc, accordingly.
+
+
+
+\subsection{Next steps}
+
+The following chapters explain how to run \KNOSOS: chapter~\ref{CHAP_RUN} provides an overview, and chapters~\ref{CHAP_INPUT},~\ref{CHAP_PROF},~\ref{CHAP_CONF} and~\ref{CHAP_OUTPUT} contain all the details of the input and output files. Chapter~\ref{CHAP_EX} provides examples published in~\citep{velasco2019knosos} that can be reproduced by the user.
+
+

@@ -1,0 +1,189 @@
+\chapter{Plasma profiles}\label{CHAP_PROF}
+
+This chapter describes how the kinetic profiles are read and processed. This includes calculating thermal velocities, weights for the velocity integral, and normalization constants.
+
+\section{Workflow}
+
+The main loop is contained in file {\ttfamily plasmas.f90} (subroutine {\ttfamily READ\_PLASMAS}), and it takes the following steps:
+
+\begin{itemize}
+\item Read electron density.
+\item Set the impurity density according to the effective charge (assuming 3 species).
+\begin{itemize}
+\item It is checked whether impurities are really trace.
+\end{itemize}
+\item Set the bulk ion density by imposing quasineutrality.
+\item Read the electron and ion temperatures.
+\begin{itemize}
+\item Bulk ions and impurities have the same temperature.
+\end{itemize}
+\item Read the electrostatic potential.
+\item For specific physics studies (if ~\vlink{JPP} or~\vlink{SATAKE}), do some manipulations to the profiles.
+\end{itemize}
+
+Later, in subroutine {\ttfamily DKE\_CONSTANTS}, velocity-dependent quantities are calculated: the source of the drift-kinetic equation, the thermal velocity, the collision frequency, the convolution weight, normalizations...
+
+
+\section{Kinetic profiles}\label{SEC_FILES}
+
+The following kinetic profiles ({\ttfamily filename}) and their derivatives are read at every radial position \vlink{S}:
+
+\begin{itemize}
+\item Electron density: ~~~~~~~~~~~~~{\ttfamily ne} 
+\item Electron temperature:~~~~~~~~{\ttfamily te} 
+\item Ion temperature:~~~~~~~~~~~~~~~{\ttfamily ti} 
+\item Electrostatic potential:~~~~~~~~{\ttfamily ph}
+\end{itemize}
+
+The electron temperature is optional, and $T_e=T_i$ if it is not provided. The electrostatic potential is optional as well; if additionally~\vlink{SOLVE\_AMB} is set to~\false, the radial electric field is taken to be the ion root value, according to the input density and temperature, for ions in the $1/\nu$ regime, see~\vlink{TRIVIAL\_AMB}.
+
+\
+
+The reading is done in subroutine {\ttfamily READ\_PROFILES}, and there are several kind of files (note that the units are different in each case, they are transformed internally to the units used by the code!): 
+\begin{itemize}
+
+  
+\item {\ttfamily //input-prof.txt}
+
+This file contains profiles in the format used by~\TASKTD.
+\begin{itemize}
+\item Line \#2: coefficients of $n_e$ (m$10^{19}\,$m$^{-3}$).
+\item Line \#4: coefficients of $T_i$ (keV).
+\item Line \#6: coefficients of $T_e$ (keV).
+\end{itemize}
+The values of the quantities and their radial derivatives are calculated analitically, using expressions such as $q=\sum_{0\le n\le 10} q_n\rho^n$, with $
+\rho=\sqrt{s}$. The bulk density is taken from quasineutrality (no more than two species are allowed for the moment in this type of calculation).
+
+
+\item {\ttfamily //prof-file.txt}
+
+This file contains profiles in the format used by~\TASKTD~(if you are using~\KNOSOS~from~\TASKTD, this is the file that is read).
+\begin{itemize}
+\item Column \#1: $\rho=\sqrt{s}=\sqrt{\psi/\psi_{LCMS}}$.
+\item Column \#2: quantity $n_e$ (m$^{-3}$).
+\item Column \#3: quantity $T_e$ (keV).
+\item Column \#4: quantity $T_i$ (keV).
+\end{itemize}
+The radial derivatives $\partial_\psi q$ are then calculated at every  radial position with second-order accuracy, and both $q$ and $\partial_\psi q$ are Lagrange-interpolated at the desired radial position. The bulk density is taken from quasineutrality (no more than two species are allowed for the moment in this type of calculation).
+
+
+\item {\ttfamily //profiles.txt}
+
+This file contains profiles in the format used by~\NEOTWO.
+\begin{itemize}
+\item Column \#1: $s=\psi/\psi_{LCMS}$.
+\item Column \#2: quantity $n_i$ (m$^{-3}$).
+\item Column \#3: quantity $n_e$ (m$^{-3}$).
+\item Column \#4: quantity $T_i$ (eV).
+\item Column \#5: quantity $T_e$ (eV).
+\item Column \#6: quantity $-\partial_{\psi_T}\varphi/iota$ (rad/s).
+\end{itemize}
+The radial derivatives $\partial_\psi q$ are then calculated at every  radial position with second-order accuracy, and both $q$ and $\partial_\psi q$ are Lagrange-interpolated at the desired radial position.
+
+
+\item {\ttfamily //profiles\_DR.txt}
+
+This file contains profiles in the format provided by the Doppler Reflectometry team at W7-X.
+\begin{itemize}
+\item Column \#1: $\rho=\sqrt{s}=\sqrt{\psi/\psi_{LCMS}}$.
+\item Column \#2: quantity $n_e$ (m$10^{19}\,$m$^{-3}$).
+\item Column \#3: quantity $T_e$ (keV).
+\item Column \#4: quantity $T_i$ (keV).
+\end{itemize}
+The radial derivatives $\partial_\psi q$ are then calculated at every  radial position with second-order accuracy, and both $q$ and $\partial_\psi q$ are Lagrange-interpolated at the desired radial position.
+
+
+\item {\ttfamily //profiles.d}
+
+This file contains profiles in the format used by~\EUTERPE~and {\ttfamily stella}.
+\begin{itemize}
+\item Column \#1: $s=\psi/\psi_{LCMS}$.
+\item Column \#2: quantity $\partial_s\mathrm{log}T_i$.
+\item Column \#3: quantity $T_i$ (eV).
+\item Column \#4: quantity $\partial_s\mathrm{log}T_e$.
+\item Column \#5: quantity $T_e$ (eV).
+%\item Column \#6: quantity $\partial_s T_z$ (if \vlink{NBB}>2).
+%\item Column \#7: quantity $T_z$.
+\item ...
+%\item Column \#2\vlink{NBB}+2: quantity $\partial_s n_i$.
+%\item Column \#2\vlink{NBB}+3: quantity $n_i$.
+\item Column \#2\vlink{NBB}+4: quantity $\partial_s\mathrm{log}n_e$.
+\item Column \#2\vlink{NBB}+5: quantity $n_e$ (m$^{-3}$).
+%\item Column \#2\vlink{NBB}+6: quantity $\partial_s n_z$ (if \vlink{NBB}>2).
+%\item Column \#2\vlink{NBB}+7: quantity $n_z$.
+\end{itemize}
+Both $q$ and $\partial_\psi q$ are Lagrange-interpolated at the desired radial position. The bulk density is taken from quasineutrality (impurity density is taken from \vlink{ZEFF} and $T_Z=T_i$).
+
+
+\item {\ttfamily //er\_s.dat}
+
+This file contains the radial electric field in the format used by~\EUTERPE.
+\begin{itemize}
+\item Column \#1: $s=\psi/\psi_{LCMS}$.
+\item Column \#2: $E_r$ (V/m).
+\end{itemize}
+$E_r$ is Lagrange-interpolated at the desired radial position. 
+
+
+\item {\ttfamily //filename//prof\_r.d}~~~(e.g. {\ttfamily neprof\_r.d})
+
+This file contains profiles in the format used by CIEMAT routines' {\ttfamily neprof}~\citep{milligen2011bayes} and {\ttfamily teprof} (after one header line, the number of meaningful points is usually 100, and should be smaller than 200). 
+\begin{itemize}
+\item Column \#1: $\rho=\sqrt{s}=\sqrt{\psi/\psi_{LCMS}}$.
+\item Column \#3: quantity $q$.
+\item Column \#5: error in $q$.
+\item Column \#6: $\partial_\rho q$ (except for {\ttfamily ph}, that contains $E_r=-\partial_r\varphi_0$).
+\item Column \#7: error in $\partial_\rho q$.
+\end{itemize}
+Both $q$ and $\partial_\psi q$ are Lagrange-interpolated at the desired radial position.
+
+\item {\ttfamily //filename//\_in.d}~~~(e.g. {\ttfamily ne\_in.d})
+
+The quantities are given just at the desired radial position (after one header line).
+\begin{itemize}
+\item Column \#1: $q$
+\item Column \#2: $\partial_r \log{q}$.
+\end{itemize}
+
+\end{itemize}
+
+If $T_e$ is not provided, $T_e=T_i$ is set. If \vlink{SOLVE\_AMB} is set to~\true, the {\ttfamily ph} files are ignored.
+
+
+
+
+\section{Scan in the plasma parameters}\label{SEC_SCAN_PLASMA}
+
+The {\ttfamily model} namelist allows to modify the kinetic profiles in order to perform an scan (in different runs of \KNOSOS):
+\begin{itemize}
+\item \vlink{FNE}: the density (keeping the normalized radial derivative constant).
+\item \vlink{FTE}: the electron temperature (keeping the normalized radial derivative constant).
+\item \vlink{FTI}: the ion temperature (keeping the normalized radial derivative constant).
+\item \vlink{FDLNE}: the normalized radial derivative of the density (keeping the density constant).
+\item \vlink{FDLTE}: the normalized radial derivative of the electron temperature (keeping electron temperature constant).
+\item \vlink{FDLTI}: the normalized radial derivative of the ion temperature (keeping the ion temperature constant).
+\item \vlink{FER}: the radial electric field.
+\end{itemize}
+
+This is the complete list of changes in all the relevant variables (where the hats correspond to the old values and $*$ denotes multiplication, in Fortran style):
+\begin{eqnarray}
+  n_e&=& \hat{n_e} *\mathrm{FNE}\,,\nonumber\\
+  T_e&=& \hat{T_e} *\mathrm{FTE}\,,\nonumber\\
+  T_i&=& \hat{T_i} *\mathrm{FTI}\,,\nonumber\\
+  \partial_\psi n_e&=& \hat{\partial_\psi n_e} *\mathrm{FNE} *\mathrm{FDLNE}\,,\nonumber\\
+  \partial_\psi T_e&=& \hat{\partial_\psi T_e} *\mathrm{FTE} *\mathrm{FDLTE}\,,\nonumber\\
+  \partial_\psi T_i&=& \hat{\partial_\psi T_i} *\mathrm{FTI} *\mathrm{FDLTI}\,,\nonumber\\
+  E_r&=& \hat{E_r} *\mathrm{FER}\,.
+\end{eqnarray}
+
+
+
+
+
+%\section{\todo{Source profiles}}\label{SEC_SOURCES}
+
+
+\section{Error estimates}\label{SEC_ERROR}
+
+\todo{\KNOSOS~can provide} results with error bars caused by uncertainties in the input quantities (densities and temperatures). It does so by using a Monte Carlo procedure: the same calculation is done \vlink{NERR} times, each time with a different set of input profiles. These are determined by means of a Gaussian random number generator according to their mean values and error bars, as e.g. in~\cite{velasco2011bootstrap}. If no error was read from the inputs (see \S\ref{SEC_FILES}), the value of \vlink{IPERR} is used.
+

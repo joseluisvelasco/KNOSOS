@@ -1,0 +1,86 @@
+\chapter{Introduction}
+
+\KNOSOS~~(KiNetic Orbit-averaging SOlver for Stellarators) is a freely available, open-source code that calculates local neoclassical transport (i.e. transport caused by inhomogeneties of the magnetic field and collisions) in low-collisionality plasmas of three-dimensional magnetic confinement devices. This includes stellarators (helias, heliotrons, quasisymmetric devices, heliacs...) and perturbed tokamaks.
+
+The main difference with respect to other local neoclassical codes is that \KNOSOS~relies on the orbit-averaging technique, which makes it very fast, since it allows to remove one of the coordinates of the problem. The code solves a drift-kinetic equation for each species with two independent variables: the angle $\alpha$ that labels magnetic field lines on a flux-surface and the pitch angle $\lambda$; the radial coordinate $\psi$ and the particle speed $v$ are parameters, and the gyro-angle and the spatial coordinate along the magnetic field line $l$ have been removed by gyro-averaging and orbit-averaging of the equations, respectively. It should be emphasized that, as we will discuss in forthcoming chapters, orbit-averaging does not imply a simplification on the treatment of the magnetic geometry of the stellarator: it can be done rigorously, and the code recovers, for real stellarators and at low collisionalities, the results (radial fluxes, variation of the electrostatic potential along the flux-surface, etc) of local neoclassical codes that do not perform orbit-averaging.
+
+After this short overview, the rest of the manual is organized as follows: chapter~\ref{CHAP_MOT} explains the motivation and scope of this project. Chapter~\ref{CHAP_EQ} presents the equations solved by the current version of \KNOSOS, using methods described in chapter~\ref{CHAP_SOL}. Chapter~\ref{CHAP_INST} contains the instructions to set up the code, and chapter~\ref{CHAP_RUN} shows how to run it. The details are given in the rest of the manual: chapter~\ref{CHAP_INPUT} lists the input files and their variables, chapter~\ref{CHAP_PROF} describes how the plasma profiles are read and processed, and chapter~\ref{CHAP_CONF} does the same thing with the magnetic configuration; chapter~\ref{CHAP_OUTPUT} lists the output files and describes their content. Finally, chapter~\ref{CHAP_EX} shows some examples of simulations that can be reproduced by the user. Chapter~\ref{CHAP_CONC} provides some concluding remarks, and there are two appendices: appendix~\ref{CHAP_HIGHCOL} derives the additional equations that are solved for high-collisionality regimes; appendix~\ref{CHAP_DKES} shows how to use~\DKES~results as input for~\KNOSOS, or how to compare monoenergetic simulations of the two codes.
+
+\
+
+This manual describes ``version 1'' of \KNOSOS~, the one used in~\citep{velasco2019knosos}\footnote{The source code itself has also comments, but they often look like~\href{https://twitter.com/bercut2000/status/1009709520220803072?s=19}{this}.}. We note that the code is still under development.
+\section{Main features}
+
+Below we list the main features of the code, which will be explained in detail in later chapters:
+
+\begin{itemize}
+
+\item \KNOSOS~can read realistic magnetic equilibria in Boozer coordinates, generated e.g. with \VMEC~plus \BOOZERXFORM~or \COTRANS, as well as model magnetic fields.
+
+\item Bounce-averaging, combined with the monoenergetic approximation, reduces the number of variables to 2 (to be compared to 3 in the case of \DKES, 4 in radially local codes such as \EUTERPE~and \SFINCS, and 5 in radially global codes such as~\FORTEC). This makes the code very fast, while retaining the physics necessary to describe important features of neoclassical transport at low collisionalities. 
+
+\item In particular, the magnetic drift tangential to the flux-surface, which gives rise to the superbanana-plateau regime, can be retained, including the effect of the magnetic shear.
+\begin{itemize}
+\item These calculations have been benchmarked against~\todo{\FORTEC}\footnote{\todo{Red color means "to do" or "in progress".}} and analytical expressions.
+\end{itemize}
+
+\item The variation of the electrostatic potential on the flux-surface $\varphi_1$ can be calculated by solving consistently the drift-kinetic and the quasineutrality equations. The computing time is $\sim$1 minute in a single computer.
+\begin{itemize}
+\item These calculations have been benchmarked against~\EUTERPE.
+\end{itemize}
+
+\item The code typically calculates the radial fluxes for given input density and temperature profiles, but it can also provide a set of \textit{monoenergetic} transport coefficients for later use by transport solvers. The computing time is $\sim$seconds in a single computer.
+\begin{itemize}
+\item These calculations have been benchmarked against~\DKES.
+\end{itemize}
+
+\item \KNOSOS~can calculate the effective ripple in the same manner as \NEO~does, but it can also provide figures of merit of neoclassical transport for low-collisionality regimes different than the 1/$\nu$ (namely, the $\sqrt{\nu}$ and \todo{superbanana-plateau} regimes).
+
+\item The calculated fluxes are moments the distribution function, which is explicitly computed and \todo{can be provided} in the output, for its use by e.g. gyrokinetic codes.
+
+\item KNOSOS~has been combined with analytical formulas to provide fast computations of impurity transport in several neoclassical regimes.
+
+\item  {\todo{\KNOSOS~can be used from the~\NEOTRANSP~suite developed at IPP and from from the~\TASKTD~suite developed at NIFS.}}
+
+\end{itemize}
+
+
+\section{Limitations}
+
+\begin{itemize}
+
+\item \KNOSOS~assumes that closed magnetic surfaces exist; magnetic islands and regions of stochastic fields or open field lines cannot be described.
+\begin{itemize}
+\item Regions in which the rotational transform is close to being a (low-order) rational number \todo{may be} numerically hard to converge.
+\end{itemize}
+
+\item The bounce-averaged technique is limited to low collisionalities: if the contribution from the plateau or Pfirsch-Schl\"uter regimes is not negligible, the calculation with~\KNOSOS~will not be accurate. 
+
+\begin{itemize}
+\item The appendices describe semianalytical methods to cover these regimes. 
+\item \KNOSOS~can be used in combination with~\DKES~and then employed to calculate the radial fluxes for arbitrary collisionality correctly including the effect of the tangential magnetic drift.
+\end{itemize}
+
+\item \KNOSOS~is, as most neoclassical codes, radially local: finite-orbit effects (that arise when the size of radial excursions of the particles from the flux surface are large as compared with other radial scales of the problem) cannot be described.
+
+\item \KNOSOS~considers non-negligible but small $\varphi_1$, so that e.g. the bounce points are not altered by it.
+
+\begin{itemize}
+
+\item These effects are typically small if the stellarator is optimized with respect to neoclassical transport.
+
+\end{itemize}
+
+\item Collisions are described by a pitch-angle-scattering collision operator that does not conserve momentum or energy. This is correct for low-collisionality regimes of large aspect-ratio devices.
+
+\item Only the part of the distribution function that is even in the parallel velocity is computed, which means that the parallel flows are not calculated.
+
+
+\end{itemize}
+
+Some of these limitations will be removed in the near future (and you are very welcome to contribute to this!).
+
+
+
+
+
