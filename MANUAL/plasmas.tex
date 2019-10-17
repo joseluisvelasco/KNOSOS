@@ -47,7 +47,7 @@ The reading is done in subroutine {\ttfamily READ\_PROFILES}, and there are seve
 
 This file contains profiles in the format used by~\TASKTD.
 \begin{itemize}
-\item Line \#2: coefficients of $n_e$ (m$10^{19}\,$m$^{-3}$).
+\item Line \#2: coefficients of $n_e$ ($10^{19}\,$m$^{-3}$).
 \item Line \#4: coefficients of $T_i$ (keV).
 \item Line \#6: coefficients of $T_e$ (keV).
 \end{itemize}
@@ -86,11 +86,23 @@ The radial derivatives $\partial_\psi q$ are then calculated at every  radial po
 This file contains profiles in the format provided by the Doppler Reflectometry team at W7-X.
 \begin{itemize}
 \item Column \#1: $\rho=\sqrt{s}=\sqrt{\psi/\psi_{LCMS}}$.
-\item Column \#2: quantity $n_e$ (m$10^{19}\,$m$^{-3}$).
+\item Column \#2: quantity $n_e$ ($10^{19}\,$m$^{-3}$).
 \item Column \#3: quantity $T_e$ (keV).
 \item Column \#4: quantity $T_i$ (keV).
 \end{itemize}
 The radial derivatives $\partial_\psi q$ are then calculated at every  radial position with second-order accuracy, and both $q$ and $\partial_\psi q$ are Lagrange-interpolated at the desired radial position.
+
+\item {\ttfamily //profiles\_neotransp.dat}
+
+This file contains profiles in the format used by \NEOTRANSP.
+\begin{itemize}
+\item Column \#1: $r=a\rho=a\sqrt{s}=a\sqrt{\psi/\psi_{LCMS}}$.
+\item Column \#2: quantity $n_e$ ($10^{19}\,$m$^{-3}$ or $10^{20}\,$m$^{-3}$).
+\item Column \#3: quantity $T_e$ (keV or eV).
+\item Column \#4: quantity $T_i$ (keV or eV).
+\end{itemize}
+In the header, the density columns must be marked {\ttfamily n\_20m3\_X} or {\ttfamily n\_19m3\_X} and the temperature columns {\ttfamily T\_keV\_X} or {\ttfamily T\_eV\_X}, where {\ttfamily X} is a recognised species ({\ttfamily e, H, D}...). The radial derivatives $\partial_\psi q$ are then calculated at every  radial position with second-order accuracy, and both $q$ and $\partial_\psi q$ are Lagrange-interpolated at the desired radial position.
+
 
 
 \item {\ttfamily //profiles.d}

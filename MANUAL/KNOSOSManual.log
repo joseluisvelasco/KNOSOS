@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.8.2)  16 OCT 2019 16:49
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.8.2)  17 OCT 2019 16:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -913,6 +913,14 @@ Overfull \hbox (4.96494pt too wide) in alignment at lines 84--90
  [] [] 
  []
 
+
+Overfull \hbox (38.20377pt too wide) in paragraph at lines 101--102
+[]\T1/cmr/m/n/10.95 using file \T1/cmtt/m/n/10.95 //profiles.d\T1/cmr/m/n/10.95
+ , \T1/cmtt/m/n/10.95 //profiles_DR.txt\T1/cmr/m/n/10.95 , \T1/cmtt/m/n/10.95 /
+/profiles_neotransp.dat\T1/cmr/m/n/10.95 , \T1/cmtt/m/n/10.95 //profiles.txt\T1
+/cmr/m/n/10.95 ,
+ []
+
 [36]
 Overfull \hbox (4.96494pt too wide) in alignment at lines 125--146
  [] [] 
@@ -1589,7 +1597,7 @@ t1095.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/cm-super/sftt1
 200.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/cm-super/sftt144
 0.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/cm-super/sftt2488.
 pfb>
-Output written on KNOSOSManual.pdf (118 pages, 4662127 bytes).
+Output written on KNOSOSManual.pdf (118 pages, 4662728 bytes).
 PDF statistics:
  3840 PDF objects out of 4296 (max. 8388607)
  2892 compressed objects within 29 object streams

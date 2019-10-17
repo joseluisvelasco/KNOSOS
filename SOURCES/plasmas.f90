@@ -188,10 +188,11 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   CHARACTER*13 nametask3d
   CHARACTER*14 nametask3d2
   CHARACTER*15 namedr
+  CHARACTER*22 nameneo
   CHARACTER*10 nameprof
   CHARACTER*7 namepoint
   CHARACTER*200 line
-  REAL*8 rho(ns0),dummy,q_p(ns0),dqdx_p(ns0),dlnqdx_p(ns0),s(ns0),dqdpsi_p(ns0)
+  REAL*8 r(ns0),rho(ns0),dummy,q_p(ns0),dqdx_p(ns0),dlnqdx_p(ns0),s(ns0),dqdpsi_p(ns0)
   REAL*8 sqs,coeff(0:nc-1)
 
   q=-1.0
@@ -346,6 +347,49 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
         dqdpsi=dqdpsi*1.0E3
      END IF
 !     GOTO 1000    
+  END IF
+
+  !neotransp profile format
+  nameneo="profiles_neotransp.dat"
+  OPEN(unit=1,file=nameneo,action='read',iostat=iostat)
+  IF(iostat.NE.0) OPEN(unit=1,file="../"//nameneo,action='read',iostat=iostat)
+  IF(iostat.EQ.0.AND.filename.NE."ph") THEN
+     WRITE(1000+myrank,'(" File ",A10," read")') namedr
+     IF(filename.EQ."ti") THEN
+        nprof=3
+     ELSE IF(filename.EQ."te") THEN
+        nprof=2
+     ELSE IF(filename.EQ."ne") THEN
+        nprof=1
+     END IF
+     READ(1,*) line
+     DO is=1,ns0
+        READ(1,*,iostat=iostat) r(is),(q_p(is),iprof=1,nprof)
+        IF(iostat.NE.0) EXIT
+     END DO
+     ns=is-1
+     CLOSE(1)
+     rho=r/rad_a
+     s=r*r/rad_a/rad_a
+     dqdx_p(1)=(-3*q_p(1)+4*q_p(2)-q_p(3))/(rho(3)-rho(1))
+     DO is=2,ns-1
+        dqdx_p(is)=(q_p(is+1)-q_p(is-1))/(rho(is+1)-rho(is-1))
+     END DO
+     dqdx_p(ns)=(3*q_p(ns)-4*q_p(ns-1)+q_p(ns-2))/(rho(3)-rho(1))
+     dqdpsi_p=dqdx_p/(2.*SQRT(s0)*atorflux)  !x=rho=r/a
+     !Interpolate at s0
+     CALL LAGRANGE(s,     q_p,ns,s0,     q,MIN(ns,3))
+     CALL LAGRANGE(s,dqdpsi_p,ns,s0,dqdpsi,MIN(ns,3))    
+     IF(filename.EQ."ne".AND.(INDEX(line, "n_20m3").EQ.0)) THEN
+        q     =q     *10.      !Density read in 10{^20}m^{-3}
+        dqdpsi=dqdpsi*10.
+     ELSE IF(filename.EQ."te".AND.(INDEX(line, "keV_e").EQ.0).OR.&
+          &  filename.EQ."ti".AND.(INDEX(line, "keV_H").EQ.0).OR.&
+          &  filename.EQ."ti".AND.(INDEX(line, "keV_D").EQ.0)) THEN
+        q     =q     *1.0E3    !Temperatures read in keV
+        dqdpsi=dqdpsi*1.0E3
+     END IF
+     !     GOTO 1000    
   END IF
 
   !EUTERPE profile format
