@@ -1,0 +1,26 @@
+--------------------------------------------
+Prologue Args:
+
+Job ID: 12564094.eulmgr.ciemat.es
+User ID: u6156
+Group ID: fusion
+--------------------------------------------
+LOG/
+LOG/fort.10000
+LOG/fort.1300
+LOG/fort.1400
+LOG/fort.1500
+LOG/fort.200
+
+--------------------------------------------
+Epilogue Args:
+
+Job Name :  w7x/KNOSOS+DKES
+Host/s:           eul1408.ciemat.es
+Elapsed(Wall)time:00:21:17
+Memory:           5328kb
+Virtual memory:   67984kb
+Job submitted at: Tue Jul 23 18:57:08
+Job started at:   Tue Jul 23 18:57:29
+Job ended at:     Tue Jul 23 19:18:46
+--------------------------------------------

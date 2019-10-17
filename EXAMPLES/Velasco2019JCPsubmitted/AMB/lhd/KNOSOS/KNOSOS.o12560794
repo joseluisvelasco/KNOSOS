@@ -1,0 +1,26 @@
+--------------------------------------------
+Prologue Args:
+
+Job ID: 12560794.eulmgr.ciemat.es
+User ID: u6156
+Group ID: fusion
+--------------------------------------------
+LOG/
+LOG/fort.10000
+LOG/fort.1300
+LOG/fort.1400
+LOG/fort.1500
+LOG/fort.200
+
+--------------------------------------------
+Epilogue Args:
+
+Job Name :  lhd/KNOSOS
+Host/s:           eul1411.ciemat.es
+Elapsed(Wall)time:00:31:10
+Memory:           5328kb
+Virtual memory:   67984kb
+Job submitted at: Tue Jul 23 15:55:03
+Job started at:   Tue Jul 23 15:56:17
+Job ended at:     Tue Jul 23 16:27:27
+--------------------------------------------

@@ -1,0 +1,1157 @@
+ File "input.parameters" found
+ File "input.model" found
+ &MODEL
+ CALC_DB = T,
+ ONLY_DB = T,
+ INC_EXB = T,
+ TANG_VM = F,
+ CLASSICAL       = T,
+ ANISOTROPY      = F,
+ FACT_CON        =  -3.00000000000000     ,
+ SOLVE_AMB       = F,
+ SOLVE_QN        = F,
+ TRIVIAL_QN      = F,
+ D_AND_V =           5,
+ COMPARE_MODELS  = F,
+ FN      =   1.00000000000000     ,
+ FI      =   1.00000000000000     ,
+ FS      =  0.000000000000000E+000,
+ FP      =   1.00000000000000     ,
+ FE      =   1.00000000000000     ,
+ FR      =   1.00000000000000     ,
+ FB      =   1.00000000000000     ,
+ TASK3D  = F,
+ SATAKE  = F,
+ ANA_NTV = F,
+ JPP     = F
+ /
+ &PARAMETERS
+ GEN_FLAG        = 4*F, T, 5*F,
+ DEBUG   = F,
+ TIME    = T,
+ I0      =          -1,
+ PLOTG   = F,
+ USE_B1  = F,
+ USE_B0PB1       = F,
+ REMOVE_DIV      = F,
+ DELTA   = T,
+ FAST_AMB        = F,
+ MLAMBDA =         128,
+ MAL     =          32,
+ TRUNCATE_B      =        -200,
+ PREC_B  =  9.999999747378752E-006,
+ PREC_EXTR       =  1.000000011686097E-007,
+ PREC_BINT       =  5.000000074505806E-002,
+ PREC_DQDV       =  5.000000074505806E-002,
+ PREC_INTV       =  9.999999776482582E-003,
+ NEFIELD =           9,
+ EFIELD  =  0.000000000000000E+000,  9.999999747378752E-006,  2.999999924213625E-005,  9.999999747378752E-005,
+   3.000000142492354E-004,  1.000000047497451E-003,  3.000000026077032E-003,  9.999999776482582E-003,  2.999999932944775E-002,
+ NCMUL   =          18,
+ CMUL    =   300.000000000000     ,   100.000000000000     ,   30.0000000000000     ,   10.0000000000000     ,
+    3.00000000000000     ,   1.00000000000000     ,  0.300000011920929     ,  0.100000001490116     ,  2.999999932944775E-002,
+   9.999999776482582E-003,  3.000000026077032E-003,  1.000000047497451E-003,  3.000000142492354E-004,  9.999999747378752E-005,
+   2.999999924213625E-005,  9.999999747378752E-006,  3.000000106112566E-006,  9.999999974752427E-007,
+ NCMAG   =           1,
+ CMAG    =  0.000000000000000E+000,
+ NER     =          21,
+ ERMIN   =   20.0000000000000     ,
+ ERMAX   =  -20.0000000000000     ,
+ ERACC   =  0.100000001490116     ,
+ NERR    =           1,
+ IPERR   =  -1.00000000000000     
+ /
+ &SURFACES
+ NS      =           1,
+ S       =   1.00000000000000     , 140*0.000000000000000E+000  ,
+ DIRDB   = ./                                                                                                  ,
+ DIRS    = ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./ 
+     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./
+      ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     .
+ /     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     
+ ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./    
+  ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./   
+   ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     ./  
+    ./     ./     ./     ./     ./     ./     ./     ./     ./     ./     
+ /
+ &SPECIES
+ NBB     =           2,
+ ZB      =  -1.00000000000000     ,   1.00000000000000     , 9*0.000000000000000E+000  ,
+ AB      =  5.485799047164619E-004,   1.00730001926422     , 9*0.000000000000000E+000  ,
+ REGB    =          -2,           3, 9*0,
+ ZEFF    =  2.710849575567359E-312
+ /
+ &OTHERS
+ QN      = F,
+ TRACE_IMP       = F,
+ PLATEAU_OR_PS   = F,
+ USE_B0  = F,
+ NTV     = F,
+ FORCE_ZEROPHI1  = F,
+ IMP1NU  = F,
+ CENTERED_ALPHA  = F,
+ CLOSEST_LAMBDA  = T,
+ CLOSEST_LAMBDA1 = T
+ /
+ File "ddkes2.data" found
+ Automatically truncating spectrum of magnetic field strength from  (nmax,mmax)=( 36,  8) to (20, 7)
+ Reading DKES output in folder 
+ ././                                                                           
+                      
+ No DKES output found
+ Calculating PS
+ Calculating PLATEAU
+ Calculating low collisionality regimes F
+Time in routine FIND_WELLS                    . Total:      0.020 Average:        NaN. Iterations:      1
+ Calculating a total of   207 regions found following     3 lines
+Time in routine FIND_WELLS                    . Total:      0.040 Average:      0.020. Iterations:      2
+ Calculating a total of   399 regions found following     6 lines
+Time in routine FIND_WELLS                    . Total:      0.070 Average:      0.025. Iterations:      3
+ Calculating a total of   787 regions found following    12 lines
+Time in routine FIND_WELLS                    . Total:      0.130 Average:      0.037. Iterations:      4
+ Calculating a total of  1528 regions found following    24 lines
+Time in routine CHARACTERIZE_WELLS            . Total:      0.420 Average:        NaN. Iterations:      1
+ Angular grid has size   59 in alpha and   32 in l.  Maximum helicity in B is   15
+Time in routine CREATE_ANGULAR_GRID           . Total:      0.000 Average:        NaN. Iterations:      1
+ Velocity grid has size  128 in lambda
+Time in routine CREATE_LAMBDA_GRID            . Total:      0.000 Average:        NaN. Iterations:      1
+ Global grid   9907 points
+Time in routine LABEL_GRIDPOINTS              . Total:      0.020 Average:        NaN. Iterations:      1
+Time in routine FIND_LAMBDA_NEIGHBOURS        . Total:      0.150 Average:        NaN. Iterations:      1
+Time in routine COEFFICIENTS_DKE              . Total:      2.480 Average:        NaN. Iterations:      1
+Time in routine FIND_ALPHA_NEIGHBOURS         . Total:      0.770 Average:        NaN. Iterations:      1
+Time in routine INIT_LINEAR_PROBLEM           . Total:      0.010 Average:        NaN. Iterations:      1
+Time in routine FILL_MATRIX                   . Total:      0.580 Average:        NaN. Iterations:      1
+Time in routine INVERT_MATRIX                 . Total:      0.050 Average:        NaN. Iterations:      1
+Time in routine INTEGRATE_G                   . Total:      0.000 Average:        NaN. Iterations:      1
+Time in routine CALC_LOW_COLLISIONALITY       . Total:      5.590 Average:        NaN. Iterations:      1
+ CMUL    3.00000E+02
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+02
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+01
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+01
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+00
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+00
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E-01
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E-01
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating PLATEAU
+ CMUL    3.00000E-02
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes F
+Time in routine FIND_WELLS                    . Total:      0.150 Average:      0.032. Iterations:      5
+ Calculating a total of   207 regions found following     3 lines
+Time in routine FIND_WELLS                    . Total:      0.170 Average:      0.030. Iterations:      6
+ Calculating a total of   399 regions found following     6 lines
+Time in routine FIND_WELLS                    . Total:      0.200 Average:      0.030. Iterations:      7
+ Calculating a total of   787 regions found following    12 lines
+Time in routine FIND_WELLS                    . Total:      0.260 Average:      0.034. Iterations:      8
+ Calculating a total of  1528 regions found following    24 lines
+Time in routine CHARACTERIZE_WELLS            . Total:      0.740 Average:      0.320. Iterations:      2
+ Angular grid has size   59 in alpha and   32 in l.  Maximum helicity in B is   15
+Time in routine CREATE_ANGULAR_GRID           . Total:      0.010 Average:      0.010. Iterations:      2
+ Velocity grid has size  128 in lambda
+Time in routine CREATE_LAMBDA_GRID            . Total:      0.000 Average:      0.000. Iterations:      2
+ Global grid   9907 points
+Time in routine LABEL_GRIDPOINTS              . Total:      0.040 Average:      0.020. Iterations:      2
+Time in routine FIND_LAMBDA_NEIGHBOURS        . Total:      0.290 Average:      0.140. Iterations:      2
+Time in routine COEFFICIENTS_DKE              . Total:      4.980 Average:      2.500. Iterations:      2
+Time in routine FIND_ALPHA_NEIGHBOURS         . Total:      1.540 Average:      0.770. Iterations:      2
+Time in routine INIT_LINEAR_PROBLEM           . Total:      0.010 Average:      0.000. Iterations:      2
+Time in routine FILL_MATRIX                   . Total:      1.150 Average:      0.570. Iterations:      2
+Time in routine INVERT_MATRIX                 . Total:      0.100 Average:      0.050. Iterations:      2
+Time in routine INTEGRATE_G                   . Total:      0.000 Average:      0.000. Iterations:      2
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     11.080 Average:      5.490. Iterations:      2
+ CMUL    1.00000E-02
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      1.720 Average:      0.570. Iterations:      3
+Time in routine INVERT_MATRIX                 . Total:      0.150 Average:      0.050. Iterations:      3
+Time in routine INTEGRATE_G                   . Total:      0.000 Average:      0.000. Iterations:      3
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     11.700 Average:      3.055. Iterations:      3
+ CMUL    3.00000E-03
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      2.280 Average:      0.567. Iterations:      4
+Time in routine INVERT_MATRIX                 . Total:      0.200 Average:      0.050. Iterations:      4
+Time in routine INTEGRATE_G                   . Total:      0.000 Average:      0.000. Iterations:      4
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     12.310 Average:      2.240. Iterations:      4
+ CMUL    1.00000E-03
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      2.860 Average:      0.570. Iterations:      5
+Time in routine INVERT_MATRIX                 . Total:      0.250 Average:      0.050. Iterations:      5
+Time in routine INTEGRATE_G                   . Total:      0.010 Average:      0.003. Iterations:      5
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     12.950 Average:      1.840. Iterations:      5
+ CMUL    3.00000E-04
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      3.430 Average:      0.570. Iterations:      6
+Time in routine INVERT_MATRIX                 . Total:      0.290 Average:      0.048. Iterations:      6
+Time in routine INTEGRATE_G                   . Total:      0.020 Average:      0.004. Iterations:      6
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     13.570 Average:      1.596. Iterations:      6
+ CMUL    1.00000E-04
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      4.000 Average:      0.570. Iterations:      7
+Time in routine INVERT_MATRIX                 . Total:      0.340 Average:      0.048. Iterations:      7
+Time in routine INTEGRATE_G                   . Total:      0.030 Average:      0.005. Iterations:      7
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     14.200 Average:      1.435. Iterations:      7
+ CMUL    3.00000E-05
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      4.560 Average:      0.569. Iterations:      8
+Time in routine INVERT_MATRIX                 . Total:      0.390 Average:      0.049. Iterations:      8
+Time in routine INTEGRATE_G                   . Total:      0.040 Average:      0.006. Iterations:      8
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     14.820 Average:      1.319. Iterations:      8
+ CMUL    1.00000E-05
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      5.130 Average:      0.569. Iterations:      9
+Time in routine INVERT_MATRIX                 . Total:      0.440 Average:      0.049. Iterations:      9
+Time in routine INTEGRATE_G                   . Total:      0.040 Average:      0.005. Iterations:      9
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     15.440 Average:      1.231. Iterations:      9
+ CMUL    3.00000E-06
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      5.700 Average:      0.569. Iterations:     10
+Time in routine INVERT_MATRIX                 . Total:      0.490 Average:      0.049. Iterations:     10
+Time in routine INTEGRATE_G                   . Total:      0.050 Average:      0.006. Iterations:     10
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     16.070 Average:      1.164. Iterations:     10
+ CMUL    1.00000E-06
+ EFIELD  0.00000E+00
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:      6.270 Average:      0.569. Iterations:     11
+Time in routine INVERT_MATRIX                 . Total:      0.530 Average:      0.048. Iterations:     11
+Time in routine INTEGRATE_G                   . Total:      0.060 Average:      0.006. Iterations:     11
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     16.690 Average:      1.110. Iterations:     11
+ CMUL    3.00000E+02
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+02
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+01
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+01
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+00
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+00
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E-01
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E-01
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating PLATEAU
+ CMUL    3.00000E-02
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     11.940 Average:      1.033. Iterations:     12
+Time in routine INVERT_MATRIX                 . Total:      0.580 Average:      0.048. Iterations:     12
+Time in routine INTEGRATE_G                   . Total:      0.060 Average:      0.005. Iterations:     12
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     22.410 Average:      1.529. Iterations:     12
+ CMUL    1.00000E-02
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     17.730 Average:      1.429. Iterations:     13
+Time in routine INVERT_MATRIX                 . Total:      0.620 Average:      0.047. Iterations:     13
+Time in routine INTEGRATE_G                   . Total:      0.070 Average:      0.006. Iterations:     13
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     28.250 Average:      1.888. Iterations:     13
+ CMUL    3.00000E-03
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     23.510 Average:      1.764. Iterations:     14
+Time in routine INVERT_MATRIX                 . Total:      0.670 Average:      0.048. Iterations:     14
+Time in routine INTEGRATE_G                   . Total:      0.080 Average:      0.006. Iterations:     14
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     34.090 Average:      2.192. Iterations:     14
+ CMUL    1.00000E-03
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     29.300 Average:      2.051. Iterations:     15
+Time in routine INVERT_MATRIX                 . Total:      0.720 Average:      0.048. Iterations:     15
+Time in routine INTEGRATE_G                   . Total:      0.080 Average:      0.006. Iterations:     15
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     39.930 Average:      2.453. Iterations:     15
+ CMUL    3.00000E-04
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     35.130 Average:      2.303. Iterations:     16
+Time in routine INVERT_MATRIX                 . Total:      0.760 Average:      0.047. Iterations:     16
+Time in routine INTEGRATE_G                   . Total:      0.090 Average:      0.006. Iterations:     16
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     45.810 Average:      2.681. Iterations:     16
+ CMUL    1.00000E-04
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     41.040 Average:      2.529. Iterations:     17
+Time in routine INVERT_MATRIX                 . Total:      0.810 Average:      0.047. Iterations:     17
+Time in routine INTEGRATE_G                   . Total:      0.090 Average:      0.006. Iterations:     17
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     51.770 Average:      2.886. Iterations:     17
+ CMUL    3.00000E-05
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     46.940 Average:      2.727. Iterations:     18
+Time in routine INVERT_MATRIX                 . Total:      0.850 Average:      0.047. Iterations:     18
+Time in routine INTEGRATE_G                   . Total:      0.100 Average:      0.006. Iterations:     18
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     57.720 Average:      3.066. Iterations:     18
+ CMUL    1.00000E-05
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     52.740 Average:      2.898. Iterations:     19
+Time in routine INVERT_MATRIX                 . Total:      0.900 Average:      0.047. Iterations:     19
+Time in routine INTEGRATE_G                   . Total:      0.110 Average:      0.006. Iterations:     19
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     63.580 Average:      3.222. Iterations:     19
+ CMUL    3.00000E-06
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     58.430 Average:      3.045. Iterations:     20
+Time in routine INVERT_MATRIX                 . Total:      0.950 Average:      0.047. Iterations:     20
+Time in routine INTEGRATE_G                   . Total:      0.110 Average:      0.006. Iterations:     20
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     69.320 Average:      3.354. Iterations:     20
+ CMUL    1.00000E-06
+ EFIELD  1.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     63.970 Average:      3.170. Iterations:     21
+Time in routine INVERT_MATRIX                 . Total:      0.990 Average:      0.047. Iterations:     21
+Time in routine INTEGRATE_G                   . Total:      0.120 Average:      0.006. Iterations:     21
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     74.910 Average:      3.466. Iterations:     21
+ CMUL    3.00000E+02
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+02
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+01
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+01
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+00
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+00
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E-01
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E-01
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating PLATEAU
+ CMUL    3.00000E-02
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     69.510 Average:      3.282. Iterations:     22
+Time in routine INVERT_MATRIX                 . Total:      1.040 Average:      0.047. Iterations:     22
+Time in routine INTEGRATE_G                   . Total:      0.120 Average:      0.006. Iterations:     22
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     80.500 Average:      3.567. Iterations:     22
+ CMUL    1.00000E-02
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     74.960 Average:      3.381. Iterations:     23
+Time in routine INVERT_MATRIX                 . Total:      1.090 Average:      0.047. Iterations:     23
+Time in routine INTEGRATE_G                   . Total:      0.120 Average:      0.005. Iterations:     23
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     86.000 Average:      3.655. Iterations:     23
+ CMUL    3.00000E-03
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     80.400 Average:      3.470. Iterations:     24
+Time in routine INVERT_MATRIX                 . Total:      1.140 Average:      0.047. Iterations:     24
+Time in routine INTEGRATE_G                   . Total:      0.130 Average:      0.006. Iterations:     24
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     91.500 Average:      3.735. Iterations:     24
+ CMUL    1.00000E-03
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     85.960 Average:      3.558. Iterations:     25
+Time in routine INVERT_MATRIX                 . Total:      1.190 Average:      0.047. Iterations:     25
+Time in routine INTEGRATE_G                   . Total:      0.130 Average:      0.005. Iterations:     25
+Time in routine CALC_LOW_COLLISIONALITY       . Total:     97.110 Average:      3.813. Iterations:     25
+ CMUL    3.00000E-04
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     91.610 Average:      3.641. Iterations:     26
+Time in routine INVERT_MATRIX                 . Total:      1.240 Average:      0.048. Iterations:     26
+Time in routine INTEGRATE_G                   . Total:      0.130 Average:      0.005. Iterations:     26
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    102.810 Average:      3.889. Iterations:     26
+ CMUL    1.00000E-04
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:     97.160 Average:      3.715. Iterations:     27
+Time in routine INVERT_MATRIX                 . Total:      1.290 Average:      0.048. Iterations:     27
+Time in routine INTEGRATE_G                   . Total:      0.140 Average:      0.005. Iterations:     27
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    108.420 Average:      3.955. Iterations:     27
+ CMUL    3.00000E-05
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    102.870 Average:      3.789. Iterations:     28
+Time in routine INVERT_MATRIX                 . Total:      1.340 Average:      0.048. Iterations:     28
+Time in routine INTEGRATE_G                   . Total:      0.140 Average:      0.005. Iterations:     28
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    114.180 Average:      4.022. Iterations:     28
+ CMUL    1.00000E-05
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    108.520 Average:      3.855. Iterations:     29
+Time in routine INVERT_MATRIX                 . Total:      1.390 Average:      0.048. Iterations:     29
+Time in routine INTEGRATE_G                   . Total:      0.140 Average:      0.005. Iterations:     29
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    119.880 Average:      4.082. Iterations:     29
+ CMUL    3.00000E-06
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    114.300 Average:      3.921. Iterations:     30
+Time in routine INVERT_MATRIX                 . Total:      1.440 Average:      0.048. Iterations:     30
+Time in routine INTEGRATE_G                   . Total:      0.140 Average:      0.005. Iterations:     30
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    125.710 Average:      4.142. Iterations:     30
+ CMUL    1.00000E-06
+ EFIELD  3.00000E-05
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    120.080 Average:      3.983. Iterations:     31
+Time in routine INVERT_MATRIX                 . Total:      1.480 Average:      0.048. Iterations:     31
+Time in routine INTEGRATE_G                   . Total:      0.150 Average:      0.005. Iterations:     31
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    131.540 Average:      4.198. Iterations:     31
+ CMUL    3.00000E+02
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+02
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+01
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+01
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+00
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+00
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E-01
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E-01
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating PLATEAU
+ CMUL    3.00000E-02
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    125.840 Average:      4.041. Iterations:     32
+Time in routine INVERT_MATRIX                 . Total:      1.520 Average:      0.047. Iterations:     32
+Time in routine INTEGRATE_G                   . Total:      0.160 Average:      0.005. Iterations:     32
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    137.350 Average:      4.250. Iterations:     32
+ CMUL    1.00000E-02
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    131.600 Average:      4.094. Iterations:     33
+Time in routine INVERT_MATRIX                 . Total:      1.570 Average:      0.047. Iterations:     33
+Time in routine INTEGRATE_G                   . Total:      0.160 Average:      0.005. Iterations:     33
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    143.160 Average:      4.299. Iterations:     33
+ CMUL    3.00000E-03
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    137.420 Average:      4.147. Iterations:     34
+Time in routine INVERT_MATRIX                 . Total:      1.610 Average:      0.047. Iterations:     34
+Time in routine INTEGRATE_G                   . Total:      0.170 Average:      0.005. Iterations:     34
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    149.030 Average:      4.347. Iterations:     34
+ CMUL    1.00000E-03
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    143.270 Average:      4.197. Iterations:     35
+Time in routine INVERT_MATRIX                 . Total:      1.660 Average:      0.047. Iterations:     35
+Time in routine INTEGRATE_G                   . Total:      0.170 Average:      0.005. Iterations:     35
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    154.930 Average:      4.392. Iterations:     35
+ CMUL    3.00000E-04
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    149.190 Average:      4.246. Iterations:     36
+Time in routine INVERT_MATRIX                 . Total:      1.710 Average:      0.047. Iterations:     36
+Time in routine INTEGRATE_G                   . Total:      0.170 Average:      0.005. Iterations:     36
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    160.900 Average:      4.437. Iterations:     36
+ CMUL    1.00000E-04
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    155.000 Average:      4.289. Iterations:     37
+Time in routine INVERT_MATRIX                 . Total:      1.760 Average:      0.047. Iterations:     37
+Time in routine INTEGRATE_G                   . Total:      0.180 Average:      0.005. Iterations:     37
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    166.770 Average:      4.477. Iterations:     37
+ CMUL    3.00000E-05
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    160.740 Average:      4.329. Iterations:     38
+Time in routine INVERT_MATRIX                 . Total:      1.810 Average:      0.048. Iterations:     38
+Time in routine INTEGRATE_G                   . Total:      0.180 Average:      0.005. Iterations:     38
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    172.560 Average:      4.513. Iterations:     38
+ CMUL    1.00000E-05
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    166.420 Average:      4.364. Iterations:     39
+Time in routine INVERT_MATRIX                 . Total:      1.860 Average:      0.048. Iterations:     39
+Time in routine INTEGRATE_G                   . Total:      0.180 Average:      0.005. Iterations:     39
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    178.290 Average:      4.545. Iterations:     39
+ CMUL    3.00000E-06
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    171.980 Average:      4.395. Iterations:     40
+Time in routine INVERT_MATRIX                 . Total:      1.900 Average:      0.047. Iterations:     40
+Time in routine INTEGRATE_G                   . Total:      0.190 Average:      0.005. Iterations:     40
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    183.900 Average:      4.572. Iterations:     40
+ CMUL    1.00000E-06
+ EFIELD  1.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    177.400 Average:      4.421. Iterations:     41
+Time in routine INVERT_MATRIX                 . Total:      1.940 Average:      0.047. Iterations:     41
+Time in routine INTEGRATE_G                   . Total:      0.200 Average:      0.005. Iterations:     41
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    189.370 Average:      4.594. Iterations:     41
+ CMUL    3.00000E+02
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+02
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+01
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+01
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+00
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+00
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E-01
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E-01
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating PLATEAU
+ CMUL    3.00000E-02
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    182.830 Average:      4.445. Iterations:     42
+Time in routine INVERT_MATRIX                 . Total:      1.990 Average:      0.047. Iterations:     42
+Time in routine INTEGRATE_G                   . Total:      0.200 Average:      0.005. Iterations:     42
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    194.850 Average:      4.616. Iterations:     42
+ CMUL    1.00000E-02
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    188.380 Average:      4.471. Iterations:     43
+Time in routine INVERT_MATRIX                 . Total:      2.040 Average:      0.047. Iterations:     43
+Time in routine INTEGRATE_G                   . Total:      0.200 Average:      0.005. Iterations:     43
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    200.450 Average:      4.640. Iterations:     43
+ CMUL    3.00000E-03
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    193.990 Average:      4.498. Iterations:     44
+Time in routine INVERT_MATRIX                 . Total:      2.090 Average:      0.047. Iterations:     44
+Time in routine INTEGRATE_G                   . Total:      0.200 Average:      0.005. Iterations:     44
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    206.110 Average:      4.663. Iterations:     44
+ CMUL    1.00000E-03
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    199.660 Average:      4.525. Iterations:     45
+Time in routine INVERT_MATRIX                 . Total:      2.140 Average:      0.048. Iterations:     45
+Time in routine INTEGRATE_G                   . Total:      0.210 Average:      0.005. Iterations:     45
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    211.840 Average:      4.687. Iterations:     45
+ CMUL    3.00000E-04
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    205.370 Average:      4.551. Iterations:     46
+Time in routine INVERT_MATRIX                 . Total:      2.190 Average:      0.048. Iterations:     46
+Time in routine INTEGRATE_G                   . Total:      0.210 Average:      0.005. Iterations:     46
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    217.600 Average:      4.711. Iterations:     46
+ CMUL    1.00000E-04
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    210.940 Average:      4.573. Iterations:     47
+Time in routine INVERT_MATRIX                 . Total:      2.230 Average:      0.047. Iterations:     47
+Time in routine INTEGRATE_G                   . Total:      0.220 Average:      0.005. Iterations:     47
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    223.220 Average:      4.731. Iterations:     47
+ CMUL    3.00000E-05
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    216.560 Average:      4.595. Iterations:     48
+Time in routine INVERT_MATRIX                 . Total:      2.280 Average:      0.047. Iterations:     48
+Time in routine INTEGRATE_G                   . Total:      0.220 Average:      0.005. Iterations:     48
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    228.890 Average:      4.751. Iterations:     48
+ CMUL    1.00000E-05
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    222.350 Average:      4.620. Iterations:     49
+Time in routine INVERT_MATRIX                 . Total:      2.330 Average:      0.048. Iterations:     49
+Time in routine INTEGRATE_G                   . Total:      0.220 Average:      0.005. Iterations:     49
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    234.730 Average:      4.774. Iterations:     49
+ CMUL    3.00000E-06
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    228.130 Average:      4.644. Iterations:     50
+Time in routine INVERT_MATRIX                 . Total:      2.380 Average:      0.048. Iterations:     50
+Time in routine INTEGRATE_G                   . Total:      0.220 Average:      0.004. Iterations:     50
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    240.560 Average:      4.795. Iterations:     50
+ CMUL    1.00000E-06
+ EFIELD  3.00000E-04
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    233.950 Average:      4.667. Iterations:     51
+Time in routine INVERT_MATRIX                 . Total:      2.430 Average:      0.048. Iterations:     51
+Time in routine INTEGRATE_G                   . Total:      0.230 Average:      0.005. Iterations:     51
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    246.440 Average:      4.817. Iterations:     51
+ CMUL    3.00000E+02
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+02
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+01
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+01
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+00
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+00
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E-01
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E-01
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating PLATEAU
+ CMUL    3.00000E-02
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    239.760 Average:      4.690. Iterations:     52
+Time in routine INVERT_MATRIX                 . Total:      2.470 Average:      0.047. Iterations:     52
+Time in routine INTEGRATE_G                   . Total:      0.240 Average:      0.005. Iterations:     52
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    252.300 Average:      4.837. Iterations:     52
+ CMUL    1.00000E-02
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    245.580 Average:      4.712. Iterations:     53
+Time in routine INVERT_MATRIX                 . Total:      2.520 Average:      0.047. Iterations:     53
+Time in routine INTEGRATE_G                   . Total:      0.250 Average:      0.005. Iterations:     53
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    258.180 Average:      4.857. Iterations:     53
+ CMUL    3.00000E-03
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    251.420 Average:      4.733. Iterations:     54
+Time in routine INVERT_MATRIX                 . Total:      2.570 Average:      0.048. Iterations:     54
+Time in routine INTEGRATE_G                   . Total:      0.250 Average:      0.005. Iterations:     54
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    264.070 Average:      4.877. Iterations:     54
+ CMUL    1.00000E-03
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    257.280 Average:      4.754. Iterations:     55
+Time in routine INVERT_MATRIX                 . Total:      2.610 Average:      0.047. Iterations:     55
+Time in routine INTEGRATE_G                   . Total:      0.260 Average:      0.005. Iterations:     55
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    269.980 Average:      4.896. Iterations:     55
+ CMUL    3.00000E-04
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    262.980 Average:      4.771. Iterations:     56
+Time in routine INVERT_MATRIX                 . Total:      2.660 Average:      0.047. Iterations:     56
+Time in routine INTEGRATE_G                   . Total:      0.260 Average:      0.005. Iterations:     56
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    275.730 Average:      4.912. Iterations:     56
+ CMUL    1.00000E-04
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    268.640 Average:      4.787. Iterations:     57
+Time in routine INVERT_MATRIX                 . Total:      2.710 Average:      0.048. Iterations:     57
+Time in routine INTEGRATE_G                   . Total:      0.260 Average:      0.005. Iterations:     57
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    281.440 Average:      4.926. Iterations:     57
+ CMUL    3.00000E-05
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    274.200 Average:      4.800. Iterations:     58
+Time in routine INVERT_MATRIX                 . Total:      2.750 Average:      0.047. Iterations:     58
+Time in routine INTEGRATE_G                   . Total:      0.260 Average:      0.005. Iterations:     58
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    287.050 Average:      4.938. Iterations:     58
+ CMUL    1.00000E-05
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    279.620 Average:      4.811. Iterations:     59
+Time in routine INVERT_MATRIX                 . Total:      2.800 Average:      0.047. Iterations:     59
+Time in routine INTEGRATE_G                   . Total:      0.260 Average:      0.004. Iterations:     59
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    292.520 Average:      4.947. Iterations:     59
+ CMUL    3.00000E-06
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    285.070 Average:      4.822. Iterations:     60
+Time in routine INVERT_MATRIX                 . Total:      2.850 Average:      0.047. Iterations:     60
+Time in routine INTEGRATE_G                   . Total:      0.260 Average:      0.004. Iterations:     60
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    298.020 Average:      4.956. Iterations:     60
+ CMUL    1.00000E-06
+ EFIELD  1.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    290.540 Average:      4.833. Iterations:     61
+Time in routine INVERT_MATRIX                 . Total:      2.890 Average:      0.047. Iterations:     61
+Time in routine INTEGRATE_G                   . Total:      0.270 Average:      0.004. Iterations:     61
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    303.540 Average:      4.966. Iterations:     61
+ CMUL    3.00000E+02
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+02
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+01
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+01
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+00
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+00
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E-01
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E-01
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating PLATEAU
+ CMUL    3.00000E-02
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    296.190 Average:      4.846. Iterations:     62
+Time in routine INVERT_MATRIX                 . Total:      2.940 Average:      0.047. Iterations:     62
+Time in routine INTEGRATE_G                   . Total:      0.270 Average:      0.004. Iterations:     62
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    309.240 Average:      4.978. Iterations:     62
+ CMUL    1.00000E-02
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    301.930 Average:      4.860. Iterations:     63
+Time in routine INVERT_MATRIX                 . Total:      2.990 Average:      0.047. Iterations:     63
+Time in routine INTEGRATE_G                   . Total:      0.270 Average:      0.004. Iterations:     63
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    315.030 Average:      4.991. Iterations:     63
+ CMUL    3.00000E-03
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    307.680 Average:      4.875. Iterations:     64
+Time in routine INVERT_MATRIX                 . Total:      3.040 Average:      0.047. Iterations:     64
+Time in routine INTEGRATE_G                   . Total:      0.270 Average:      0.004. Iterations:     64
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    320.830 Average:      5.004. Iterations:     64
+ CMUL    1.00000E-03
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    313.310 Average:      4.886. Iterations:     65
+Time in routine INVERT_MATRIX                 . Total:      3.090 Average:      0.047. Iterations:     65
+Time in routine INTEGRATE_G                   . Total:      0.280 Average:      0.004. Iterations:     65
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    326.520 Average:      5.015. Iterations:     65
+ CMUL    3.00000E-04
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    318.980 Average:      4.898. Iterations:     66
+Time in routine INVERT_MATRIX                 . Total:      3.140 Average:      0.048. Iterations:     66
+Time in routine INTEGRATE_G                   . Total:      0.290 Average:      0.004. Iterations:     66
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    332.250 Average:      5.026. Iterations:     66
+ CMUL    1.00000E-04
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    324.730 Average:      4.911. Iterations:     67
+Time in routine INVERT_MATRIX                 . Total:      3.190 Average:      0.048. Iterations:     67
+Time in routine INTEGRATE_G                   . Total:      0.290 Average:      0.004. Iterations:     67
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    338.050 Average:      5.037. Iterations:     67
+ CMUL    3.00000E-05
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    330.510 Average:      4.924. Iterations:     68
+Time in routine INVERT_MATRIX                 . Total:      3.240 Average:      0.048. Iterations:     68
+Time in routine INTEGRATE_G                   . Total:      0.290 Average:      0.004. Iterations:     68
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    343.880 Average:      5.049. Iterations:     68
+ CMUL    1.00000E-05
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    336.300 Average:      4.937. Iterations:     69
+Time in routine INVERT_MATRIX                 . Total:      3.290 Average:      0.048. Iterations:     69
+Time in routine INTEGRATE_G                   . Total:      0.290 Average:      0.004. Iterations:     69
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    349.720 Average:      5.061. Iterations:     69
+ CMUL    3.00000E-06
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    342.140 Average:      4.950. Iterations:     70
+Time in routine INVERT_MATRIX                 . Total:      3.340 Average:      0.048. Iterations:     70
+Time in routine INTEGRATE_G                   . Total:      0.290 Average:      0.004. Iterations:     70
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    355.610 Average:      5.073. Iterations:     70
+ CMUL    1.00000E-06
+ EFIELD  3.00000E-03
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    347.970 Average:      4.963. Iterations:     71
+Time in routine INVERT_MATRIX                 . Total:      3.390 Average:      0.048. Iterations:     71
+Time in routine INTEGRATE_G                   . Total:      0.290 Average:      0.004. Iterations:     71
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    361.490 Average:      5.084. Iterations:     71
+ CMUL    3.00000E+02
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+02
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+01
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+01
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+00
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+00
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E-01
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E-01
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating PLATEAU
+ CMUL    3.00000E-02
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    353.870 Average:      4.976. Iterations:     72
+Time in routine INVERT_MATRIX                 . Total:      3.440 Average:      0.048. Iterations:     72
+Time in routine INTEGRATE_G                   . Total:      0.290 Average:      0.004. Iterations:     72
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    367.440 Average:      5.096. Iterations:     72
+ CMUL    1.00000E-02
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    359.760 Average:      4.989. Iterations:     73
+Time in routine INVERT_MATRIX                 . Total:      3.490 Average:      0.048. Iterations:     73
+Time in routine INTEGRATE_G                   . Total:      0.290 Average:      0.004. Iterations:     73
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    373.380 Average:      5.108. Iterations:     73
+ CMUL    3.00000E-03
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    365.520 Average:      4.999. Iterations:     74
+Time in routine INVERT_MATRIX                 . Total:      3.540 Average:      0.048. Iterations:     74
+Time in routine INTEGRATE_G                   . Total:      0.300 Average:      0.004. Iterations:     74
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    379.200 Average:      5.118. Iterations:     74
+ CMUL    1.00000E-03
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    371.170 Average:      5.008. Iterations:     75
+Time in routine INVERT_MATRIX                 . Total:      3.580 Average:      0.048. Iterations:     75
+Time in routine INTEGRATE_G                   . Total:      0.310 Average:      0.004. Iterations:     75
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    384.910 Average:      5.126. Iterations:     75
+ CMUL    3.00000E-04
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    376.720 Average:      5.015. Iterations:     76
+Time in routine INVERT_MATRIX                 . Total:      3.620 Average:      0.048. Iterations:     76
+Time in routine INTEGRATE_G                   . Total:      0.320 Average:      0.004. Iterations:     76
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    390.510 Average:      5.132. Iterations:     76
+ CMUL    1.00000E-04
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    382.270 Average:      5.022. Iterations:     77
+Time in routine INVERT_MATRIX                 . Total:      3.670 Average:      0.048. Iterations:     77
+Time in routine INTEGRATE_G                   . Total:      0.330 Average:      0.004. Iterations:     77
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    396.120 Average:      5.139. Iterations:     77
+ CMUL    3.00000E-05
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    387.700 Average:      5.028. Iterations:     78
+Time in routine INVERT_MATRIX                 . Total:      3.710 Average:      0.048. Iterations:     78
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     78
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    401.600 Average:      5.143. Iterations:     78
+ CMUL    1.00000E-05
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    393.150 Average:      5.033. Iterations:     79
+Time in routine INVERT_MATRIX                 . Total:      3.760 Average:      0.048. Iterations:     79
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     79
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    407.100 Average:      5.148. Iterations:     79
+ CMUL    3.00000E-06
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    398.710 Average:      5.040. Iterations:     80
+Time in routine INVERT_MATRIX                 . Total:      3.810 Average:      0.048. Iterations:     80
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     80
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    412.710 Average:      5.153. Iterations:     80
+ CMUL    1.00000E-06
+ EFIELD  1.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    404.460 Average:      5.049. Iterations:     81
+Time in routine INVERT_MATRIX                 . Total:      3.860 Average:      0.048. Iterations:     81
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     81
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    418.510 Average:      5.162. Iterations:     81
+ CMUL    3.00000E+02
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+02
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+01
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+01
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E+00
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E+00
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    3.00000E-01
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating PS
+ CMUL    1.00000E-01
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating PLATEAU
+ CMUL    3.00000E-02
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    410.140 Average:      5.056. Iterations:     82
+Time in routine INVERT_MATRIX                 . Total:      3.910 Average:      0.048. Iterations:     82
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     82
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    424.240 Average:      5.169. Iterations:     82
+ CMUL    1.00000E-02
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    415.930 Average:      5.065. Iterations:     83
+Time in routine INVERT_MATRIX                 . Total:      3.960 Average:      0.048. Iterations:     83
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     83
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    430.080 Average:      5.177. Iterations:     83
+ CMUL    3.00000E-03
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    421.610 Average:      5.073. Iterations:     84
+Time in routine INVERT_MATRIX                 . Total:      4.010 Average:      0.048. Iterations:     84
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     84
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    435.810 Average:      5.183. Iterations:     84
+ CMUL    1.00000E-03
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    427.250 Average:      5.079. Iterations:     85
+Time in routine INVERT_MATRIX                 . Total:      4.060 Average:      0.048. Iterations:     85
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     85
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    441.500 Average:      5.189. Iterations:     85
+ CMUL    3.00000E-04
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    433.020 Average:      5.088. Iterations:     86
+Time in routine INVERT_MATRIX                 . Total:      4.110 Average:      0.048. Iterations:     86
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     86
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    447.320 Average:      5.197. Iterations:     86
+ CMUL    1.00000E-04
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    438.810 Average:      5.096. Iterations:     87
+Time in routine INVERT_MATRIX                 . Total:      4.160 Average:      0.048. Iterations:     87
+Time in routine INTEGRATE_G                   . Total:      0.340 Average:      0.004. Iterations:     87
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    453.160 Average:      5.204. Iterations:     87
+ CMUL    3.00000E-05
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    444.620 Average:      5.104. Iterations:     88
+Time in routine INVERT_MATRIX                 . Total:      4.200 Average:      0.048. Iterations:     88
+Time in routine INTEGRATE_G                   . Total:      0.350 Average:      0.004. Iterations:     88
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    459.020 Average:      5.212. Iterations:     88
+ CMUL    1.00000E-05
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    450.430 Average:      5.112. Iterations:     89
+Time in routine INVERT_MATRIX                 . Total:      4.250 Average:      0.048. Iterations:     89
+Time in routine INTEGRATE_G                   . Total:      0.350 Average:      0.004. Iterations:     89
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    464.880 Average:      5.219. Iterations:     89
+ CMUL    3.00000E-06
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    456.280 Average:      5.120. Iterations:     90
+Time in routine INVERT_MATRIX                 . Total:      4.300 Average:      0.048. Iterations:     90
+Time in routine INTEGRATE_G                   . Total:      0.350 Average:      0.004. Iterations:     90
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    470.780 Average:      5.227. Iterations:     90
+ CMUL    1.00000E-06
+ EFIELD  3.00000E-02
+ CMAG    0.00000E+00
+ Calculating low collisionality regimes T
+Time in routine FILL_MATRIX                   . Total:    462.170 Average:      5.129. Iterations:     91
+Time in routine INVERT_MATRIX                 . Total:      4.350 Average:      0.048. Iterations:     91
+Time in routine INTEGRATE_G                   . Total:      0.350 Average:      0.004. Iterations:     91
+Time in routine CALC_LOW_COLLISIONALITY       . Total:    476.720 Average:      5.235. Iterations:     91
+ SUBROUTINE TRANSPORT not ready
+ Simulation complete                                                            
+                      

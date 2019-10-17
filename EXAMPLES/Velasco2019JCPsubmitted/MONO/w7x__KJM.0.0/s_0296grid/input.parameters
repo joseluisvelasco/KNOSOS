@@ -1,0 +1,7 @@
+&parameters
+ DEBUG=.TRUE.
+ GEN_FLAG=.FALSE.,.FALSE.,.FALSE.,.FALSE.,.TRUE.,.FALSE. 
+ MAL=32
+ MLAMBDA=64
+/
+

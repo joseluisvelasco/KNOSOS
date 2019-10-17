@@ -1,0 +1,6 @@
+&surfaces
+NS=1
+S=0.250
+DIRDB='/home/u6156/SCRATCH/DKES/lhd_r3.60.0.0/'
+DIRS='s_0250/'
+/
