@@ -1,6 +1,0 @@
-&model
- FS=0
- COMPARE_MODELS=.TRUE.
- SOLVE_QN=.TRUE.
- SOLVE_AMB=.FALSE.
-/

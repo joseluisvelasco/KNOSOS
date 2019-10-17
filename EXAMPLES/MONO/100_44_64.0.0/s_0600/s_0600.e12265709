@@ -1,6 +1,0 @@
-rm: cannot remove `fort.*': No such file or directory
-rm: cannot remove `STD*': No such file or directory
-rm: cannot remove `J*.sh.[oe][1-9][1-9][1-9][1-9][1-9][1-9][1-9]': No such file or directory
-mv: cannot stat `*.[0-9][0-9]': No such file or directory
-tar: LOG/fort.10000: file changed as we read it
-tar: LOG/fort.200: file changed as we read it

@@ -1,5 +1,0 @@
-&parameters
- TIME=.TRUE. 
- MAL=64
- MLAMBDA=256
-/
