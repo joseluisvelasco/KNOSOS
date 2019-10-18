@@ -1,0 +1,6 @@
+&parameters
+ GEN_FLAG=.FALSE.
+ TIME=.TRUE. 
+ MAL=64
+ MLAMBDA=128
+/

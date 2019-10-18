@@ -1,0 +1,36 @@
+--------------------------------------------
+Prologue Args:
+
+Job ID: 12696811.eulmgr.ciemat.es
+User ID: u6156
+Group ID: fusion
+--------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There are more than one active ports on host 'eul0512.ciemat.es', but the
+default subnet GID prefix was detected on more than one of these
+ports.  If these ports are connected to different physical IB
+networks, this configuration will fail in Open MPI.  This version of
+Open MPI requires that every physically separate IB subnet that is
+used between connected MPI processes must have different subnet ID
+values.
+
+Please see this FAQ entry for more details:
+
+  http://www.open-mpi.org/faq/?category=openfabrics#ofa-default-subnet-gid
+
+NOTE: You can turn off this warning by setting the MCA parameter
+      btl_openib_warn_default_gid_prefix to 0.
+--------------------------------------------------------------------------
+
+--------------------------------------------
+Epilogue Args:
+
+Job Name :  euterpe/Er-10.0
+Host/s:           eul0512.ciemat.es
+Elapsed(Wall)time:00:03:25
+Memory:           5324kb
+Virtual memory:   67980kb
+Job submitted at: Thu Oct 17 20:47:38
+Job started at:   Thu Oct 17 20:47:56
+Job ended at:     Thu Oct 17 20:51:21
+--------------------------------------------
