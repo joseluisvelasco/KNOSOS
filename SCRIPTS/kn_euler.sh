@@ -20,7 +20,7 @@ test -e flux.knosos.00
 if [ $? -eq 0 ]
 then
 
-    for n in $(seq 1 10)
+    for n in $(seq 1 100)
     do
     
 	if [ $n -eq 1 ]
@@ -50,6 +50,15 @@ then
 	elif [ $n -eq 9 ]
 	then
 	    sdir=knosos.dk
+	elif [ $n -eq 9 ]
+	then
+	    sdir=flux.amb.comp
+	elif [ $n -eq 10 ]
+	then
+	    sdir=varphi1.map.comp
+	elif [ $n -eq 11 ]
+	then
+	    sdir=flux.modes
 	fi
 	
 	dir=$sdir.00

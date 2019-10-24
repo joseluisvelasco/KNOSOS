@@ -196,9 +196,8 @@ SUBROUTINE TRILAGRANGE(x1a,x2a,x3a,ya,m,n,o,x1,x2,x3,y,order)
   !Output
   REAL*8 y
   !Others
-  INTEGER, PARAMETER :: NN=1000 ! Maximum expected value of n and m.
   INTEGER j,k,l
-  REAL*8 ytmp(NN),yytmp(NN,NN)
+  REAL*8 ytmp(o),yytmp(m,n)
 
   !Interpolates in one direction and creates a 2D grid
   DO j=1,m
@@ -211,7 +210,6 @@ SUBROUTINE TRILAGRANGE(x1a,x2a,x3a,ya,m,n,o,x1,x2,x3,y,order)
   END DO
   !Interpolates in the other two directions
   CALL BILAGRANGE(x1a,x2a,yytmp(1:m,1:n),m,n,x1,x2,y,order)
-
 
 END SUBROUTINE TRILAGRANGE
 

@@ -1,154 +1,6 @@
 
 !Solve the drift kinetic equation, together with quasineutrality and ambipolarity
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-SUBROUTINE CALC_DATABASE(is,s0)
-
-!----------------------------------------------------------------------------------------------- 
-!Solve the monoenergetic drift kinetic equation at s0 for several values of cmul and efield,
-!either hard-coded or read from namelist 'parameters'
-!Generate a database of transport coefficients that can be:
-!-compared with DKES;
-!-used in a transport simulation.
-!----------------------------------------------------------------------------------------------- 
-
-  USE GLOBAL
-  IMPLICIT NONE
-  !Input 
-  INTEGER is
-  REAL*8 s0
-  !Others
-  CHARACTER*100 filename
-  INTEGER, SAVE :: nalphab
-!  INTEGER nlambda,nal
-  INTEGER icmul,iefield,icmag,idummy(1),iostat
-  REAL*8 ZB(1),AB(1),nb(1),Tb(1),Epsi,dummy(1)
-  REAL*8 new_nb(ncmult),cmul0,D11tab(ncmult,nefieldt,ncmagt),D11(Nnmp,Nnmp)
-  REAL*8 zeta(nax),theta(nax),dn1(nax,nax),phi1c(Nnmp),Mbbnm(Nnmp),trMnm(Nnmp),dn1nm(Nnmp,Nnmp)
-
-  !Read a DKES database of monoenergetic transport coefficients
-  IF(.NOT.(PENTA.OR.NEOTRANSP)) CALL READ_DKES_TABLE(is)
-
-  CALCULATED_INT=.FALSE.
-  !Calculate dummy sources, etc
-  ZB=+1.
-  AB=+1.
-  nb=1E+0
-  Tb=5E+3
-  cmul_1NU=1E+20  
-  cmul_PS= 1E+20
-  CALL DKE_CONSTANTS(1,1,ZB,AB,IDUMMY,nb,dummy,Tb,dummy,dummy(1),.FALSE.)
-  phi1c=0
-  trMnm=0
-  Mbbnm=0
-  cmul0=nu(1)/v(1)/2
-  !Determine collisionalities that limit different collisionality regimes
-  IF(.NOT.SATAKE.AND..NOT.QN.AND..NOT.JPP) THEN !if not low-collisionality problems 
-     cmul_PS =-1.0   !this may be necessary if there is 
-     cmul_1NU=-1.0   !some connection imposed between regimes
-     CALL CALC_PS(1,ALMOST_ZERO,D11(1,1))
-     D11onu=D11(1,1)/cmul0
-     IF(DKES_READ) THEN
-        D11pla=D11pla/fdkes(1)
-     ELSE
-        CALL CALC_PLATEAU(1,ALMOST_ZERO,D11(1,1))
-        D11pla=D11(1,1)
-     END IF
-     cmul_PS =ABS(D11pla/D11onu)  !CMUL such that plateau and PS transport are equal
-     CALL CALC_LOW_COLLISIONALITY(1,ZERO,phi1c,Mbbnm,trMnm,&
-          & D11tab(1,1,1),nalphab,zeta,theta,dn1,dn1nm)
-!     CALCULATED_INT=.FALSE.
-     D11nu=D11tab(1,1,1)*cmul0
-     cmul_1NU=ABS(D11nu/D11pla)  !CMUL such that plateau and 1/nu transport are equal 
-!     cmul_1NU=ABS(aiota/rad_R*eps32)!Use formula, because between plateau and 1/nu there
-     D11pla=D11pla*fdkes(1)           !might exist banana regime
-  END IF
-
-  IF(numprocs.EQ.1) filename="results.knosos"
-  IF(numprocs.GT.1) WRITE(filename,'("results.knosos.",I2.2)') myrank
-  OPEN(unit=200+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-  WRITE(200+myrank,'("cmul efield weov wtov L11m L11p L31m L31p L33m L33p scal11&
-       & scal13 scal33 max\_residual chip psip btheta bzeta vp cmag")')
-
-  IF(NEOTRANSP) THEN
-     IF(numprocs.EQ.1) filename="knosos.dk"
-     IF(numprocs.GT.1) WRITE(filename,'("knosos.dk.",I2.2)') myrank
-     OPEN(unit=6000+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-     IF(myrank.EQ.0) THEN
-        WRITE(6000+myrank,'("cc")')  
-        WRITE(6000+myrank,'("cc")')  
-        WRITE(6000+myrank,'("cc")')  
-        WRITE(6000+myrank,'("cc")')  
-        WRITE(6000+myrank,'("cc")')  
-     END IF
-     WRITE(6000+myrank,'(5(1pe13.5),"  NaN",1pe13.5,"  r,R,B,io,xkn,ft,<b^2>")') &
-          & SQRT(s0)*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
-     IF(myrank.EQ.0) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
-     WRITE(6000+myrank,'("cfit          NaN        NaN           NaN       NaN      NaN")')
-  END IF
-
-  !Only continue if the goal is to compare with DKES or perform a monoenergetic calculation
-  IF(.NOT.CALC_DB) RETURN
-
-  cmul0=nu(iv0)/v(iv0)/2
-  new_nb=nb(1)*cmult/cmul0
-  
-!  nal=16
-!  DO WHILE (nal.LE.nax)
-!  nlambda=64
-!  DO WHILE (nlambda.LE.nlambdax)
-!  nal=64
-!  DO WHILE (nal.LE.64)
-!  nlambda=256
-!  DO WHILE (nlambda.LE.256)
-  !Scan in EFIELD
-  CALCULATED_INT=.FALSE.
-
-  DO iefield=1,nefieldt
-     DO icmul=1,ncmult
-        DO icmag=1,ncmagt
-           WRITE(1000+myrank,'(" CMUL  ",1pe13.5)') cmult(icmul)
-           WRITE(1000+myrank,'(" EFIELD",1pe13.5)') efieldt(iefield)
-           WRITE(1000+myrank,'(" CMAG  ",1pe13.5)') cmagt(icmag)
-           !Calculate (v,species)-dependent constants
-           CALL DKE_CONSTANTS(1,1,ZB,AB,IDUMMY,new_nb(icmul),dummy,Tb,dummy,dummy(1),.FALSE.)
-           Epsi=efieldt(iefield)*v(iv0)/psip
-           IF(NEOTRANSP) Epsi=Epsi*aiota*eps
-                      !Use different subroutines in different regimes
-           IF(cmult(icmul).GT.cmul_PS) THEN
-              CALL CALC_PS(iv0,Epsi,D11tab(icmul,iefield,icmag))              
-           ELSE IF(cmult(icmul).GT.cmul_1NU) THEN
-              CALL CALC_PLATEAU(iv0,Epsi,D11tab(icmul,iefield,icmag))
-           ELSE
-!              CALL CALC_LOW_COLLISIONALITY_NANL
-!              CALCULATED_INT=.FALSE.
-              CONVERGED=.FALSE.
-              vmconst=cmagt(icmag)
-              CALL CALC_LOW_COLLISIONALITY(iv0,Epsi,phi1c,Mbbnm,trMnm,&
-                   & D11tab(icmul,iefield,icmag),nalphab,zeta,theta,dn1,dn1nm)
-              !           CALCULATED_INT=.TRUE.           
-           END IF
-        END DO
-     END DO
-  END DO
-!  nlambda=nlambda*2  
-!  END DO
-!  nal=nal*2
-!  END DO
-
-  IF(NEOTRANSP) WRITE(6000+myrank,'("e")')
-
-
-  IF(ONLY_DB) RETURN
-
-  !Save table of monenergetic transport coefficients (with DKES normalization)
-  D11tab=D11tab*fdkes(iv0)
-  lD11tab=LOG(D11tab)
-
-END SUBROUTINE CALC_DATABASE
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -193,6 +45,7 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
   !Calculate Epsi by solving ambipolarity of the neoclassical fluxes using bisection
   IF(SOLVE_AMB) THEN
 
+     WRITE(1000+myrank,*) 'Calculating Er'
      Epsiacc=1E3*ERACC/psip
      !Find changes of sign of the radial neoclasical current (nroot, may be more than 1)
      IF(ERMAX-ERMIN.GT.-1E-3) THEN !between Epsimin and Epsimax
@@ -208,11 +61,10 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
      END IF
 
      Epsi=Epsimin
+     WRITE(1000+myrank,'(" Calculating for Er=",1pe13.5,", kV/m")') Epsi*psip/1E3
      CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
           & Gb,Qb,L1b,L2b,ephi1oTsize)
      Jr(1)=SUM(ZB(1:NBB)*nb(1:NBB)*Gb(1:NBB))
-     WRITE(1000+myrank,*) 'Calculating Er'
-
      dEpsi=(Epsimax-Epsimin)/(NER-1)
      nroot=0
      DO iEpsi=2,NER
@@ -229,7 +81,7 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
               Epsi2(nroot)=Epsi
            END IF
         END IF
-        IF(nroot.EQ.1.AND.FAST_AMB) EXIT
+!        IF(nroot.EQ.1.AND.FAST_AMB) EXIT
      END DO
      
 !     IF(nroot.EQ.2) THEN
@@ -683,12 +535,12 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
            END IF
         END IF
      ELSE
-!        IF(FAST_AMB) THEN
-!           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),.TRUE.) 
-!        ELSE
+        IF(FAST_AMB) THEN
+           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),.TRUE.) 
+        ELSE
            CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
                 & D11,nalphab,zeta,theta,dn1dv,dn1nmdv)
-!        END IF
+        END IF
      END IF !regime set from input
   ELSE IF(regb.EQ.1) THEN
      CALL CALC_PS(iv,Epsi,D11(1,1))

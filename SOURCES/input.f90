@@ -42,13 +42,44 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   !Other
   CHARACTER*100 serr,line
   INTEGER iline,iostat,nefield,ncmul,ncmag,iz,ia,is
+  !DKES database
+  INTEGER, PARAMETER :: ncmuld=18
+  REAL*8 cmuld(ncmuld) /3E+2,1E+2,3E+1,1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
+                      & 3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6/
+  INTEGER, PARAMETER :: nefieldd=9
+  REAL*8 efieldd(nefieldd) /0E-0,1E-5,3E-5,1E-4,3E-4,1E-3,3E-3,1E-2,3E-2/
+  INTEGER, PARAMETER :: ncmagd=1
+  REAL*8 cmagd(ncmagd) /0E+0/
+  !3D database
   INTEGER, PARAMETER :: ncmulx=18
   REAL*8 cmulx(ncmulx) /3E+2,1E+2,3E+1,1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
                       & 3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6/
-  INTEGER, PARAMETER :: nefieldx=9
-  REAL*8 efieldx(nefieldx) /0E-0,1E-5,3E-5,1E-4,3E-4,1E-3,3E-3,1E-2,3E-2/
-  INTEGER, PARAMETER :: ncmagx=1
-  REAL*8 cmagx(ncmagx) /0.0/
+!  INTEGER, PARAMETER :: nefieldx=9
+!  REAL*8 efieldx(nefieldx) /0E-0,1E-5,3E-5,1E-4,3E-4,1E-3,3E-3,1E-2,3E-2/
+!  INTEGER, PARAMETER :: ncmagx=13
+!  REAL*8 cmagx(ncmagx) /-3E-2,-1E-2,-3E-3,-1E-3,-3E-4,-1E-4,0E-0,&
+!                      & +1E-4,+3E-4,+1E-3,+3E-3,+1E-2,+3E-2/
+!  3D finer database 
+!  INTEGER, PARAMETER :: ncmulx=52
+!  REAL*8 cmulx(ncmulx) /5E+2,2E+2,1E+2,5E+1,2E+1,1E+1,5E+0,2E+0,1.0E+0,&
+!                      & 5E-1,2E-1,1E-1,5E-2,2E-2,1E-2,5E-3,2E-3,1.5E-3,1.0E-3,&
+!                      & 9E-4,8E-4,7E-4,6E-4,5E-4,4E-4,3E-4,2E-4,1.5E-4,1.2E-4,1E-4,&
+!                      & 9E-5,8E-5,7E-5,6E-5,5E-5,4E-5,3E-5,2E-5,1.5E-5,1.2E-5,1E-5,&
+!                      & 9E-6,8E-6,7E-6,6E-6,5E-6,4E-6,3E-6,2E-6,1.5E-6,1.2E-6,1E-6/
+  INTEGER, PARAMETER :: nefieldx=50 
+  REAL*8 efieldx(nefieldx) /0E-0,1E-5,1.2E-5,1.5E-5,2E-5,3E-5,4E-5,5E-5,6E-5,7E-5,8E-5,9E-5,&
+                              &  1E-4,1.2E-4,1.5E-4,2E-4,3E-4,4E-4,5E-4,6E-4,7E-4,8E-4,9E-4,&
+                              &  1E-3,1.2E-3,1.5E-3,2E-3,3E-3,4E-3,5E-3,6E-3,7E-3,8E-3,9E-3,&
+                              &  1E-2,1.2E-2,1.5E-2,2E-2,3E-2,4E-2,5E-2,6E-2,7E-2,8E-2,9E-2,&
+                              &  1E-1,1.2E-1,1.5E-1,2E-1,5E-5/
+  INTEGER, PARAMETER :: ncmagx=66
+  REAL*8 cmagx(ncmagx)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
+                     & -9E-3,-8E-3,-7E-3,-8E-3,-5E-3,-4E-3,-3E-3,-2E-3,-1.5E-3,-1.2E-3,-1E-3,&
+                     & -9E-4,-8E-4,-7E-4,-8E-4,-5E-4,-4E-4,-3E-4,-2E-4,-1.5E-4,-1.2E-4,-1E-4,&
+                     & +1E-4,+1.2E-4,+1.5E-4,+2E-4,+3E-4,+4E-4,+5E-4,+6E-4,+7E-4,+8E-4,+9E-4,&
+                     & +1E-3,+1.2E-3,+1.5E-3,+2E-3,+3E-3,+4E-3,+5E-3,+6E-3,+7E-3,+8E-3,+9E-3,&
+                     & +1E-2,+1.2E-2,+1.5E-2,+2E-2,+3E-2,+4E-2,+5E-2,+6E-2,+7E-2,+8E-2,+9E-2/
+  !Database for neontrasp
   INTEGER, PARAMETER :: ncmuly=16
   REAL*8 cmuly(ncmuly) /1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
                       & 3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6,3E-7/
@@ -57,7 +88,14 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
        & 1E-2,2E-2,3E-2,5E-2,1E-1,2E-1,3E-1,5E-1,7E-1,8E-1,1.0,1.2,1.5,2.0,3.0,5.0/
   INTEGER, PARAMETER :: ncmagy=1
   REAL*8 cmagy(ncmagy) /0.0/
-  REAL*8 dummy,cmul(ncmulx),efield(nefieldy),cmag(ncmagx)
+!  INTEGER, PARAMETER :: ncmagy=66
+!  REAL*8 cmagy(ncmagy)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
+!                     & -9E-3,-8E-3,-7E-3,-8E-3,-5E-3,-4E-3,-3E-3,-2E-3,-1.5E-3,-1.2E-3,-1E-3,&
+!                     & -9E-4,-8E-4,-7E-4,-8E-4,-5E-4,-4E-4,-3E-4,-2E-4,-1.5E-4,-1.2E-4,-1E-4,&
+!                     & +1E-4,+1.2E-4,+1.5E-4,+2E-4,+3E-4,+4E-4,+5E-4,+6E-4,+7E-4,+8E-4,+9E-4,&
+!                     & +1E-3,+1.2E-3,+1.5E-3,+2E-3,+3E-3,+4E-3,+5E-3,+6E-3,+7E-3,+8E-3,+9E-3,&
+!                     & +1E-2,+1.2E-2,+1.5E-2,+2E-2,+3E-2,+4E-2,+5E-2,+6E-2,+7E-2,+8E-2,+9E-2/
+  REAL*8 dummy,cmul(MAX(ncmulx,ncmuly)),efield(MAX(nefieldx,nefieldy)),cmag(MAX(ncmagx,ncmagy))
 
 
   OPEN(unit=1000,file="STDOUT",form='formatted',action='write',iostat=iostat)
@@ -96,12 +134,12 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   PREC_DQDV=  5E-2     
   PREC_INTV=  1E-2     
   !Set details of the monoenergetic database
-  NEFIELD=nefieldx     
-  EFIELD(1:nefield)=efieldx     
-  NCMUL  =ncmulx       
-  CMUL   = cmulx       
-  NCMAG  =ncmagx
-  CMAG   = cmagx        
+  NCMUL  =ncmuld       
+  NEFIELD=nefieldd     
+  NCMAG  =ncmagd
+  CMUL(1:ncmuld)    =cmuld       
+  EFIELD(1:nefieldd)=efieldd     
+  CMAG(1:ncmagd)    =cmagd        
   !Set details of ambipolarity
   NER  = 21     
   ERMIN=+20.0  
@@ -286,6 +324,15 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      END IF
   END DO
 
+  IF(FAST_AMB) THEN
+     CALC_DB=.TRUE.
+     NCMUL  =ncmulx  
+     NEFIELD=nefieldx     
+     NCMAG  =ncmagx
+     CMUL(1:ncmulx)    =cmulx       
+     EFIELD(1:nefieldx)=efieldx     
+     CMAG(1:ncmagx)    =cmagx        
+  END IF
   IF(NEOTRANSP.OR.PENTA) THEN
      CALC_DB=.TRUE.
      ONLY_DB=.TRUE.
@@ -297,13 +344,15 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
         ncmul  =ncmuly
         nefield=nefieldy
         ncmag  =ncmagy
-        cmul(1:ncmuly)=cmuly
-        efield=efieldy
-        cmag  =cmagy
+        cmul(1:ncmuly)    =cmuly
+        efield(1:nefieldy)=efieldy
+        cmag(1:ncmagy)    =cmagy
      END IF
-  ELSE IF(ONLY_DB) THEN
-     TANG_VM=.FALSE.
-     FS=0     
+  END IF
+  IF(.NOT.TANG_VM) THEN
+     FS=0
+     ncmag=1
+     cmag=0.0
   END IF
   USE_B0=USE_B1.OR.USE_B0pB1
   DO ib=3,nbb
@@ -345,6 +394,12 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   cmult  =cmul
   efieldt=efield
   cmagt  =cmag
+  lcmult  =LOG(cmult)   
+  lefieldt=LOG(efieldt)
+  lcmagt  =LOG(ABS(lcmagt))
+  lefieldt(1)=-1000 !dummy value to avoid log(0.0)
+
+
   
   !Write input parameters
   IF(myrank.EQ.0) THEN

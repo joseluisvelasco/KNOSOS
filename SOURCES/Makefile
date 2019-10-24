@@ -9,75 +9,93 @@ HOSTNAME := $(shell uname -n|cut -f1 -d.)
 NODENAME := $(shell uname -n|rev|cut -f2 -dl|rev)
 
 ifeq ($(HOSTNAME), euler01)
-CASE=mpi_euler
+CASE=euler
 endif
 ifeq ($(HOSTNAME), euler02)
-CASE=mpi_euler
+CASE=euler
 endif
 ifeq ($(NODENAME), eu)
-CASE=mpi_euler
+CASE=euler
 endif
 ifeq ($(HOSTNAME), dirac)
-CASE=ifort_dirac
+CASE=dirac
 endif
 ifeq ($(HOSTNAME), fusc3)
-CASE=ifort_fusc3
+CASE=fusc3
 endif
 ifeq ($(HOSTNAME), macfus33)
-CASE=gfortran_desktop
+CASE=desktop
 EXT=Darwin
 endif
 ifeq ($(HOSTNAME), MBdJLVG)
-CASE=gfortran_desktop
+CASE=desktop
 EXT=Darwin
 endif
 ifeq ($(HOSTNAME), xUdJLVBG)
-CASE=gfortran_desktop
+CASE=desktop
 EXT=Linux
 endif
 ifeq ($(HOSTNAME), task3d-l)
-CASE=ifort_knl
+CASE=task3d-l
+endif
+ifeq ($(HOSTNAME), egcalc-vpn)
+CASE=egcalc-vpn
 endif
 ifeq ($(HOSTNAME), draco01)
-CASE=mpi_draco
+CASE=draco
 endif
 ifeq ($(HOSTNAME), draco02)
-CASE=mpi_draco
+CASE=draco
 endif
 
 
 ###### if running at draco #####################################
 
-ifeq ($(CASE), mpi_draco)
+ifeq ($(CASE), draco)
 COMPILER =mpiifort
 #MPI_DIR  =
 #PETSC_DIR=
 #FFT_DIR  =
 #MKL_DIR  =
 #COMP_LIB =
-FFLAGS   =-fpp -DDRACO -DMPIandPETSc -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0
+FFLAGS   =-fpp -DIPPorNIFS -DMPIandPETSc -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0
 IFLAGS   =-I${PETSC_DIR}/lib/petsc/conf/variables -I${PETSC_DIR}/lib/petsc/conf/rules -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -qopenmp -I${PETSC_DIR}/include
 LFLAGS   =-L${PETSC_DIR}/lib -lpetsc -L/${MKL_HOME}/lib/intel64 -mkl -Wl,-rpath,${MKL_HOME}/lib/intel64,-rpath,${PETSC_DIR}/lib
 endif
 
 ###### if running at TASK3D-L #####################################
 
-ifeq ($(CASE), ifort_knl)
+ifeq ($(CASE), task3d-l)
 COMPILER =mpiifort
 #MPI_DIR  =
 PETSC_DIR=/usr/local/petsc-3.11.2
 #FFT_DIR  =
 #MKL_DIR  =
 #COMP_LIB =
-FFLAGS   =-fpp -DMPIandPETSc -DTASK3D -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0 
+FFLAGS   =-fpp -DMPIandPETSc -DIPPorNIFS -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0 
 IFLAGS   =-I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc 
 LFLAGS   =-mkl -lpetsc -L${PETSC_DIR}/lib 
+endif
+
+###### if running at egcalc-vpn #####################################
+
+ifeq ($(CASE), egcalc-vpn)
+COMPILER =mpif90
+MPI_DIR  =/home/LHD/satake/local/lib
+PETSC_DIR=/home/LHD/satake/local/petsc-3.11.2
+FFT_DIR  =
+MKL_DIR  =
+COMP_LIB =
+FFLAGS   =-fpp -DMPIandPETSc -DIPPorNIFS -O3 -xHost -shared-intel -warn all -mcmodel large -align array64byte --with-debugging=0
+#FFLAGS   =-fpp -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0
+IFLAGS   =-I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc
+LFLAGS   =-mkl -lpetsc -L${PETSC_DIR}/lib
 endif
 
 
 ###### if running at euler cluster at CIEMAT #####################################
 
-ifeq ($(CASE), mpi_euler)
+ifeq ($(CASE), euler)
 COMPILER =mpif90 -traceback
 MPI_DIR  =/opt/ofed_1.3.1/mpi/intel/openmpi-1.2.6/lib64/
 PETSC_DIR=/home/localsoft/petsc-3.7.4/real
@@ -93,7 +111,7 @@ endif
 
 ###### if running at dirac computer at CIEMAT #####################################
 
-ifeq ($(CASE), ifort_dirac)
+ifeq ($(CASE), dirac)
 COMPILER =ifort
 #MPI_DIR  =
 #PETSC_DIR=
@@ -107,7 +125,7 @@ endif
 
 ###### if running at fusc computer at CIEMAT #####################################
 
-ifeq ($(CASE), ifort_fusc3)
+ifeq ($(CASE), fusc3)
 COMPILER =ifort
 #MPI_DIR  =
 #PETSC_DIR=
@@ -121,7 +139,7 @@ endif
 
 ###### if running at Velasco's eMAC, Macbook or xUbuntu at CIEMAT ################
 
-ifeq ($(CASE), gfortran_desktop)
+ifeq ($(CASE), desktop)
 COMPILER =gfortran
 #MPI_DIR  =
 #PETSC_DIR=
@@ -137,12 +155,12 @@ endif
 
 knosos.x: \
 	global.o \
-	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o dkes.o  \
+	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o database.o  \
 	errors.o input.o knosos.o lagrange.o low_collisionality.o  mpi_and_end.o \
 	plasmas.o plateau.o pfirsch_schlueter.o times.o trace_impurities.o transport.o
 
 	${COMPILER} -o knosos.x global.o \
-	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o dkes.o \
+	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o database.o \
 	errors.o input.o knosos.o lagrange.o low_collisionality.o mpi_and_end.o \
 	plasmas.o plateau.o pfirsch_schlueter.o times.o trace_impurities.o transport.o \
 	${COMP_LIB} ${LFLAGS} ${IFLAGS} ${FFLAGS} 
@@ -165,8 +183,8 @@ coefficients.o: coefficients.f90
 configuration.o: configuration.f90
 	${COMPILER} ${FFLAGS} ${IFLAGS} -c configuration.f90
 
-dkes.o: dkes.f90
-	${COMPILER} ${FFLAGS} -c dkes.f90
+database.o: database.f90
+	${COMPILER} ${FFLAGS} -c database.f90
 
 errors.o: errors.f90
 	${COMPILER} ${FFLAGS} -c errors.f90

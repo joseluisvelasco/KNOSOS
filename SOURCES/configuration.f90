@@ -433,12 +433,10 @@ SUBROUTINE READ_BFIELD(s0)
      CALL FIND_3DPOINTS(MAL,MAL,s0)
      !Check if the coordinate system is left-handed, as expected
      CALL CHECK_JACSIGN(MAL,MAL,dpsi,x1,x2,x3,Bzt(2,:,:),LeftHanded)
-     WRITE(1000+myrank,*) 'here'
      IF(.NOT.LeftHanded) THEN
         serr="The magnetic field was not provided in left-handed coordinates"
         CALL END_ALL(serr,.FALSE.)
      END IF
-     WRITE(1000+myrank,*) 'there'
      !Prepare for radial derivatives
      iotap  =iota_b(js1)
      iotam  =iota_b(js0)

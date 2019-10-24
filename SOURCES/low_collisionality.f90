@@ -41,9 +41,9 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
      !Write monoenergetic transport coefficients using DKES normalization
      CALL CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
           & D11,nalphab,zeta,theta,dn1dv,dn1nm)
-     WRITE(200+myrank,'(2(1pe13.5)," NaN NaN ",2(1pe13.5)," &
+     WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5)," &
           & NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
-          & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,fdkes(jv)*D11(1,1),fdkes(jv)*D11(1,1)
+          & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),fdkes(jv)*D11(1,1),fdkes(jv)*D11(1,1)
      IF(NEOTRANSP) THEN
         WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,-fdkes(jv)*D11(1,1)
               WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
@@ -69,9 +69,9 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
         D11r(ial,ilambda+1:100)=D11r(ial,ilambda)
         IF(ial.GT.1.AND.nlambda.LE.nlambdax.AND.&
              & ABS(D11r(ial,ilambda)/D11r(ial-1,100)-1.0).LT.PREC_DQDV) THEN
-           WRITE(200+myrank,'(2(1pe13.5)," NaN NaN ",2(1pe13.5),&
+           WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5),&
                 & " NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
-                & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,fdkes(jv)*D11r(ial,ilambda),fdkes(jv)*D11r(ial,ilambda)
+                & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),fdkes(jv)*D11r(ial,ilambda),fdkes(jv)*D11r(ial,ilambda)
            IF(NEOTRANSP) THEN
               WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,-fdkes(jv)*D11r(ial,ilambda)
               WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
@@ -118,7 +118,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 !-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
-#ifdef DRACO
+#ifdef IPPorNIFS
   USE petscsys
   USE petscksp
 !  USE petscvec
@@ -133,9 +133,9 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   INTEGER nalphab
   REAL*8 D11(Nnmp,Nnmp),dn1dv(nax,nax),dn1nm(Nnmp,Nnmp)
   !Others
-  INTEGER, SAVE :: nalpha,npoint
+  INTEGER, SAVE :: nalpha,nalphab_save,npoint
   INTEGER, SAVE, ALLOCATABLE :: nbif(:),i_p_ap1(:),i_p_am1(:),i_p_ap2(:),i_p_am2(:)
-  REAL*8, SAVE :: offset
+  REAL*8, SAVE :: offset,theta_save(nax)
   REAL*8, SAVE, ALLOCATABLE :: lambda(:),dalpha_am1(:),dalpha_ap1(:),dalpha_am2(:),dalpha_ap2(:)
   REAL*8, SAVE, ALLOCATABLE :: dlambda_lm1(:),dlambda_lp1(:)
   !Wells and bounce points
@@ -203,7 +203,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 
   CALL CPU_TIME(tstart)
 
-  WRITE(1000+myrank,*) 'Calculating low collisionality regimes',CALCULATED_INT
+  WRITE(1000+myrank,*) 'Calculating low collisionality regimes'
 
   !Set output to zero
 
@@ -259,6 +259,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
      nalphab=nalphab*2
   END DO
   nalphab=nalphab/2
+  nalphab_save=nalphab
   IF(ALLOCATED(zetap)) DEALLOCATE(zetap,thetap,zetax,B_al,vds_al)
   ALLOCATE(zetax(nalpha,nalphab),alphap(nalpha),&
          & zetap(nalphab),thetap(nalpha,nalphab),&
@@ -266,6 +267,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   CALL CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,thetap,zetap,zetax,B_al,vds_al)
   zeta(1:nalphab) =zetap  !square grid
   theta(1:nalphab)=zetap*nzperiod 
+  theta_save=theta
 
   IF(ALLOCATED(lambda)) DEALLOCATE(lambda,i_p)
   ALLOCATE(lambda(nlambda),one_o_lambda(nlambda),i_p(nlambda,nalpha,nalphab))
@@ -454,7 +456,9 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 
 !  CALL CALCULATE_TIME(routine2,ntotal2,t02,tstart2,ttotal2)
 
-123 IF(DEBUG) THEN
+123 nalphab=nalphab_save 
+  theta=theta_save
+  IF(DEBUG) THEN
      DO ipoint=1,npoint
         WRITE(3300+myrank,'(I6,1(1pe13.5),2I6)') ipoint,BI3(ipoint)*vdconst(jv)/nu(jv),nal,nlambda
      END DO
@@ -505,11 +509,11 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   IF(DEBUG.OR.ONLY_DB) THEN
      CALL FLUSH(10000+myrank)
      IF(cmul_1NU.GT.0) THEN
-        WRITE(10000+myrank,'("4 ",5(1pe13.5),3I5,1pe13.5,I5)') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,fdkes(jv)*D11(1,1),&
-             & weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv),nal,nlambda,nalphab,D11pla
+        WRITE(10000+myrank,'("4 ",6(1pe13.5),3I5,1pe13.5,I5)') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
+             & fdkes(jv)*D11(1,1),weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv),nal,nlambda,nalphab,D11pla
      ELSE
-        WRITE(10000+myrank,'("0 ",5(1pe13.5),3I5,1pe13.5,I5)') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,fdkes(jv)*D11(1,1),&
-             & weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv),nal,nlambda,nalphab,D11pla
+        WRITE(10000+myrank,'("0 ",6(1pe13.5),3I5,1pe13.5,I5)') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
+             & fdkes(jv)*D11(1,1),weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv),nal,nlambda,nalphab,D11pla
      END IF
      CALL FLUSH(10000+myrank)
   END IF
@@ -2218,7 +2222,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
 
      DO ipoint=1,npoint  
         WRITE(3400+myrank,'(I6,1(1pe13.5),2I6)') ipoint,g(ipoint,1),nalpha,nlambda
-        IF(nalphab.EQ.0) STOP
+!        IF(nalphab.EQ.0) STOP
      END DO
 
   END IF
@@ -2408,9 +2412,9 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
               dn1_zt(ia,il)=0
               CALL LAGRANGE(thetape(1:tnalpha,il),dn1_ale(1:tnalpha),tnalpha,&
                  & theta(ia),dn1_zt(ia,il),2)
-              IF(DEBUG.AND.ipoint.EQ.1) WRITE(3450+myrank,'(10(1pe13.5),10I6)') &
-                   & zetap(il),theta(ia),dn1_zt(ia,il),D11_zt(ia,il)
            END IF
+           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3450+myrank,'(10(1pe13.5),10I6)') &
+                & zetap(il),theta(ia),dn1_zt(ia,il),D11_zt(ia,il)
         END DO
      END DO
      !Flux surface average
@@ -2452,7 +2456,6 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
 !          & dn1nmp(:,1:npoint-1),Nnmp,g(1:npoint-1,:),npoint-1,ZERO,dn1nm,Nnmp) 
   ELSE
      D11(1,1)=D11p(1,1)
-
      IF(QN) THEN
         dn1=dn1_zt
         dn1nm(:,1)=dn1nmp(:,1)

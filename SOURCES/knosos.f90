@@ -23,10 +23,20 @@ PROGRAM KNOSOS
   REAL*8 S(nsx),Zb(nbx),Ab(nbx),Zeff
 #ifdef MPIandPETSc
   INTEGER ierr
+#endif
+#ifdef IPPoNIFS
 ! INCLUDE "mpif.h"
-!#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscsys.h>
 #endif
 
+  !Time
+  CHARACTER*30, PARAMETER :: routine="KNOSOS"
+  INTEGER, SAVE :: ntotal=0
+  REAL*8,  SAVE :: ttotal=0
+  REAL*8,  SAVE :: t0=0
+  REAL*8 tstart
+
+  CALL CPU_TIME(tstart)
   !Initialize MPI
   CALL INITIALIZE_MPI()
   !Read input files (simulation parameters, models, flux-surfaces, species...)
@@ -73,6 +83,8 @@ PROGRAM KNOSOS
      END DO
   END DO
   IF(nerr.GT.1) CALL AVERAGE_SAMPLES(nbb,ns,s(1:ns),Epsi,Gb,Qb) 
+
+  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   !End MPI and PETSC
   serr="Simulation complete"
   CALL END_ALL(serr,.TRUE.)

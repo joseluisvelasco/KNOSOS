@@ -20,10 +20,19 @@ then
 	    sdir=varphi1.map
 	elif [ $n -eq 5 ]
 	then
-	    sdir=knososTASK3D.flux
+	    sdir=Er.map
 	elif [ $n -eq 6 ]
 	then
+	    sdir=imp.knosos
+        elif [ $n -eq 7 ]
+        then
+            sdir=knososTASK3D.flux
+	elif [ $n -eq 8 ]
+	then
 	    sdir=knososTASK3D.ambEr
+	elif [ $n -eq 9 ]
+	then
+	    sdir=knosos.dk
 	fi
 	
 	dir=$sdir.00
