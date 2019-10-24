@@ -22,9 +22,9 @@ SUBROUTINE CALC_DATABASE(is,s0)
   CHARACTER*100 filename
   INTEGER nalphab
 !  INTEGER nlambda,nal
-  INTEGER icmul,iefield,icmag,idummy(1),iostat
+  INTEGER icmul,iefield,ivmag,idummy(1),iostat
   REAL*8 ZB(1),AB(1),nb(1),Tb(1),Epsi,dummy(1)
-  REAL*8 new_nb(ncmult),cmul0,D11tab(ncmult,nefieldt,ncmagt),D11(Nnmp,Nnmp)
+  REAL*8 new_nb(ncmult),cmul0,D11tab(ncmult,nefieldt,nvmagt),D11(Nnmp,Nnmp)
   REAL*8 zeta(nax),theta(nax),dn1(nax,nax),phi1c(Nnmp),Mbbnm(Nnmp),trMnm(Nnmp),dn1nm(Nnmp,Nnmp)
   !Time
   CHARACTER*30, PARAMETER :: routine="CALC_DATABASE"
@@ -79,7 +79,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
   IF(numprocs.GT.1) WRITE(filename,'("results.knosos.",I2.2)') myrank
   OPEN(unit=200+myrank,file=filename,form='formatted',action='write',iostat=iostat)
   WRITE(200+myrank,'("cmul efield weov wtov L11m L11p L31m L31p L33m L33p scal11&
-       & scal13 scal33 max\_residual chip psip btheta bzeta vp cmag")')
+       & scal13 scal33 max\_residual chip psip btheta bzeta vp vmag")')
 
   IF(NEOTRANSP) THEN
      IF(numprocs.EQ.1) filename="knosos.dk"
@@ -117,30 +117,30 @@ SUBROUTINE CALC_DATABASE(is,s0)
 
   DO iefield=1,nefieldt
      DO icmul=1,ncmult
-        DO icmag=1,ncmagt
+        DO ivmag=1,nvmagt
            WRITE(1000+myrank,'(" CMUL  ",1pe13.5)') cmult(icmul)
            WRITE(1000+myrank,'(" EFIELD",1pe13.5)') efieldt(iefield)
-           WRITE(1000+myrank,'(" CMAG  ",1pe13.5)') cmagt(icmag)
-           IF(cmult(icmul).GT.cmul_1NU.AND.icmag.GT.1) THEN
-              D11tab(icmul,iefield,icmag)=D11tab(icmul,iefield,1) 
+           WRITE(1000+myrank,'(" VMAG  ",1pe13.5)') vmagt(ivmag)
+           IF(cmult(icmul).GT.cmul_1NU.AND.ivmag.GT.1) THEN
+              D11tab(icmul,iefield,ivmag)=D11tab(icmul,iefield,1) 
               CYCLE
            END IF
            !Calculate (v,species)-dependent constants
            CALL DKE_CONSTANTS(1,1,ZB,AB,IDUMMY,new_nb(icmul),dummy,Tb,dummy,dummy(1),.FALSE.)
-           vmconst=cmagt(icmag)*v
+           vmconst=vmagt(ivmag)*v
            Epsi=efieldt(iefield)*v(iv0)/psip
            IF(NEOTRANSP) Epsi=Epsi*aiota*eps
                       !Use different subroutines in different regimes
            IF(cmult(icmul).GT.cmul_PS) THEN
-              CALL CALC_PS(iv0,Epsi,D11tab(icmul,iefield,icmag))   
+              CALL CALC_PS(iv0,Epsi,D11tab(icmul,iefield,ivmag))   
            ELSE IF(cmult(icmul).GT.cmul_1NU) THEN
-              CALL CALC_PLATEAU(iv0,Epsi,D11tab(icmul,iefield,icmag))
+              CALL CALC_PLATEAU(iv0,Epsi,D11tab(icmul,iefield,ivmag))
            ELSE
 !              CALL CALC_LOW_COLLISIONALITY_NANL
 !              CALCULATED_INT=.FALSE.
               CONVERGED=.FALSE.
               CALL CALC_LOW_COLLISIONALITY(iv0,Epsi,phi1c,Mbbnm,trMnm,&
-                   & D11tab(icmul,iefield,icmag),nalphab,zeta,theta,dn1,dn1nm)
+                   & D11tab(icmul,iefield,ivmag),nalphab,zeta,theta,dn1,dn1nm)
               !           CALCULATED_INT=.TRUE.           
            END IF
         END DO
@@ -281,9 +281,9 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,knososdb)
   !Output
   REAL*8 D11
   !Others
-  INTEGER ncmagtt
-  REAL*8 efield,cmul,cmag,lD11,lD11dkes(ncmult,nefieldt)
-  REAL*8 lcmagtt((ncmagt-1)/2),lD11tabt(ncmult,nefieldt,(ncmagt-1)/2)
+  INTEGER nvmagtt
+  REAL*8 efield,cmul,vmag,lD11,lD11dkes(ncmult,nefieldt)
+  REAL*8 lvmagtt((nvmagt-1)/2),lD11tabt(ncmult,nefieldt,(nvmagt-1)/2)
   !Time
   CHARACTER*30, PARAMETER :: routine="INTERP_DATABASE"
   INTEGER, SAVE :: ntotal=0
@@ -295,15 +295,15 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,knososdb)
 
   IF(knososDB) THEN
      WRITE(1000+myrank,*) 'Interpolating KNOSOS coefficients'
-     cmag=vmconst(jv)/v(jv)
-     IF(Epsi.LT.0) cmag=-cmag        
-     ncmagtt=(ncmagt-1)/2
-     IF(cmag.LT.0) THEN
-        lcmagtt=LOG(ABS(cmagt(1:ncmagtt)))
-        lD11tabt=lD11tab(1:ncmult,1:nefieldt,1:ncmagtt)
+     vmag=vmconst(jv)/v(jv)
+     IF(Epsi.LT.0) vmag=-vmag        
+     nvmagtt=(nvmagt-1)/2
+     IF(vmag.LT.0) THEN
+        lvmagtt=LOG(ABS(vmagt(1:nvmagtt)))
+        lD11tabt=lD11tab(1:ncmult,1:nefieldt,1:nvmagtt)
      ELSE
-        lcmagtt=LOG(ABS(cmagt(ncmagt-ncmagtt+1:ncmagt)))
-        lD11tabt=lD11tab(1:ncmult,1:nefieldt,ncmagt-ncmagtt+1:ncmagt)
+        lvmagtt=LOG(ABS(vmagt(nvmagt-nvmagtt+1:nvmagt)))
+        lD11tabt=lD11tab(1:ncmult,1:nefieldt,nvmagt-nvmagtt+1:nvmagt)
      END IF     
   ELSE
      WRITE(1000+myrank,*) 'Interpolating DKES coefficients'
@@ -318,7 +318,7 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,knososdb)
   END IF
 
   IF(knososDB) THEN     !Interpolate from a database calculated with KNOSOS
-     IF(ncmagt.EQ.1) THEN
+     IF(nvmagt.EQ.1) THEN
        IF(efield.GT.0.1*efieldt(2)) THEN!  IF(efield.GT.1E-10) THEN
            CALL BILAGRANGE(lcmult(1:ncmult),lefieldt(2:nefieldt),lD11tab(1:ncmult,2:nefieldt,1),&
                 & ncmult,nefieldt-1,LOG(cmul),LOG(efield),lD11,2)
@@ -329,11 +329,11 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,knososdb)
      ELSE
       IF(efield.GT.0.1*efieldt(2)) THEN!  IF(efield.GT.1E-10) THEN
          
-           CALL TRILAGRANGE(lcmult(1:ncmult),lefieldt(2:nefieldt),lcmagtt(1:ncmagtt),lD11tabt(1:ncmult,2:nefieldt,1:ncmagtt),&
-                & ncmult,nefieldt-1,ncmagtt,LOG(cmul),LOG(efield),LOG(ABS(cmag)),lD11,1)
+           CALL TRILAGRANGE(lcmult(1:ncmult),lefieldt(2:nefieldt),lvmagtt(1:nvmagtt),lD11tabt(1:ncmult,2:nefieldt,1:nvmagtt),&
+                & ncmult,nefieldt-1,nvmagtt,LOG(cmul),LOG(efield),LOG(ABS(vmag)),lD11,1)
         ELSE
-           CALL BILAGRANGE(lcmult(1:ncmult),lcmagtt(1:ncmagtt),lD11tabt(1:ncmult,1,1:ncmagtt),&
-             & ncmult,ncmagtt,LOG(cmul),LOG(ABS(cmag)),lD11,1)
+           CALL BILAGRANGE(lcmult(1:ncmult),lvmagtt(1:nvmagtt),lD11tabt(1:ncmult,1,1:nvmagtt),&
+             & ncmult,nvmagtt,LOG(cmul),LOG(ABS(vmag)),lD11,1)
         END IF
      END IF
   ELSE                  !Interpolate from DKES

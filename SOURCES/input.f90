@@ -21,7 +21,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
        & USE_B1,USE_B0pB1,&
        & REMOVE_DIV,DELTA,&
        & MLAMBDA,MAL,TRUNCATE_B,PREC_B,PREC_EXTR,PREC_BINT,PREC_DQDV,PREC_INTV,&
-       & NEFIELD,EFIELD,NCMUL,CMUL,NCMAG,CMAG,&
+       & NEFIELD,EFIELD,NCMUL,CMUL,NVMAG,VMAG,&
        & NER,ERMIN,ERMAX,ERACC,&
        & NERR,IPERR
   !Namelist 'model' contains physics parameters
@@ -41,23 +41,23 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   REAL*8 S(nsx),ZB(nbx),AB(nbx),ZEFF
   !Other
   CHARACTER*100 serr,line
-  INTEGER iline,iostat,nefield,ncmul,ncmag,iz,ia,is
+  INTEGER iline,iostat,nefield,ncmul,nvmag,iz,ia,is
   !DKES database
   INTEGER, PARAMETER :: ncmuld=18
   REAL*8 cmuld(ncmuld) /3E+2,1E+2,3E+1,1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
                       & 3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6/
   INTEGER, PARAMETER :: nefieldd=9
   REAL*8 efieldd(nefieldd) /0E-0,1E-5,3E-5,1E-4,3E-4,1E-3,3E-3,1E-2,3E-2/
-  INTEGER, PARAMETER :: ncmagd=1
-  REAL*8 cmagd(ncmagd) /0E+0/
+  INTEGER, PARAMETER :: nvmagd=1
+  REAL*8 vmagd(nvmagd) /0E+0/
   !3D database
   INTEGER, PARAMETER :: ncmulx=18
   REAL*8 cmulx(ncmulx) /3E+2,1E+2,3E+1,1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
                       & 3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6/
 !  INTEGER, PARAMETER :: nefieldx=9
 !  REAL*8 efieldx(nefieldx) /0E-0,1E-5,3E-5,1E-4,3E-4,1E-3,3E-3,1E-2,3E-2/
-!  INTEGER, PARAMETER :: ncmagx=13
-!  REAL*8 cmagx(ncmagx) /-3E-2,-1E-2,-3E-3,-1E-3,-3E-4,-1E-4,0E-0,&
+!  INTEGER, PARAMETER :: nvmagx=13
+!  REAL*8 vmagx(nvmagx) /-3E-2,-1E-2,-3E-3,-1E-3,-3E-4,-1E-4,0E-0,&
 !                      & +1E-4,+3E-4,+1E-3,+3E-3,+1E-2,+3E-2/
 !  3D finer database 
 !  INTEGER, PARAMETER :: ncmulx=52
@@ -72,8 +72,8 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
                               &  1E-3,1.2E-3,1.5E-3,2E-3,3E-3,4E-3,5E-3,6E-3,7E-3,8E-3,9E-3,&
                               &  1E-2,1.2E-2,1.5E-2,2E-2,3E-2,4E-2,5E-2,6E-2,7E-2,8E-2,9E-2,&
                               &  1E-1,1.2E-1,1.5E-1,2E-1,5E-5/
-  INTEGER, PARAMETER :: ncmagx=66
-  REAL*8 cmagx(ncmagx)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
+  INTEGER, PARAMETER :: nvmagx=66
+  REAL*8 vmagx(nvmagx)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
                      & -9E-3,-8E-3,-7E-3,-8E-3,-5E-3,-4E-3,-3E-3,-2E-3,-1.5E-3,-1.2E-3,-1E-3,&
                      & -9E-4,-8E-4,-7E-4,-8E-4,-5E-4,-4E-4,-3E-4,-2E-4,-1.5E-4,-1.2E-4,-1E-4,&
                      & +1E-4,+1.2E-4,+1.5E-4,+2E-4,+3E-4,+4E-4,+5E-4,+6E-4,+7E-4,+8E-4,+9E-4,&
@@ -86,16 +86,16 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   INTEGER, PARAMETER :: nefieldy=27
   REAL*8 efieldy(nefieldy) /0.0,3E-7,1E-6,3E-6,1E-5,3E-5,1E-4,3E-4,1E-3,2E-3,5E-3,&
        & 1E-2,2E-2,3E-2,5E-2,1E-1,2E-1,3E-1,5E-1,7E-1,8E-1,1.0,1.2,1.5,2.0,3.0,5.0/
-  INTEGER, PARAMETER :: ncmagy=1
-  REAL*8 cmagy(ncmagy) /0.0/
-!  INTEGER, PARAMETER :: ncmagy=66
-!  REAL*8 cmagy(ncmagy)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
+  INTEGER, PARAMETER :: nvmagy=1
+  REAL*8 vmagy(nvmagy) /0.0/
+!  INTEGER, PARAMETER :: nvmagy=66
+!  REAL*8 vmagy(nvmagy)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
 !                     & -9E-3,-8E-3,-7E-3,-8E-3,-5E-3,-4E-3,-3E-3,-2E-3,-1.5E-3,-1.2E-3,-1E-3,&
 !                     & -9E-4,-8E-4,-7E-4,-8E-4,-5E-4,-4E-4,-3E-4,-2E-4,-1.5E-4,-1.2E-4,-1E-4,&
 !                     & +1E-4,+1.2E-4,+1.5E-4,+2E-4,+3E-4,+4E-4,+5E-4,+6E-4,+7E-4,+8E-4,+9E-4,&
 !                     & +1E-3,+1.2E-3,+1.5E-3,+2E-3,+3E-3,+4E-3,+5E-3,+6E-3,+7E-3,+8E-3,+9E-3,&
 !                     & +1E-2,+1.2E-2,+1.5E-2,+2E-2,+3E-2,+4E-2,+5E-2,+6E-2,+7E-2,+8E-2,+9E-2/
-  REAL*8 dummy,cmul(MAX(ncmulx,ncmuly)),efield(MAX(nefieldx,nefieldy)),cmag(MAX(ncmagx,ncmagy))
+  REAL*8 dummy,cmul(MAX(ncmulx,ncmuly)),efield(MAX(nefieldx,nefieldy)),vmag(MAX(nvmagx,nvmagy))
 
 
   OPEN(unit=1000,file="STDOUT",form='formatted',action='write',iostat=iostat)
@@ -136,10 +136,10 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   !Set details of the monoenergetic database
   NCMUL  =ncmuld       
   NEFIELD=nefieldd     
-  NCMAG  =ncmagd
+  NVMAG  =nvmagd
   CMUL(1:ncmuld)    =cmuld       
   EFIELD(1:nefieldd)=efieldd     
-  CMAG(1:ncmagd)    =cmagd        
+  VMAG(1:nvmagd)    =vmagd        
   !Set details of ambipolarity
   NER  = 21     
   ERMIN=+20.0  
@@ -328,10 +328,10 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      CALC_DB=.TRUE.
      NCMUL  =ncmulx  
      NEFIELD=nefieldx     
-     NCMAG  =ncmagx
+     NVMAG  =nvmagx
      CMUL(1:ncmulx)    =cmulx       
      EFIELD(1:nefieldx)=efieldx     
-     CMAG(1:ncmagx)    =cmagx        
+     VMAG(1:nvmagx)    =vmagx        
   END IF
   IF(NEOTRANSP.OR.PENTA) THEN
      CALC_DB=.TRUE.
@@ -343,16 +343,16 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      IF(NEOTRANSP) THEN
         ncmul  =ncmuly
         nefield=nefieldy
-        ncmag  =ncmagy
+        nvmag  =nvmagy
         cmul(1:ncmuly)    =cmuly
         efield(1:nefieldy)=efieldy
-        cmag(1:ncmagy)    =cmagy
+        vmag(1:nvmagy)    =vmagy
      END IF
   END IF
   IF(.NOT.TANG_VM) THEN
      FS=0
-     ncmag=1
-     cmag=0.0
+     nvmag=1
+     vmag=0.0
   END IF
   USE_B0=USE_B1.OR.USE_B0pB1
   DO ib=3,nbb
@@ -387,16 +387,16 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
 
   ncmult  =ncmul
   nefieldt=nefield
-  ncmagt  =ncmag
-  ALLOCATE( cmult(ncmult), efieldt(nefieldt), cmagt(ncmagt))
-  ALLOCATE(lcmult(ncmult),lefieldt(nefieldt),lcmagt(ncmagt))
-  ALLOCATE(lD11dkes1(ncmult,nefieldt),lD11dkes2(ncmult,nefieldt),lD11tab(ncmult,nefieldt,ncmagt))
+  nvmagt  =nvmag
+  ALLOCATE( cmult(ncmult), efieldt(nefieldt), vmagt(nvmagt))
+  ALLOCATE(lcmult(ncmult),lefieldt(nefieldt),lvmagt(nvmagt))
+  ALLOCATE(lD11dkes1(ncmult,nefieldt),lD11dkes2(ncmult,nefieldt),lD11tab(ncmult,nefieldt,nvmagt))
   cmult  =cmul
   efieldt=efield
-  cmagt  =cmag
+  vmagt  =vmag
   lcmult  =LOG(cmult)   
   lefieldt=LOG(efieldt)
-  lcmagt  =LOG(ABS(lcmagt))
+  lvmagt  =LOG(ABS(lvmagt))
   lefieldt(1)=-1000 !dummy value to avoid log(0.0)
 
 
@@ -475,7 +475,7 @@ SUBROUTINE INIT_FILES()
 !  IF(numprocs.GT.1) WRITE(filename,'("results.knosos.",I2.2)') myrank
 !  OPEN(unit=200+myrank,file=filename,form='formatted',action='write',iostat=iostat)
 !  WRITE(200+myrank,'("cmul efield weov wtov L11m L11p L31m L31p L33m L33p scal11&
-!       & scal13 scal33 max\_residual chip psip btheta bzeta vp cmag")')
+!       & scal13 scal33 max\_residual chip psip btheta bzeta vp vmag")')
 
   IF(SOLVE_AMB.OR.SOLVE_QN) THEN
      IF(numprocs.EQ.1) filename="flux.amb"

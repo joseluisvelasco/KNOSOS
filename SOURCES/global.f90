@@ -102,9 +102,9 @@ MODULE GLOBAL
   REAL*8 D11onu,D11pla,D11nu
 
   !DKES/neotransp/PENTA-related variables
-  INTEGER ncmult,nefieldt,ncmagt
-  REAL*8, ALLOCATABLE ::  cmult(:), efieldt(:), cmagt(:)
-  REAL*8, ALLOCATABLE :: lcmult(:),lefieldt(:),lcmagt(:)
+  INTEGER ncmult,nefieldt,nvmagt
+  REAL*8, ALLOCATABLE ::  cmult(:), efieldt(:), vmagt(:)
+  REAL*8, ALLOCATABLE :: lcmult(:),lefieldt(:),lvmagt(:)
   REAL*8, ALLOCATABLE :: lD11dkes1(:,:),lD11dkes2(:,:),lD11tab(:,:,:)
 
 
