@@ -22,7 +22,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
   CHARACTER*100 filename
   INTEGER nalphab
 !  INTEGER nlambda,nal
-  INTEGER icmul,iefield,ivmag,idummy(1),iostat
+  INTEGER icmul,iefield,ivmag,idummy(1),iostat,iturn
   REAL*8 ZB(1),AB(1),nb(1),Tb(1),Epsi,dummy(1)
   REAL*8 new_nb(ncmult),cmul0,D11tab(ncmult,nefieldt,nvmagt),D11(Nnmp,Nnmp)
   REAL*8 zeta(nax),theta(nax),dn1(nax,nax),phi1c(Nnmp),Mbbnm(Nnmp),trMnm(Nnmp),dn1nm(Nnmp,Nnmp)
@@ -115,50 +115,63 @@ SUBROUTINE CALC_DATABASE(is,s0)
   !Scan in EFIELD
   CALCULATED_INT=.FALSE.
 
-  DO iefield=1,nefieldt
-     DO icmul=1,ncmult
-        DO ivmag=1,nvmagt
-           WRITE(1000+myrank,'(" CMUL  ",1pe13.5)') cmult(icmul)
-           WRITE(1000+myrank,'(" EFIELD",1pe13.5)') efieldt(iefield)
-           WRITE(1000+myrank,'(" VMAG  ",1pe13.5)') vmagt(ivmag)
-           IF(cmult(icmul).GT.cmul_1NU.AND.ivmag.GT.1) THEN
-              D11tab(icmul,iefield,ivmag)=D11tab(icmul,iefield,1) 
-              CYCLE
-           END IF
-           !Calculate (v,species)-dependent constants
-           CALL DKE_CONSTANTS(1,1,ZB,AB,IDUMMY,new_nb(icmul),dummy,Tb,dummy,dummy(1),.FALSE.)
-           vmconst=vmagt(ivmag)*v
-           Epsi=efieldt(iefield)*v(iv0)/psip
-           IF(NEOTRANSP) Epsi=Epsi*aiota*eps
-                      !Use different subroutines in different regimes
-           IF(cmult(icmul).GT.cmul_PS) THEN
-              CALL CALC_PS(iv0,Epsi,D11tab(icmul,iefield,ivmag))   
-           ELSE IF(cmult(icmul).GT.cmul_1NU) THEN
-              CALL CALC_PLATEAU(iv0,Epsi,D11tab(icmul,iefield,ivmag))
-           ELSE
-!              CALL CALC_LOW_COLLISIONALITY_NANL
-!              CALCULATED_INT=.FALSE.
-              CONVERGED=.FALSE.
-              CALL CALC_LOW_COLLISIONALITY(iv0,Epsi,phi1c,Mbbnm,trMnm,&
-                   & D11tab(icmul,iefield,ivmag),nalphab,zeta,theta,dn1,dn1nm)
-              !           CALCULATED_INT=.TRUE.           
-           END IF
+  IF(NEOTRANSP) efieldt=efieldt*aiota*eps
+
+  DO iturn=1,2
+     DO iefield=1,nefieldt
+        DO icmul=1,ncmult
+           DO ivmag=1,nvmagt
+              !Calculate (v,species)-dependent constants
+              CALL DKE_CONSTANTS(1,1,ZB,AB,IDUMMY,new_nb(icmul),dummy,Tb,dummy,dummy(1),.FALSE.)
+              vmconst=vmagt(ivmag)*v
+              Epsi=efieldt(iefield)*v(iv0)/psip
+              IF(iturn.EQ.1) THEN
+                 WRITE(1000+myrank,'(" CMUL  ",1pe13.5)') cmult(icmul)
+                 WRITE(1000+myrank,'(" EFIELD",1pe13.5)') efieldt(iefield)
+                 WRITE(1000+myrank,'(" VMAG  ",1pe13.5)') vmagt(ivmag)
+                 IF(cmult(icmul).GT.cmul_1NU.AND.ivmag.GT.1) THEN
+                    D11tab(icmul,iefield,ivmag)=D11tab(icmul,iefield,1) 
+                    CYCLE
+                 END IF
+                 !Use different subroutines in different regimes
+                 IF(cmult(icmul).GT.cmul_PS) THEN
+                    CALL CALC_PS(iv0,Epsi,D11tab(icmul,iefield,ivmag))   
+                 ELSE IF(cmult(icmul).GT.cmul_1NU) THEN
+                    CALL CALC_PLATEAU(iv0,Epsi,D11tab(icmul,iefield,ivmag))
+                 ELSE
+                    CONVERGED=.FALSE.
+                    CALL CALC_LOW_COLLISIONALITY(iv0,Epsi,phi1c,Mbbnm,trMnm,&
+                         & D11tab(icmul,iefield,ivmag),nalphab,zeta,theta,dn1,dn1nm)
+                 END IF
+              ELSE IF(NEOTRANSP) THEN
+                 IF(D11tab(icmul,iefield,ivmag).LT.0) THEN
+!                    CALL INTERP_DATABASE(iturn,iv0,Epsi,D11(1,1),.TRUE.)
+!                    D11tab(icmul,iefield,ivmag)=D11(1,1)
+!                    CALL BILAGRANGE(lcmult(1:icmul-1),lefieldt(2:iefield-1),lD11tab(1:icmul-1,2:iefield-1,ivmag),&
+!                         & icmul-1,iefield-2,LOG(cmult(icmul)),LOG(efieldt(iefield)),lD11,1)
+                    CALL LAGRANGE(lcmult(1:icmul-1),lD11tab(1:icmul-1,iefield,ivmag),&
+                         & icmul-1,LOG(cmult(icmul)),lD11tab(icmul,iefield,ivmag),1)
+                    D11tab(icmul,iefield,ivmag)=EXP(lD11tab(icmul,iefield,ivmag))
+!                    IF(D11tab(icmul,iefield,ivmag).LT.0) D11tab(icmul,iefield,ivmag)=&
+!                         & D11tab(icmul,iefield,ivmag)*SQRT(cmult(icmul)/cmult(icmul+1))
+                    D11tab(icmul+1:ncmult,iefield,ivmag)=-1
+                 END IF
+                 WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') &
+                      & nu(iv0)/v(iv0)/2.,Epsi/v(iv0)*psip,-D11tab(icmul,iefield,ivmag)
+                 WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
+                 IF(iefield.EQ.nefieldt.AND.icmul.EQ.ncmult.AND.ivmag.EQ.nvmagt) WRITE(6000+myrank,'("e")')
+              END IF
+           END DO
         END DO
      END DO
+     !Save table of monenergetic transport coefficients (with DKES normalization)
+     D11tab=D11tab*fdkes(iv0)
+     lD11tab=LOG(D11tab)
   END DO
-!  nlambda=nlambda*2  
-!  END DO
-!  nal=nal*2
-!  END DO
 
-  IF(NEOTRANSP) WRITE(6000+myrank,'("e")')
-
+  IF(NEOTRANSP) efieldt=efieldt/(aiota*eps)
 
   IF(ONLY_DB) RETURN
-
-  !Save table of monenergetic transport coefficients (with DKES normalization)
-  D11tab=D11tab*fdkes(iv0)
-  lD11tab=LOG(D11tab)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 

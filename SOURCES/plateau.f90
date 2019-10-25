@@ -65,10 +65,6 @@ SUBROUTINE CALC_PLATEAU(jv,Epsi,D11)
   G11dkes=fdkes(jv)*D11
   WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5),"  NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
        & nu(jv)/v(jv)/2,Epsi/v(jv)*psip,vmconst(jv)/v(jv),G11dkes,G11dkes
-  IF(NEOTRANSP) THEN
-     WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') nu(jv)/v(jv)/2,Epsi/v(jv)*psip,-G11dkes
-     WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
-  END IF
   IF(DEBUG) THEN
      IF(cmul_PS.GT.0) THEN !to be checked
         WRITE(10000+myrank,'("2 ",6(1pe13.5))') nu(jv)/v(jv)/2,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&

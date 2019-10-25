@@ -44,10 +44,6 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
      WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5)," &
           & NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
           & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),fdkes(jv)*D11(1,1),fdkes(jv)*D11(1,1)
-     IF(NEOTRANSP) THEN
-        WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,-fdkes(jv)*D11(1,1)
-              WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
-     END IF
   ELSE
 
      D11=0
@@ -72,10 +68,6 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
            WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5),&
                 & " NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
                 & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),fdkes(jv)*D11r(ial,ilambda),fdkes(jv)*D11r(ial,ilambda)
-           IF(NEOTRANSP) THEN
-              WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,-fdkes(jv)*D11r(ial,ilambda)
-              WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
-           END IF
            EXIT
         END IF
         ial=ial+1
