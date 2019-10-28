@@ -28,7 +28,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   NAMELIST /model/ CALC_DB,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,ANISOTROPY,FRICTION,FACT_CON,&
        & SOLVE_AMB,TRIVIAL_AMB,FAST_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,D_AND_V,COMPARE_MODELS,&
        & FN,FI,FS,FP,FE,FR,FB,FNE,FTI,FTE,FER,&
-       & NEOTRANSP,PENTA,TASK3D,SATAKE,ANA_NTV,JPP
+       & NEOTRANSP,PENTA,TASK3D,TASK3Dlike,STELLOPT,SATAKE,ANA_NTV,JPP
   !Namelist 'surfaces' contains the list of flux-surfaces calculated
   NAMELIST /surfaces/ NS,S,DIRDB,DIRS
   !Namelist 'species' contains the list of species calculated
@@ -79,24 +79,42 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
                      & +1E-4,+1.2E-4,+1.5E-4,+2E-4,+3E-4,+4E-4,+5E-4,+6E-4,+7E-4,+8E-4,+9E-4,&
                      & +1E-3,+1.2E-3,+1.5E-3,+2E-3,+3E-3,+4E-3,+5E-3,+6E-3,+7E-3,+8E-3,+9E-3,&
                      & +1E-2,+1.2E-2,+1.5E-2,+2E-2,+3E-2,+4E-2,+5E-2,+6E-2,+7E-2,+8E-2,+9E-2/
-  !Database for neontrasp
-  INTEGER, PARAMETER :: ncmuly=16
-  REAL*8 cmuly(ncmuly) /1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
+  !Database for NEOTRANSP
+  INTEGER, PARAMETER :: ncmuln=16
+  REAL*8 cmuln(ncmuln) /1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
                       & 3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6,3E-7/
-  INTEGER, PARAMETER :: nefieldy=27
-  REAL*8 efieldy(nefieldy) /0.0,3E-7,1E-6,3E-6,1E-5,3E-5,1E-4,3E-4,1E-3,2E-3,5E-3,&
+  INTEGER, PARAMETER :: nefieldn=27
+  REAL*8 efieldn(nefieldn) /0.0,3E-7,1E-6,3E-6,1E-5,3E-5,1E-4,3E-4,1E-3,2E-3,5E-3,&
        & 1E-2,2E-2,3E-2,5E-2,1E-1,2E-1,3E-1,5E-1,7E-1,8E-1,1.0,1.2,1.5,2.0,3.0,5.0/
-  INTEGER, PARAMETER :: nvmagy=1
-  REAL*8 vmagy(nvmagy) /0.0/
-!  INTEGER, PARAMETER :: nvmagy=66
-!  REAL*8 vmagy(nvmagy)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
+  INTEGER, PARAMETER :: nvmagn=1
+  REAL*8 vmagn(nvmagn) /0.0/
+!  INTEGER, PARAMETER :: nvmagn=66
+!  REAL*8 vmagn(nvmagn)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
 !                     & -9E-3,-8E-3,-7E-3,-8E-3,-5E-3,-4E-3,-3E-3,-2E-3,-1.5E-3,-1.2E-3,-1E-3,&
 !                     & -9E-4,-8E-4,-7E-4,-8E-4,-5E-4,-4E-4,-3E-4,-2E-4,-1.5E-4,-1.2E-4,-1E-4,&
 !                     & +1E-4,+1.2E-4,+1.5E-4,+2E-4,+3E-4,+4E-4,+5E-4,+6E-4,+7E-4,+8E-4,+9E-4,&
 !                     & +1E-3,+1.2E-3,+1.5E-3,+2E-3,+3E-3,+4E-3,+5E-3,+6E-3,+7E-3,+8E-3,+9E-3,&
 !                     & +1E-2,+1.2E-2,+1.5E-2,+2E-2,+3E-2,+4E-2,+5E-2,+6E-2,+7E-2,+8E-2,+9E-2/
-  REAL*8 dummy,cmul(MAX(ncmulx,ncmuly)),efield(MAX(nefieldx,nefieldy)),vmag(MAX(nvmagx,nvmagy))
-
+  !Database for PENTA
+  INTEGER, PARAMETER :: ncmulp=16
+  REAL*8 cmulp(ncmulp) /1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
+                      & 3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6,3E-7/
+  INTEGER, PARAMETER :: nefieldp=27
+  REAL*8 efieldp(nefieldp) /0.0,3E-7,1E-6,3E-6,1E-5,3E-5,1E-4,3E-4,1E-3,2E-3,5E-3,&
+       & 1E-2,2E-2,3E-2,5E-2,1E-1,2E-1,3E-1,5E-1,7E-1,8E-1,1.0,1.2,1.5,2.0,3.0,5.0/
+  INTEGER, PARAMETER :: nvmagp=1
+  REAL*8 vmagp(nvmagp) /0.0/
+!  INTEGER, PARAMETER :: nvmagp=66
+!  REAL*8 vmagp(nvmagp)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
+!                     & -9E-3,-8E-3,-7E-3,-8E-3,-5E-3,-4E-3,-3E-3,-2E-3,-1.5E-3,-1.2E-3,-1E-3,&
+!                     & -9E-4,-8E-4,-7E-4,-8E-4,-5E-4,-4E-4,-3E-4,-2E-4,-1.5E-4,-1.2E-4,-1E-4,&
+!                     & +1E-4,+1.2E-4,+1.5E-4,+2E-4,+3E-4,+4E-4,+5E-4,+6E-4,+7E-4,+8E-4,+9E-4,&
+!                     & +1E-3,+1.2E-3,+1.5E-3,+2E-3,+3E-3,+4E-3,+5E-3,+6E-3,+7E-3,+8E-3,+9E-3,&
+!                     & +1E-2,+1.2E-2,+1.5E-2,+2E-2,+3E-2,+4E-2,+5E-2,+6E-2,+7E-2,+8E-2,+9E-2/
+  REAL*8   cmul(MAX(  ncmulx,  ncmuln,  ncmulp))
+  REAL*8 efield(MAX(nefieldx,nefieldn,nefieldp))
+  REAL*8   vmag(MAX(  nvmagx,  nvmagn,  nvmagp))
+  REAL*8 dummy
 
   OPEN(unit=1000,file="STDOUT",form='formatted',action='write',iostat=iostat)
 
@@ -201,12 +219,14 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   FDLTI=1.0
   FER=1.0
   !Particular problems
-  NEOTRANSP=.FALSE.
-  TASK3D=   .FALSE. 
-  PENTA=    .FALSE. 
-  SATAKE=   .FALSE. 
-  ANA_NTV=  .FALSE. 
-  JPP=      .FALSE.
+  NEOTRANSP= .FALSE.
+  TASK3D=    .FALSE. 
+  TASK3Dlike=.FALSE. 
+  PENTA=     .FALSE. 
+  STELLOPT=  .FALSE.
+  SATAKE=    .FALSE. 
+  ANA_NTV=   .FALSE. 
+  JPP=       .FALSE.
   
   !Read namelist 'model'
   OPEN(unit=1,file="input.model",form='formatted',action='read',iostat=iostat) 
@@ -231,6 +251,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   Zb(2)  =+1.            
   Ab(2)  = 1.0073
   regb(2)=+3
+
   IF(TASK3D) THEN
      !Could be overwritten by file 'input.surfaces'
      ns=40
@@ -238,8 +259,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
         s(is)=(is-0.5)*(is-0.5)/REAL(ns*ns)
      END DO
      !Could be overwritten by file 'input.species'
-     NBB=6
-     REGB(1:2)=3
+     REGB(1:2)=0
      ZB(1)=-1.
      AB(1)=5.48579909E-4
      OPEN(unit=1,file="input-prof.txt",action='read',iostat=iostat)
@@ -257,6 +277,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
         serr="Wrong data in input-prof.txt"
         CALL END_ALL(serr,.FALSE.)
      END IF
+     NBB=6
      Zb(3)  =+3.         
      Ab(3)  =6.941
      Zb(4)  =+19.         
@@ -267,11 +288,13 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      Ab(6)  =55.847
      regb(3:nbb)=10
      ZEFF   =1.0000000001
-     !Could be overwritten by 'input.model'
-     SOLVE_QN  =.FALSE.
-     TRIVIAL_QN=.TRUE.
      D_AND_V=5
   ELSE IF(NEOTRANSP) THEN
+     ns=7
+     DO is=1,ns
+        s(is)=(is-0.5)*(is-0.5)/REAL(ns*ns)
+     END DO
+  ELSE IF(PENTA) THEN
      ns=7
      DO is=1,ns
         s(is)=(is-0.5)*(is-0.5)/REAL(ns*ns)
@@ -333,20 +356,42 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      EFIELD(1:nefieldx)=efieldx     
      VMAG(1:nvmagx)    =vmagx        
   END IF
-  IF(NEOTRANSP.OR.PENTA) THEN
+  IF(TASK3D.OR.STELLOPT(2).OR.STELLOPT(3)) THEN
+     !Could be overwritten by 'input.model'
+     SOLVE_QN  =.FALSE.
+     TRIVIAL_QN=.TRUE.
+  ELSE IF(NEOTRANSP.OR.PENTA.OR.STELLOPT(1)) THEN
      CALC_DB=.TRUE.
-     ONLY_DB=.TRUE.
-     TANG_VM=.FALSE.
-     INC_EXB=.TRUE.
-     SOLVE_AMB=.FALSE.
-     SOLVE_QN=.FALSE.       
+     IF(NEOTRANSP.OR.PENTA) TANG_VM=.FALSE.
+     IF(NEOTRANSP.OR.PENTA.OR..NOT.(STELLOPT(2).OR.STELLOPT(3))) THEN
+        SOLVE_AMB=.FALSE.
+        SOLVE_QN=.FALSE.   
+        ONLY_DB=.TRUE.
+     END IF
+     IF(NEOTRANSP.OR.PENTA) TANG_VM=.FALSE.
      IF(NEOTRANSP) THEN
-        ncmul  =ncmuly
-        nefield=nefieldy
-        nvmag  =nvmagy
-        cmul(1:ncmuly)    =cmuly
-        efield(1:nefieldy)=efieldy
-        vmag(1:nvmagy)    =vmagy
+        ncmul  =ncmuln
+        nefield=nefieldn
+        nvmag  =nvmagn
+        cmul(1:ncmuln)    =cmuln
+        efield(1:nefieldn)=efieldn
+        vmag(1:nvmagn)    =vmagn
+     ELSE IF(PENTA) THEN
+        ncmul  =ncmulp
+        nefield=nefieldp
+        nvmag  =nvmagp
+        cmul(1:ncmulp)    =cmulp
+        efield(1:nefieldp)=efieldp
+        vmag(1:nvmagp)    =vmagp
+     ELSE IF(STELLOPT(1)) THEN
+        ncmul  =1
+        nefield=3
+        nvmag  =1
+        cmul(1)=1E-5
+        efield(1)=3E-4
+        efield(2)=0E+0
+        efield(3)=0E+0
+        vmag=0
      END IF
   END IF
   IF(.NOT.TANG_VM) THEN
@@ -384,6 +429,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   IF(MAL.GT.0) ALLOCATE(absnablar(MAL,MAL))
 
   IF(GEN_FLAG(1)) CLOSEST_LAMBDA=.NOT.CLOSEST_LAMBDA
+  IF(TASK3Dlike) TASK3D=.TRUE.
 
   ncmult  =ncmul
   nefieldt=nefield
@@ -398,8 +444,6 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   lefieldt=LOG(efieldt)
   lvmagt  =LOG(ABS(lvmagt))
   lefieldt(1)=-1000 !dummy value to avoid log(0.0)
-
-
   
   !Write input parameters
   IF(myrank.EQ.0) THEN

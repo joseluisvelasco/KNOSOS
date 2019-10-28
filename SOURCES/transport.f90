@@ -1,11 +1,11 @@
 
 !Solve transport REVISE ALL
 
-SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Sb,Tb,dTbdpsi,Pb,Es)
+SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
 
 !----------------------------------------------------------------------------------------------- 
 !For densities and temperatures and electrostatic potential given by nb, dnbdpsi, Tb, dTbdpsi,
-!and Epsi for nbb species of charge Zb and mass Ab at ns surfaces s, calculate evolution 
+!and Er for nbb species of charge Zb and mass Ab at ns surfaces s, calculate evolution 
 !after time step dt
 !----------------------------------------------------------------------------------------------- 
   USE GLOBAL
@@ -14,45 +14,61 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Sb,Tb,dTbdpsi,Pb,Es)
   INTEGER nbb,ns
   REAL*8 dt,s(ns),Zb(nbb),Ab(nbb),Gb(nbb,ns),Sb(nbb,ns),Qb(nbb,ns),Pb(nbb,ns)
   !Input/output
-  REAL*8 nb(nbb,ns),dnbdpsi(nbb,ns),Tb(nbb,ns),dTbdpsi(nbb,ns),Es(ns)
+  REAL*8 nb(nbb,ns),dnbdpsi(nbb,ns),Tb(nbb,ns),dTbdpsi(nbb,ns),Epsi(ns)
   !Others
-  REAL*8, PARAMETER  ::  prefact_Es=1213173.45142083 !e/(8pi^2m)
-  INTEGER ib,is
-  REAL*8 gradGb(nbb,ns),gradQb(nbb,ns),ohm(nbb,ns),coulomb(nbb,ns)
-  REAL*8 dnbdt(nbb,ns),dTbdt(nbb,ns),dnbTbdt(nbb,ns),dEsdt(ns)
-  REAL*8 fdummy,nu0(ns),fact_coulomb(ns),fact_Es(ns)
-
+  REAL*8, PARAMETER  ::  prefact_Epsi=1213173.45142083 !e/(8pi^2m)
+  INTEGER ib,is,iostat
+  REAL*8 dsdV(ns),dVdpsi(ns),dsdr(ns)
+  REAL*8 dGbdV(nbb,ns),dQbdV(nbb,ns),dEpsids(ns),dErdr(ns)
+  REAL*8 Pin(ns),ohm(nbb,ns),coulomb(nbb,ns)
+  REAL*8 dnbdt(nbb,ns),dTbdt(nbb,ns),dnbTbdt(nbb,ns),dEpsidt(ns)
+  REAL*8 fdummy,nu0(ns),fact_coulomb(ns),fact_Epsi(ns)
 #ifdef MPIandPETSc
-
   INCLUDE "mpif.h"
 
   IF(numprocs.GT.1) THEN
      DO ib=1,nbb
-        CALL REAL_ALLREDUCE(     nb(ib,:),ns)
-        CALL REAL_ALLREDUCE(dnbdpsi(ib,:),ns)
-        CALL REAL_ALLREDUCE(     Gb(ib,:),ns)
-        CALL REAL_ALLREDUCE(     Sb(ib,:),ns)
-        CALL REAL_ALLREDUCE(     Tb(ib,:),ns)
-        CALL REAL_ALLREDUCE(dnbdpsi(ib,:),ns)
-        CALL REAL_ALLREDUCE(dTbdpsi(ib,:),ns)
-        CALL REAL_ALLREDUCE(     Qb(ib,:),ns)
-        CALL REAL_ALLREDUCE(     Pb(ib,:),ns)
+        CALL REAL_ALLREDUCE(nb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Gb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Sb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Tb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Qb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Pb(ib,:),ns)
      END DO
-     CALL REAL_ALLREDUCE( s,ns)
-     CALL REAL_ALLREDUCE(Es,ns)
+     CALL REAL_ALLREDUCE(Epsi,ns)
   END IF
 
-#endif
-  
+#endif     
+
+  dsdV=1./(TWOPI*PI*rad_R*rad_a*rad_a)
+  dVdpsi=1./(dsdV*torflux)
+  dsdr=2*SQRT(s)/rad_a
+
+ 
+  IF(myrank.EQ.0.AND.(STELLOPT(2).OR.STELLOPT(3))) THEN
+     Pin=0
+     DO ib=1,nbb
+        Pin=Pin+Qb(ib,:)*nb(ib,:)*Tb(ib,:)*1.60218*dVdpsi
+     END DO
+     CALL DERIVE(s,Epsi,ns,4,dEpsids)
+     dErdr=dEpsids*dsdr*dsdr*atorflux
+     OPEN(unit=7000+myrank,file="flux.opt",form='formatted',action='write',iostat=iostat)
+     WRITE(7000+myrank,'("s P_in[W] MAX(P_in)[W] E_r[V/m] dE_r/dr[V/m^2] MAX|dE_r/dr|[V/m^2]")')
+     DO is=1,ns
+        WRITE(7000+myrank,'(30(1pe13.5))') s(is),Pin(is),MAXVAL(Pin),&
+             & Epsi(is)*atorflux*dsdr(is),dErdr(is),MAXVAL(ABS(dErdr))
+     END DO
+  END IF
+
   WRITE(1000+myrank,*) 'SUBROUTINE TRANSPORT not ready'
   RETURN
 
   DO ib=1,nbb
-     CALL DERIVE(s(1:ns),Gb(ib,1:ns),ns,4,gradGb(ib,1:ns))
-     CALL DERIVE(s(1:ns),Qb(ib,1:ns),ns,4,gradQb(ib,1:ns))
+     CALL DERIVE(s/dsdV,Gb(ib,:),ns,4,dGbdV(ib,:))
+     CALL DERIVE(s/dsdV,Qb(ib,:),ns,4,dQbdV(ib,:))
   END DO
-
-  ohm(1,:)=-Es*Gb(1,:) !XXX
+  !Check
+  ohm(1,:)=-Epsi*Gb(1,:)*nb(1,:)*dVdpsi
   ohm(2,:)=-ohm(1,:)
   DO is=1,ns
      CALL CALC_CTS(Zb(2),Ab(2),nb(2,is),Tb(2,is),fdummy,nu0(is))
@@ -60,26 +76,24 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Sb,Tb,dTbdpsi,Pb,Es)
   fact_coulomb=4/sqpi*Zb(2)*Ab(1)/Ab(2)*nu0
   coulomb(1,:)=3*(Tb(1,:)-Tb(2,:))*fact_coulomb
   coulomb(2,:)=-coulomb(1,:)
-
-  Sb=gradGb
-
-  dnbdt  =-gradGb+Sb
-  dnbTbdt=(-gradQb+Pb+ohm+coulomb)*2./3
+  !End check
+  Sb=-dGbdV !No particle transport
+  dnbdt  = -dGbdV+Sb
+  dnbTbdt=(-dQbdV+Pb+ohm+coulomb)*2./3
   dTbdt  =(dnbTbdt-Tb*dnbdt)/nb
-
-  dEsdt=0
+  dEpsidt=0
   DO ib=1,nbb
-     dEsdt=dEsdt+Zb(ib)*nb(ib,:)*Gb(ib,:)
+     dEpsidt=dEpsidt+Zb(ib)*nb(ib,:)*Gb(ib,:)
   END DO
-  fact_Es=prefact_Es/etet/SQRT(s(:))/nb(2,:)/Ab(2)
-  dEsdt=dEsdt*fact_Es
+  fact_Epsi=prefact_Epsi/etet/SQRT(s(:))/nb(2,:)/Ab(2)
+  dEpsidt=dEpsidt*fact_Epsi  !Check factor
 
+  !Update profiles
   nb=nb+dt*dnbdt
   Tb=Tb+dt*dTbdt
-  Es=Es+dt*dEsdt
-  
-  CALL DERIVE(s(1:ns),nb(ib,1:ns),ns,4,dnbdpsi(ib,1:ns))
-  CALL DERIVE(s(1:ns),Tb(ib,1:ns),ns,4,dTbdpsi(ib,1:ns))
+  Epsi=Epsi+dt*dEpsidt  
+  CALL DERIVE(s*atorflux,nb(ib,:),ns,4,dnbdpsi(ib,:))
+  CALL DERIVE(s*atorflux,Tb(ib,:),ns,4,dTbdpsi(ib,:))
 
 END SUBROUTINE TRANSPORT
 

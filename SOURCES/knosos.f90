@@ -44,6 +44,16 @@ PROGRAM KNOSOS
   !Allocate some transport-related quantities
   ALLOCATE(nb(nbb,ns,nerr),dnbdpsi(nbb,ns,nerr),Tb(nbb,ns,nerr),dTbdpsi(nbb,ns,nerr),&
     & Epsi(ns,nerr),Gb(nbb,ns,nerr),Qb(nbb,ns,nerr),Sb(nbb,ns,nerr),Pb(nbb,ns,nerr),rank(ns,nerr))
+  nb=0
+  dnbdpsi=0
+  Tb=0
+  dTbdpsi=0
+  Epsi=0
+  Gb=0
+  Qb=0
+  Sb=0
+  Pb=0
+  rank=0
   !Initialize PETSC and the random number generator according to the input, distribute MPI jobs
   CALL DISTRIBUTE_MPI(ns,rank)
 #ifdef MPIandPETSc
@@ -76,10 +86,12 @@ PROGRAM KNOSOS
            !(incl. drift-kinetic eq., ambipolarity and quasineutrality)
            CALL SOLVE_DKE_QN_AMB(itime,nbb,Zb(1:nbb),Ab(1:nbb),regb(1:nbb),s(is),&
                 & nb(:,is,jerr),dnbdpsi(:,is,jerr),Tb(:,is,jerr),dTbdpsi(:,is,jerr),&
-                & Epsi(is,jerr),Gb(:,is,jerr),Qb(:,is,jerr))                
+                & Epsi(is,jerr),Gb(:,is,jerr),Qb(:,is,jerr))
         END DO
-        !Evolve the plasma profiles (without error propagation)
-        CALL TRAnsPORT(nbb,ns,dt,S,Zb,Ab,nb,Gb(:,:,1),Sb,Tb,Qb(:,:,1),Pb,Epsi(:,1))
+        !Evolve the plasma profiles (without error propagation) 
+        CALL TRANSPORT(nbb,ns,dt,s(1:ns),Zb(1:nbb),Ab(1:nbb),&
+             & nb(:,:,jerr),dnbdpsi(:,:,jerr),Gb(:,:,jerr),Sb,&
+             & Tb(:,:,jerr),dTbdpsi(:,:,jerr),Qb(:,:,jerr),Pb,Epsi(:,jerr))
      END DO
   END DO
   IF(nerr.GT.1) CALL AVERAGE_SAMPLES(nbb,ns,s(1:ns),Epsi,Gb,Qb) 

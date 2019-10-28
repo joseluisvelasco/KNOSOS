@@ -203,7 +203,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=nametask3d2,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nametask3d2,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A10," read")') nametask3d2
+     WRITE(1000+myrank,'(" File ",A22," read")') nametask3d2
      IF(filename.EQ."ti") THEN
         nprof=2
      ELSE IF(filename.EQ."te") THEN
@@ -234,7 +234,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=nametask3d,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nametask3d,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A10," read")') nametask3d
+     WRITE(1000+myrank,'(" File ",A22," read")') nametask3d
      READ(1,*) line
      READ(1,*) line
      IF(filename.EQ."ti") THEN
@@ -275,7 +275,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=namegraz,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//namegraz,action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
-     WRITE(1000+myrank,'(" File ",A10," read")') namegraz
+     WRITE(1000+myrank,'(" File ",A22," read")') namegraz
      READ(1,*) line
      IF(filename.EQ."ti") THEN
         nprof=3
@@ -317,7 +317,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=namedr,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//namedr,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A10," read")') namedr
+     WRITE(1000+myrank,'(" File ",A22," read")') namedr
      IF(filename.EQ."ti") THEN
         nprof=3
      ELSE IF(filename.EQ."te") THEN
@@ -354,7 +354,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=nameneo,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nameneo,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A10," read")') namedr
+     WRITE(1000+myrank,'(" File ",A22," read")') nameneo
      IF(filename.EQ."ti") THEN
         nprof=3
      ELSE IF(filename.EQ."te") THEN
@@ -397,7 +397,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=nameeut,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nameeut,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A10," read")') nameeut
+     WRITE(1000+myrank,'(" File ",A22," read")') nameeut
      IF(filename.EQ."ti") THEN
         nprof=1
      ELSE IF(filename.EQ."te") THEN
@@ -425,7 +425,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
      OPEN(unit=1,file=nameeut,action='read',iostat=iostat)
      IF(iostat.NE.0) OPEN(unit=1,file="../"//nameeut,action='read',iostat=iostat)
      IF(iostat.EQ.0) THEN
-        WRITE(1000+myrank,'(" File ",A10," read")') nameeut
+        WRITE(1000+myrank,'(" File ",A22," read")') nameeut
         READ(1,*) line
         READ(1,*) line
         READ(1,*) line
@@ -449,7 +449,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=nameprof,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nameprof,action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
-     WRITE(1000+myrank,'(" File ",A10," read")') nameprof
+     WRITE(1000+myrank,'(" File ",A22," read")') nameprof
      READ(1,*) line
      DO is=1,ns0
         READ(1,*,iostat=iostat) rho(is),dummy,q_p(is),dummy,dummy,dqdx_p(is),dummy
@@ -479,7 +479,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=namepoint,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//namepoint,action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
-     WRITE(1000+myrank,'(" File ",A10," read")') namepoint
+     WRITE(1000+myrank,'(" File ",A22," read")') namepoint
      READ(1,*) line
      READ(1,*,iostat=iostat) q,dlnqdx_p(1)  !x=r=rho*a
      dqdpsi=q*dlnqdx_p(1)/psip        
@@ -492,6 +492,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
 
 
   IF(filename.NE."ph".AND.filename.NE."te".AND.q.LT.ALMOST_ZERO) THEN
+     WRITE(1000,*) filename,q
      serr="Missing profile"
      CALL END_ALL(serr,.FALSE.)
   END IF

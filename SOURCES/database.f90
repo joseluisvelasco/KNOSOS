@@ -36,7 +36,8 @@ SUBROUTINE CALC_DATABASE(is,s0)
   CALL CPU_TIME(tstart)
 
   !Read a DKES database of monoenergetic transport coefficients
-  IF(.NOT.(PENTA.OR.NEOTRANSP.OR.FAST_AMB)) CALL READ_DKES_TABLE(is)
+  IF(.NOT.(PENTA.OR.NEOTRANSP.OR.PENTA.OR.FAST_AMB&
+       &.OR.STELLOPT(1).OR.STELLOPT(2).OR.STELLOPT(3))) CALL READ_DKES_TABLE(is)
 
   CALCULATED_INT=.FALSE.
   !Calculate dummy sources, etc
@@ -52,7 +53,9 @@ SUBROUTINE CALC_DATABASE(is,s0)
   Mbbnm=0
   cmul0=nu(1)/v(1)/2
   !Determine collisionalities that limit different collisionality regimes
-  IF(.NOT.SATAKE.AND..NOT.QN.AND..NOT.JPP) THEN !if not low-collisionality problems 
+  IF(.NOT.SATAKE.AND..NOT.QN.AND..NOT.JPP.AND..NOT.STELLOPT(1).AND.&
+       &                 .NOT.STELLOPT(2).AND..NOT.STELLOPT(3)) THEN 
+     !if not low-collisionality problems 
      cmul_PS =-1.0   !this may be necessary if there is 
      cmul_1NU=-1.0   !some connection imposed between regimes
      CALL CALC_PS(1,ALMOST_ZERO,D11(1,1))
@@ -96,6 +99,26 @@ SUBROUTINE CALC_DATABASE(is,s0)
           & SQRT(s0)*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
      IF(myrank.EQ.0) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
      WRITE(6000+myrank,'("cfit          NaN        NaN           NaN       NaN      NaN")')
+  ELSE IF(PENTA) THEN
+!     IF(numprocs.EQ.1) filename="knosos.penta"
+!     IF(numprocs.GT.1) WRITE(filename,'("knosos.penta.",I2.2)') myrank
+     OPEN(unit=6000+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+     IF(myrank.EQ.0) THEN
+!        WRITE(6000+myrank,'("cc")')  
+!        WRITE(6000+myrank,'("cc")')  
+!        WRITE(6000+myrank,'("cc")')  
+!        WRITE(6000+myrank,'("cc")')  
+!        WRITE(6000+myrank,'("cc")')  
+     END IF
+!     WRITE(6000+myrank,'(5(1pe13.5),"  NaN",1pe13.5,"  r,R,B,io,xkn,ft,<b^2>")') &
+!          & SQRT(s0)*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
+!     IF(myrank.EQ.0) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
+!     WRITE(6000+myrank,'("cfit          NaN        NaN           NaN       NaN      NaN")')
+  ELSE IF(STELLOPT(1).OR.STELLOPT(2).OR.STELLOPT(3)) THEN
+     IF(numprocs.EQ.1) filename="mono.opt"
+     IF(numprocs.GT.1) WRITE(filename,'("mono.opt.",I2.2)') myrank
+     OPEN(unit=6000+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+     WRITE(6000+myrank,'("s Gamma_1nu Gamma_sqrtnu Gamma_sbp")')
   END IF
 
   !Only continue if the goal is to compare with DKES or perform a monoenergetic calculation
@@ -119,11 +142,13 @@ SUBROUTINE CALC_DATABASE(is,s0)
 
   DO iturn=1,2
      DO iefield=1,nefieldt
+        IF(STELLOPT(1).AND.iturn.GT.1)    EXIT
+        IF(STELLOPT(1).AND.nefieldt.EQ.3) TANG_VM=.FALSE.
         DO icmul=1,ncmult
            DO ivmag=1,nvmagt
               !Calculate (v,species)-dependent constants
               CALL DKE_CONSTANTS(1,1,ZB,AB,IDUMMY,new_nb(icmul),dummy,Tb,dummy,dummy(1),.FALSE.)
-              vmconst=vmagt(ivmag)*v
+              IF(.NOT.STELLOPT(1)) vmconst=vmagt(ivmag)*v
               Epsi=efieldt(iefield)*v(iv0)/psip
               IF(iturn.EQ.1) THEN
                  WRITE(1000+myrank,'(" CMUL  ",1pe13.5)') cmult(icmul)
@@ -143,7 +168,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
                     CALL CALC_LOW_COLLISIONALITY(iv0,Epsi,phi1c,Mbbnm,trMnm,&
                          & D11tab(icmul,iefield,ivmag),nalphab,zeta,theta,dn1,dn1nm)
                  END IF
-              ELSE IF(NEOTRANSP) THEN
+              ELSE IF(NEOTRANSP.OR.PENTA) THEN
                  IF(D11tab(icmul,iefield,ivmag).LT.0) THEN
 !                    CALL INTERP_DATABASE(iturn,iv0,Epsi,D11(1,1),.TRUE.)
 !                    D11tab(icmul,iefield,ivmag)=D11(1,1)
@@ -167,6 +192,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
      !Save table of monenergetic transport coefficients (with DKES normalization)
      D11tab=D11tab*fdkes(iv0)
      lD11tab=LOG(D11tab)
+     IF(STELLOPT(1)) EXIT
   END DO
 
   IF(NEOTRANSP) efieldt=efieldt/(aiota*eps)

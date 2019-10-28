@@ -152,6 +152,10 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
         ELSE
            Epsi=Epsi1(3)
         END IF
+     ELSE IF(nroot.EQ.0) THEN
+        Gb=0
+        Qb=0
+        Epsi=0
      END IF
 
 !     WRITE(600+myrank,'(30(1pe13.5))')-s,Epsi*psip,&
@@ -1192,10 +1196,17 @@ SUBROUTINE PLOT_FLUX(jt,jt0,nbb,s,Epsi,Gb,Qb,L1b,L2b,Zb,nb,dnbdpsi,Tb,dTbdpsi,ep
        & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip, &
        & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
        & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize
-  IF(TASK3D) WRITE(5300+myrank,'(1000(1pe13.5))') SQRT(s),Epsi*psip/1E3,& 
-       & nb(1)*1E19*Gb(1)/psip,nb(2)*1E19*Gb(2)/psip,ZERO,nb(2)*1E19*Gb(2)/psip+ZERO,&
-       & 1.602*nb(1)*Tb(1)*Qb(1)/psip,1.602*nb(2)*Tb(2)*Qb(2)/psip,ZERO,1.602*nb(2)*Tb(2)*Qb(2)/psip
-  
+  IF(TASK3D) THEN
+     IF(GEN_FLAG(2)) THEN
+        WRITE(5300+myrank,'(I4,1000(1pe13.5))') jt,SQRT(s),Epsi*psip/1E3,& 
+             & nb(1)*1E19*Gb(1)/psip,nb(2)*1E19*Gb(2)/psip,ZERO,nb(2)*1E19*Gb(2)/psip+ZERO,&
+             & 1.602*nb(1)*Tb(1)*Qb(1)/psip,1.602*nb(2)*Tb(2)*Qb(2)/psip,ZERO,1.602*nb(2)*Tb(2)*Qb(2)/psip
+     ELSE
+        WRITE(5300+myrank,'(1000(1pe13.5))') SQRT(s),Epsi*psip/1E3,& 
+             & nb(1)*1E19*Gb(1)/psip,nb(2)*1E19*Gb(2)/psip,ZERO,nb(2)*1E19*Gb(2)/psip+ZERO,&
+             & 1.602*nb(1)*Tb(1)*Qb(1)/psip,1.602*nb(2)*Tb(2)*Qb(2)/psip,ZERO,1.602*nb(2)*Tb(2)*Qb(2)/psip
+     END IF
+  END IF
   IF(jt.EQ.jt0.AND.SOLVE_QN) THEN
      nm=1
      WRITE(700+myrank,'(2(1pe13.5),I5,1000(1pe13.5))') &
