@@ -998,11 +998,12 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,dpsi,x1,x2,x3,Bzt,LeftHanded)
   LOGICAL LeftHanded
   !Others
   INTEGER iz,izp1,izm1,it,itp1,itm1
-  REAL*8 dx1dpsi,dx1dt,dx1dz,dx2dpsi,dx2dt,dx2dz,dx3dpsi,dx3dt,dx3dz,sqrtg,k,k2,dz,dt
+  REAL*8 dx1dpsi,dx1dt,dx1dz,dx2dpsi,dx2dt,dx2dz,dx3dpsi,dx3dt,dx3dz,sqrtg,k,k2,dz,dt,denom
 
   k =0
   k2=0
     
+  etet=0
   !Calculate derivatives
   DO iz=1,nz
      IF(iz.GT.2.AND..NOT.DEBUG.AND..NOT.ONLY_PHI1) CYCLE
@@ -1057,6 +1058,8 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,dpsi,x1,x2,x3,Bzt,LeftHanded)
              & sqrtg,Bzt(iz,it),absnablar(iz,it),LeftHanded
         IF(.NOT.LeftHanded) RETURN
         IF(iz.EQ.2.AND.it.EQ.2.AND..NOT.DEBUG.AND..NOT.ONLY_PHI1) RETURN
+        etet=etet+(dx1dt*dx1dt+dx2dt*dx2dt+dx3dt*dx3dt)/(Bzt(iz,it)*Bzt(iz,it))
+        denom=denom+1/(Bzt(iz,it)*Bzt(iz,it))
      END DO
   END DO
   !Check if there is too much deviation from sqrt(g)*B^2=constant
@@ -1064,7 +1067,8 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,dpsi,x1,x2,x3,Bzt,LeftHanded)
   k2=SQRT((k2-k*k*(nz*nt))/(nz*nt-1.0))  
   IF(k2.GT.0.5*ABS(k)) LeftHanded=.FALSE. 
   IF(DEBUG) WRITE(1400+myrank,'(5(1pe13.5),L)') k,k2
-  
+  etet=etet/denom
+
 END SUBROUTINE CHECK_JACSIGN
  
 

@@ -63,7 +63,7 @@ SUBROUTINE DISTRIBUTE_MPI(ns,rank)
   IF(ns.EQ.1.AND.nerr.EQ.1) THEN
 
      rank=0
-    
+
   ELSE IF(numprocs.GE.nerr*ns) THEN
 
      rank=100000
@@ -73,6 +73,15 @@ SUBROUTINE DISTRIBUTE_MPI(ns,rank)
            rank(is,ierr)=irank
            irank=irank+1
         END DO
+     END DO
+    
+  ELSE IF(numprocs.GE.ns) THEN
+
+     rank=100000
+     irank=0
+     DO is=1,ns
+        rank(is,:)=irank
+        irank=irank+1
      END DO
 
 !  Can be used for splitting jobs  

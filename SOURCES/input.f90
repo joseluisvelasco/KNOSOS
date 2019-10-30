@@ -95,15 +95,15 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
 !                     & +1E-4,+1.2E-4,+1.5E-4,+2E-4,+3E-4,+4E-4,+5E-4,+6E-4,+7E-4,+8E-4,+9E-4,&
 !                     & +1E-3,+1.2E-3,+1.5E-3,+2E-3,+3E-3,+4E-3,+5E-3,+6E-3,+7E-3,+8E-3,+9E-3,&
 !                     & +1E-2,+1.2E-2,+1.5E-2,+2E-2,+3E-2,+4E-2,+5E-2,+6E-2,+7E-2,+8E-2,+9E-2/
-  !Database for PENTA
+!  !Database for PENTA
   INTEGER, PARAMETER :: ncmulp=16
-  REAL*8 cmulp(ncmulp) /1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
-                      & 3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6,3E-7/
+!  REAL*8 cmulp(ncmulp) /1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
+!                      & 3E-3,1E-3,3E-4,1E-4,3E-5,1E-5,3E-6,1E-6,3E-7/
   INTEGER, PARAMETER :: nefieldp=27
-  REAL*8 efieldp(nefieldp) /0.0,3E-7,1E-6,3E-6,1E-5,3E-5,1E-4,3E-4,1E-3,2E-3,5E-3,&
-       & 1E-2,2E-2,3E-2,5E-2,1E-1,2E-1,3E-1,5E-1,7E-1,8E-1,1.0,1.2,1.5,2.0,3.0,5.0/
+!  REAL*8 efieldp(nefieldp) /0.0,3E-7,1E-6,3E-6,1E-5,3E-5,1E-4,3E-4,1E-3,2E-3,5E-3,&
+!       & 1E-2,2E-2,3E-2,5E-2,1E-1,2E-1,3E-1,5E-1,7E-1,8E-1,1.0,1.2,1.5,2.0,3.0,5.0/
   INTEGER, PARAMETER :: nvmagp=1
-  REAL*8 vmagp(nvmagp) /0.0/
+!  REAL*8 vmagp(nvmagp) /0.0/
 !  INTEGER, PARAMETER :: nvmagp=66
 !  REAL*8 vmagp(nvmagp)/-9E-2,-8E-2,-7E-2,-8E-2,-5E-2,-4E-2,-3E-2,-2E-2,-1.5E-2,-1.2E-2,-1E-2,&
 !                     & -9E-3,-8E-3,-7E-3,-8E-3,-5E-3,-4E-3,-3E-3,-2E-3,-1.5E-3,-1.2E-3,-1E-3,&
@@ -294,11 +294,11 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      DO is=1,ns
         s(is)=(is-0.5)*(is-0.5)/REAL(ns*ns)
      END DO
-  ELSE IF(PENTA) THEN
-     ns=7
-     DO is=1,ns
-        s(is)=(is-0.5)*(is-0.5)/REAL(ns*ns)
-     END DO
+ ! ELSE IF(PENTA) THEN
+ !    ns=7
+ !    DO is=1,ns
+ !       s(is)=(is-0.5)*(is-0.5)/REAL(ns*ns)
+ !    END DO
   END IF
 
 
@@ -377,12 +377,15 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
         efield(1:nefieldn)=efieldn
         vmag(1:nvmagn)    =vmagn
      ELSE IF(PENTA) THEN
-        ncmul  =ncmulp
-        nefield=nefieldp
-        nvmag  =nvmagp
-        cmul(1:ncmulp)    =cmulp
-        efield(1:nefieldp)=efieldp
-        vmag(1:nvmagp)    =vmagp
+        ncmul=1
+        nefield=1
+        nvmag=1
+!        ncmul  =ncmulp
+!        nefield=nefieldp
+!        nvmag  =nvmagp
+!        cmul(1:ncmulp)    =cmulp
+!        efield(1:nefieldp)=efieldp
+!        vmag(1:nvmagp)    =vmagp
      ELSE IF(STELLOPT(1)) THEN
         ncmul  =1
         nefield=3
@@ -599,17 +602,17 @@ SUBROUTINE INIT_FILES()
    END IF
    
    IF(nerr.GT.1) THEN
-      IF(numprocs.EQ.1) THEN
+!      IF(numprocs.EQ.1) THEN
          filename="flux.av"
          OPEN(unit=800+myrank,file=filename,form='formatted',action='write',iostat=iostat)
          WRITE(800+myrank,'("ohos E_r[V/m] err(E_r)[V/m] (\Gamma_b/n_b[m/s] err(\Ganna_b/n_b)[m/s] &
               & Qb/n_b/T_b[m/s], err(Qb/n_b/T_b)[m/s], b=1,NBB) ")')
-      ELSE
-         WRITE(filename,'("flux.av.",I2.2)') myrank
-         OPEN(unit=800+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-         WRITE(800+myrank,'("s E_r[V/m] err(E_r)[V/m] (\Gamma_b/n_b[m/s] err(\Ganna_b/n_b)[m/s] &
-              & Qb/n_b/T_b[m/s], err(Qb/n_b/T_b)[m/s], b=1,NBB) ")')
-      END IF
+!      ELSE
+!         WRITE(filename,'("flux.av.",I2.2)') myrank
+!         OPEN(unit=800+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+!         WRITE(800+myrank,'("s E_r[V/m] err(E_r)[V/m] (\Gamma_b/n_b[m/s] err(\Ganna_b/n_b)[m/s] &
+!              & Qb/n_b/T_b[m/s], err(Qb/n_b/T_b)[m/s], b=1,NBB) ")')
+!      END IF
    END IF
    
    IF(TRACE_IMP) THEN

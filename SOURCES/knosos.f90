@@ -60,7 +60,7 @@ PROGRAM KNOSOS
   CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,myrank,myrank,PETSC_COMM_WORLD,ierr)
   CALL PETSCINITIALIZE(PETSC_NULL_CHARACTER,ierr)
 #endif
-  IF(nerr.GT.1) CALL INIT_RANDOM_SEED()
+  IF(nerr.GT.0) CALL INIT_RANDOM_SEED()
   CALL INIT_FILES()
   !Perform a loop in samples
   DO jerr=1,nerr
@@ -94,7 +94,7 @@ PROGRAM KNOSOS
              & Tb(:,:,jerr),dTbdpsi(:,:,jerr),Qb(:,:,jerr),Pb,Epsi(:,jerr))
      END DO
   END DO
-  IF(nerr.GT.1) CALL AVERAGE_SAMPLES(nbb,ns,s(1:ns),Epsi,Gb,Qb) 
+  IF(nerr.GT.1.AND.myrank.EQ.0) CALL AVERAGE_SAMPLES(nbb,ns,s(1:ns),Epsi,Gb,Qb) 
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   !End MPI and PETSC

@@ -107,5 +107,6 @@ MODULE GLOBAL
   REAL*8, ALLOCATABLE :: lcmult(:),lefieldt(:),lvmagt(:)
   REAL*8, ALLOCATABLE :: lD11dkes1(:,:),lD11dkes2(:,:),lD11tab(:,:,:)
 
+  INTEGER, ALLOCATABLE :: seed(:)
 
 END MODULE GLOBAL

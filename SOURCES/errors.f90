@@ -14,7 +14,6 @@ SUBROUTINE INIT_RANDOM_SEED()
   IMPLICIT NONE
 
   INTEGER i,n!,clock
-  INTEGER, ALLOCATABLE :: seed(:)
   REAL dummy,rand
 
   CALL RANDOM_SEED(size=n)
@@ -35,8 +34,6 @@ SUBROUTINE INIT_RANDOM_SEED()
   CALL RANDOM_SEED(PUT = seed)
   dummy=rand(seed(1))
 #endif
-  
-  DEALLOCATE(seed)
 
 END SUBROUTINE INIT_RANDOM_SEED
 
@@ -57,11 +54,13 @@ REAL*8 FUNCTION RGAUSS(sigma)
   !Input
   REAL*8 sigma
   !Others
-  REAL*8 x1,x2,w,y1,y2,RAND
+  REAL*8 x1,x2,w,y1,y2
+  REAL rand
 
   rgauss=0
   IF(sigma.LT.0) RETURN
 
+!  CALL RANDOM_SEED()
   DO WHILE (w.GE.1.0.OR.w.EQ.0)
      x1=2.0*rand(0)-1.0
      x2=2.0*rand(0)-1.0
@@ -94,22 +93,33 @@ SUBROUTINE AVERAGE_SAMPLES(nbb,ns,s,Epsi,Gb,Qb)
   REAL*8 s(ns),Epsi(ns,nerr),Gb(nbb,ns,nerr),Qb(nbb,ns,nerr)
   !Others
   INTEGER ierr,ib,is
-  REAL*8 q1d(ns),q2d(nbb,ns)  
+  REAL*8 q1d(ns),q2d(nbb,ns),dpsidr(ns)
   REAL*8 ave_Epsi(ns),ave_Gb(nbb,ns),ave_Qb(nbb,ns)
   REAL*8 var_Epsi(ns),var_Gb(nbb,ns),var_Qb(nbb,ns)
-#ifdef MPIandPETSc
-  INCLUDE "mpif.h"
-
-  IF(numprocs.GT.1) THEN
-     DO is=1,ns
-        DO ib=1,nbb
-           CALL REAL_ALLREDUCE(Gb(ib,is,:),nerr)
-           CALL REAL_ALLREDUCE(Qb(ib,is,:),nerr)
-        END DO
-        CALL REAL_ALLREDUCE(Epsi(is,:),nerr)
-     END DO
-  END IF
-#endif
+!!$#ifdef MPIandPETSc
+!!$  INCLUDE "mpif.h"
+!!$
+!!$  IF(numprocs.GT.1) THEN
+!!$     IF(ns*nerr.EQ.numprocs) THEN
+!!$        DO is=1,ns
+!!$           DO ib=1,nbb
+!!$              CALL REAL_ALLREDUCE(Gb(ib,is,:),nerr)
+!!$              CALL REAL_ALLREDUCE(Qb(ib,is,:),nerr)
+!!$           END DO
+!!$           CALL REAL_ALLREDUCE(Epsi(is,:),nerr)
+!!$        END DO
+!!$     ELSE       
+!!$        DO ierr=1,nerr
+!!$           CALL REAL_ALLREDUCE(Epsi(:,ierr),ns)
+!!$        END DO
+!!$
+!!$        DO ib=1,nbb      
+!!$           CALL REAL_ALLREDUCE(Gb(ib,is,:),ns)
+!!$           CALL REAL_ALLREDUCE(Qb(ib,is,:),ns)
+!!$        END DO
+!!$
+!!$     END IF
+!!$#endif
   
   !Radial electric field
   ave_Epsi=0
@@ -148,9 +158,12 @@ SUBROUTINE AVERAGE_SAMPLES(nbb,ns,s,Epsi,Gb,Qb)
   Qb(:,:,3:nerr)=0
   
   !Plot
+  dpsidr=2*atorflux*SQRT(s)/rad_a
   DO is=1,ns
-     IF(myrank.EQ.0.OR.NS.GT.1) WRITE(800+myrank,'(30(1pe13.5))') s(is),Epsi(is,1)*psip,Epsi(is,2)*psip,&
-          & (Gb(ib,is,1)/psip,Gb(ib,is,2)/psip,Qb(ib,is,1)/psip,Qb(ib,is,2)/psip,ib=1,NBB)
+     IF(myrank.EQ.0) WRITE(800+myrank,'(30(1pe13.5))') s(is),&
+          &   Epsi(is,1)*dpsidr(is),Epsi(is,2)*dpsidr(is),&
+          & (Gb(ib,is,1)/dpsidr(is),Gb(ib,is,2)/dpsidr(is),&
+          &  Qb(ib,is,1)/dpsidr(is),Qb(ib,is,2)/dpsidr(is),ib=1,NBB)
   END DO
   
 END SUBROUTINE AVERAGE_SAMPLES
@@ -158,3 +171,4 @@ END SUBROUTINE AVERAGE_SAMPLES
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+

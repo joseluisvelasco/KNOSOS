@@ -86,6 +86,11 @@ then
 	mv $dir LOG
     fi 
   done
+  test -e LOG/flux.av
+  if [ $? -eq 0 ]
+  then
+      mv LOG/flux.av .
+  fi 
   touch LOG/*
   tar cfz ./log.tar.gz LOG/* && rm -r LOG
 fi

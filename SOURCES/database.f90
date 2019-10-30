@@ -26,6 +26,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
   REAL*8 ZB(1),AB(1),nb(1),Tb(1),Epsi,dummy(1)
   REAL*8 new_nb(ncmult),cmul0,D11tab(ncmult,nefieldt,nvmagt),D11(Nnmp,Nnmp)
   REAL*8 zeta(nax),theta(nax),dn1(nax,nax),phi1c(Nnmp),Mbbnm(Nnmp),trMnm(Nnmp),dn1nm(Nnmp,Nnmp)
+  REAL*8 g11_ft,eps_eff
   !Time
   CHARACTER*30, PARAMETER :: routine="CALC_DATABASE"
   INTEGER, SAVE :: ntotal=0
@@ -51,7 +52,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
   phi1c=0
   trMnm=0
   Mbbnm=0
-  cmul0=nu(1)/v(1)/2
+  cmul0=nu(1)/v(1)/2.
   !Determine collisionalities that limit different collisionality regimes
   IF(.NOT.SATAKE.AND..NOT.QN.AND..NOT.JPP.AND..NOT.STELLOPT(1).AND.&
        &                 .NOT.STELLOPT(2).AND..NOT.STELLOPT(3)) THEN 
@@ -67,8 +68,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
         D11pla=D11(1,1)
      END IF
      cmul_PS =ABS(D11pla/D11onu)  !CMUL such that plateau and PS transport are equal
-     CALL CALC_LOW_COLLISIONALITY(1,ZERO,phi1c,Mbbnm,trMnm,&
-          & D11tab(1,1,1),nalphab,zeta,theta,dn1,dn1nm)
+     vmconst=0
      CALL CALC_LOW_COLLISIONALITY(1,ZERO,phi1c,Mbbnm,trMnm,&
           & D11tab(1,1,1),nalphab,zeta,theta,dn1,dn1nm)
 !     CALCULATED_INT=.FALSE.
@@ -85,10 +85,12 @@ SUBROUTINE CALC_DATABASE(is,s0)
        & scal13 scal33 max\_residual chip psip btheta bzeta vp vmag")')
 
   IF(NEOTRANSP) THEN
+     g11_ft=d11nu*fdkes(1)
+     eps_eff=(5.0*g11_ft*rad_R*rad_R*borbic(0,0)*borbic(0,0))**0.66666
      IF(numprocs.EQ.1) filename="knosos.dk"
      IF(numprocs.GT.1) WRITE(filename,'("knosos.dk.",I2.2)') myrank
      OPEN(unit=6000+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-     IF(myrank.EQ.0) THEN
+     IF(is.EQ.1) THEN
         WRITE(6000+myrank,'("cc")')  
         WRITE(6000+myrank,'("cc")')  
         WRITE(6000+myrank,'("cc")')  
@@ -97,23 +99,24 @@ SUBROUTINE CALC_DATABASE(is,s0)
      END IF
      WRITE(6000+myrank,'(5(1pe13.5),"  NaN",1pe13.5,"  r,R,B,io,xkn,ft,<b^2>")') &
           & SQRT(s0)*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
-     IF(myrank.EQ.0) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
-     WRITE(6000+myrank,'("cfit          NaN        NaN           NaN       NaN      NaN")')
-  ELSE IF(PENTA) THEN
-!     IF(numprocs.EQ.1) filename="knosos.penta"
-!     IF(numprocs.GT.1) WRITE(filename,'("knosos.penta.",I2.2)') myrank
-     OPEN(unit=6000+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-     IF(myrank.EQ.0) THEN
-!        WRITE(6000+myrank,'("cc")')  
-!        WRITE(6000+myrank,'("cc")')  
-!        WRITE(6000+myrank,'("cc")')  
-!        WRITE(6000+myrank,'("cc")')  
-!        WRITE(6000+myrank,'("cc")')  
-     END IF
-!     WRITE(6000+myrank,'(5(1pe13.5),"  NaN",1pe13.5,"  r,R,B,io,xkn,ft,<b^2>")') &
-!          & SQRT(s0)*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
-!     IF(myrank.EQ.0) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
-!     WRITE(6000+myrank,'("cfit          NaN        NaN           NaN       NaN      NaN")')
+     IF(is.EQ.1) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
+     WRITE(6000+myrank,'("cfit ",2(1pe13.5),"      NaN        NaN      NaN")') eps_eff,g11_ft
+
+!  ELSE IF(PENTA) THEN
+!!     IF(numprocs.EQ.1) filename="knosos.penta"
+!!     IF(numprocs.GT.1) WRITE(filename,'("knosos.penta.",I2.2)') myrank
+!     OPEN(unit=6000+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+!     IF(is.EQ.1) THEN
+!!        WRITE(6000+myrank,'("cc")')  
+!!        WRITE(6000+myrank,'("cc")')  
+!!        WRITE(6000+myrank,'("cc")')  
+!!        WRITE(6000+myrank,'("cc")')  
+!!        WRITE(6000+myrank,'("cc")')  
+!     END IF
+!!     WRITE(6000+myrank,'(5(1pe13.5),"  NaN",1pe13.5,"  r,R,B,io,xkn,ft,<b^2>")') &
+!!          & SQRT(s0)*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
+!!     IF(is.EQ.1) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
+!!     WRITE(6000+myrank,'("cfit          NaN        NaN           NaN       NaN      NaN")')
   ELSE IF(STELLOPT(1).OR.STELLOPT(2).OR.STELLOPT(3)) THEN
      IF(numprocs.EQ.1) filename="mono.opt"
      IF(numprocs.GT.1) WRITE(filename,'("mono.opt.",I2.2)') myrank
@@ -142,7 +145,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
 
   DO iturn=1,2
      DO iefield=1,nefieldt
-        IF(STELLOPT(1).AND.iturn.GT.1)    EXIT
+        IF((PENTA.OR.STELLOPT(1)).AND.iturn.GT.1)    EXIT
         IF(STELLOPT(1).AND.nefieldt.EQ.3) TANG_VM=.FALSE.
         DO icmul=1,ncmult
            DO ivmag=1,nvmagt
@@ -258,13 +261,12 @@ SUBROUTINE READ_DKES_TABLE(is)
 
   file=TRIM(DIRDB)//TRIM(DIRS(is))
   WRITE(1000+myrank,*) 'Reading DKES output in folder ',file 
-
   !Read data
   nefield=0  
   ncmul=0
   D11pla=1e10
-  DO iefield=1,MIN(nefield,nefieldt)
-     DO icmul=1,MIN(ncmuld,ncmult)
+  DO iefield=1,nefieldt
+     DO icmul=1,ncmult
         file=TRIM(DIRDB)//TRIM(DIRS(is))//TRIM(dir_efield(iefield))//TRIM(dir_cmul(icmul))//"results.data"
            WRITE(1000+myrank,*) 'Reading subfolder ',file
         OPEN(unit=1,file=TRIM(file),action='read',iostat=iostat) 

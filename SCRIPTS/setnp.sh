@@ -62,6 +62,12 @@ fi
 
 
 np=`awk -v f=1 -v nerr=$nerr -v ns=$ns 'BEGIN{print ( f*ns*nerr) }'`
+if [ $np -gt 64 ]
+then 
+  np=$ns
+fi
+
+
 
 if [ $np -eq 1  ]
 then

@@ -349,7 +349,8 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                      WRITE(1100+myrank,*) 'Not converged in v'
                   END IF
                END IF
-               
+               WRITE(1000+myrank,'(" L2/L1 for species #",I1," is ",f7.4)') ib,L2rhs(ib,1,1)/L1rhs(ib,1,1)
+               WRITE(1000+myrank,'(" L2/L1 should be 3 for plateau, 5 for 1/nu, 2.75 for sqrt(nu) and 2.5 for sb-p")')
             END DO
 
            !Sums over species

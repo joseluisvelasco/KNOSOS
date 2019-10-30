@@ -1,5 +1,5 @@
 
-!Solve transport REVISE ALL
+!Solve transport
 
 SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
 
@@ -17,12 +17,13 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
   REAL*8 nb(nbb,ns),dnbdpsi(nbb,ns),Tb(nbb,ns),dTbdpsi(nbb,ns),Epsi(ns)
   !Others
   REAL*8, PARAMETER  ::  prefact_Epsi=1213173.45142083 !e/(8pi^2m)
+  REAL*8, PARAMETER :: e4omemieps02=5516.42011 !units are m^6/s^4
   INTEGER ib,is,iostat
   REAL*8 dsdV(ns),dVdpsi(ns),dsdr(ns)
   REAL*8 dGbdV(nbb,ns),dQbdV(nbb,ns),dEpsids(ns),dErdr(ns)
-  REAL*8 Pin(ns),ohm(nbb,ns),coulomb(nbb,ns)
+  REAL*8 Pin(ns),ohm(nbb,ns),coulomb(nbb,ns),nue(ns),loglambda(ns)
   REAL*8 dnbdt(nbb,ns),dTbdt(nbb,ns),dnbTbdt(nbb,ns),dEpsidt(ns)
-  REAL*8 fdummy,nu0(ns),fact_coulomb(ns),fact_Epsi(ns)
+  REAL*8 fact_Epsi(ns)
 #ifdef MPIandPETSc
   INCLUDE "mpif.h"
 
@@ -67,26 +68,38 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
      CALL DERIVE(s/dsdV,Gb(ib,:),ns,4,dGbdV(ib,:))
      CALL DERIVE(s/dsdV,Qb(ib,:),ns,4,dQbdV(ib,:))
   END DO
-  !Check
+
+  !Particle balance
+  DO ib=1,2
+     Sb(ib,:)=-dGbdV(ib,:) !No particle transport
+  END DO
+  DO ib=3,nbb
+     DO is=1,ns
+        CALL READ_ADAS(Zb(ib),Ab(ib),nb(1,is),Tb(1,is),Sb(ib,is))
+     END DO
+  END DO
+  dnbdt  = -dGbdV+Sb
+
+  !Energy balance
+  !Ohmic term
   ohm(1,:)=-Epsi*Gb(1,:)*nb(1,:)*dVdpsi
   ohm(2,:)=-ohm(1,:)
-  DO is=1,ns
-     CALL CALC_CTS(Zb(2),Ab(2),nb(2,is),Tb(2,is),fdummy,nu0(is))
-  END DO
-  fact_coulomb=4/sqpi*Zb(2)*Ab(1)/Ab(2)*nu0
-  coulomb(1,:)=3*(Tb(1,:)-Tb(2,:))*fact_coulomb
+  !Collisional transfer
+  logLambda=24.0-LOG(SQRT(nb(1,:)*1.0E13)/Tb(1,:))
+  nue=e4omemieps02*nb(1,:)*1E19*logLambda/(3.*PI*SQPI*vth(1)*vth(1)*vth(1))
+  coulomb(1,:)=3*nb(2,:)*(Tb(2,:)-Tb(1,:))*1.602*nue
   coulomb(2,:)=-coulomb(1,:)
-  !End check
-  Sb=-dGbdV !No particle transport
-  dnbdt  = -dGbdV+Sb
+  !
   dnbTbdt=(-dQbdV+Pb+ohm+coulomb)*2./3
   dTbdt  =(dnbTbdt-Tb*dnbdt)/nb
+  
+  !Radial electric field evlution
   dEpsidt=0
   DO ib=1,nbb
      dEpsidt=dEpsidt+Zb(ib)*nb(ib,:)*Gb(ib,:)
   END DO
-  fact_Epsi=prefact_Epsi/etet/SQRT(s(:))/nb(2,:)/Ab(2)
-  dEpsidt=dEpsidt*fact_Epsi  !Check factor
+  fact_Epsi=1.602*torflux*dsdr/(4*PI*PI*Ab(2)*nb(1,:)*etet)
+  dEpsidt=dEpsidt*fact_Epsi
 
   !Update profiles
   nb=nb+dt*dnbdt
@@ -188,3 +201,24 @@ END SUBROUTINE DERIVE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+SUBROUTINE READ_ADAS(Zb,Ab,nb,Tb,Sb)
+
+!----------------------------------------------------------------------------------------------- 
+!
+!----------------------------------------------------------------------------------------------- 
+  USE GLOBAL
+  IMPLICIT NONE
+  !Input
+  INTEGER ns
+  REAL*8 Zb,Ab,nb,Tb
+  !Output
+  REAL*8 Sb
+
+  ns=ns
+  Zb=Zb
+  Ab=Ab
+  nb=nb
+  Tb=Tb
+  Sb=Sb
+
+END SUBROUTINE READ_ADAS
