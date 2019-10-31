@@ -168,21 +168,22 @@ SUBROUTINE CALC_DATABASE(is,s0)
                     CALL CALC_PLATEAU(iv0,Epsi,D11tab(icmul,iefield,ivmag))
                  ELSE
                     CONVERGED=.FALSE.
-                    CALL CALC_LOW_COLLISIONALITY(iv0,Epsi,phi1c,Mbbnm,trMnm,&
-                         & D11tab(icmul,iefield,ivmag),nalphab,zeta,theta,dn1,dn1nm)
+                    IF(ABS(efieldt(iefield)).LT.aiota*borbic(0,0)*eps) THEN
+                       CALL CALC_LOW_COLLISIONALITY(iv0,Epsi,phi1c,Mbbnm,trMnm,&
+                            & D11tab(icmul,iefield,ivmag),nalphab,zeta,theta,dn1,dn1nm)
+                    ELSE
+                       D11tab(icmul,iefield,ivmag)=D11tab(icmul,iefield-1,ivmag)
+                    END IF
                  END IF
               ELSE IF(NEOTRANSP.OR.PENTA) THEN
-                 IF(D11tab(icmul,iefield,ivmag).LT.0) THEN
-!                    CALL INTERP_DATABASE(iturn,iv0,Epsi,D11(1,1),.TRUE.)
-!                    D11tab(icmul,iefield,ivmag)=D11(1,1)
-!                    CALL BILAGRANGE(lcmult(1:icmul-1),lefieldt(2:iefield-1),lD11tab(1:icmul-1,2:iefield-1,ivmag),&
-!                         & icmul-1,iefield-2,LOG(cmult(icmul)),LOG(efieldt(iefield)),lD11,1)
-                    CALL LAGRANGE(lcmult(1:icmul-1),lD11tab(1:icmul-1,iefield,ivmag),&
-                         & icmul-1,LOG(cmult(icmul)),lD11tab(icmul,iefield,ivmag),1)
-                    D11tab(icmul,iefield,ivmag)=EXP(lD11tab(icmul,iefield,ivmag))
-!                    IF(D11tab(icmul,iefield,ivmag).LT.0) D11tab(icmul,iefield,ivmag)=&
-!                         & D11tab(icmul,iefield,ivmag)*SQRT(cmult(icmul)/cmult(icmul+1))
-                    D11tab(icmul+1:ncmult,iefield,ivmag)=-1
+                 IF(ABS(efieldt(iefield)).GT.0.2*aiota*borbic(0,0)*eps) THEN
+                    D11tab(icmul,iefield,ivmag)=D11tab(icmul,iefield-1,ivmag)
+                 ELSE IF(cmult(icmul-1).LT.cmul_1NU.AND.D11tab(icmul-1,iefield,ivmag).LT.D11pla.AND.&
+                  ((D11tab(icmul,iefield,ivmag).LT.0).OR.&
+                  ((D11tab(icmul,iefield,ivmag).GT.D11tab(icmul-1,iefield,ivmag))))) THEN
+                    D11tab(icmul,iefield,ivmag)=0.5*(&
+                         D11tab(icmul-1,iefield,ivmag)*SQRT(cmult(icmul)/cmult(icmul-1))+&
+                        &D11tab(icmul-1,iefield,ivmag)*efieldt(iefield-1)*SQRT(efieldt(iefield-1)/efieldt(iefield))/efieldt(iefield))
                  END IF
                  WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') &
                       & nu(iv0)/v(iv0)/2.,Epsi/v(iv0)*psip,-D11tab(icmul,iefield,ivmag)
