@@ -50,7 +50,6 @@ SUBROUTINE TRACE_IMPURITIES(jt,ib,nbb,Zb,Ab,regb,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
   nustar_z=rad_R*nuzi(ib)/aiota/vth(ib)
   nustar_i=rad_R*nuth(2)/aiota/vth(2)
 
-
   !Calculate |nablapsi|/B^2 transport for classical transport
   IF(CLASSICAL.AND..NOT.ALLOCATED(absnablapsi2oB2)) THEN
      ALLOCATE(absnablapsi2oB2(nalphab,nalphab))
@@ -122,7 +121,7 @@ SUBROUTINE TRACE_IMPURITIES(jt,ib,nbb,Zb,Ab,regb,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
              & nalphab,zeta,theta,B,dBdz,dBdt,dphi1dz,dphi1dt,expmZepoT,&
              & f_c,f_s,u0,u1,u2,Mbb,trM,Gnct(1))
         CALL CALC_TRACE_PLATEAU_O_LOWCOLL(it,ib,NBB,ZB,AB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
-             & nalphab,B,dBdz,dBdt,dphi1dz,dphi1dt,f_c,f_s,u0,Mbb,trM,Gnct(2))
+             & nalphab,B,phi1,f_c,f_s,u0,Mbb,trM,Gnct(2))
         IF(it.EQ.1) THEN
 !           Gnc=Gnct(MINLOC(ABS(Gnct(1:2)),1))
            Gnc=1./(SUM(1./Gnct(1:2)))
@@ -141,10 +140,10 @@ SUBROUTINE TRACE_IMPURITIES(jt,ib,nbb,Zb,Ab,regb,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
              & f_c,f_s,u0,u1,u2,Mbb,trM,Gnc)
      ELSE IF(regb(ib).EQ.12) THEN
         CALL CALC_TRACE_PLATEAU_O_LOWCOLL(it,ib,NBB,ZB,AB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
-             & nalphab,B,dBdz,dBdt,dphi1dz,dphi1dt,f_c,f_s,u0,Mbb,trM,Gnc)
-     ELSE IF(regb(ib).EQ.22) THEN
-        CALL CALC_TRACE_PLATEAU_O_LOWCOLL2(it,ib,NBB,ZB,AB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
              & nalphab,B,phi1,f_c,f_s,u0,Mbb,trM,Gnc)
+     ELSE IF(regb(ib).EQ.22) THEN
+        CALL CALC_TRACE_PLATEAU_O_LOWCOLL_OLD(it,ib,NBB,ZB,AB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
+             & nalphab,B,dBdz,dBdt,dphi1dz,dphi1dt,f_c,f_s,u0,Mbb,trM,Gnc)
      ELSE IF(regb(ib).EQ.13) THEN
         CALL CALC_TRACE1NU_O_LOWCOLL(it,ib,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,&
              & Epsi,phi1c,Mbbnm,trMnm,Gnc)
@@ -179,7 +178,7 @@ SUBROUTINE TRACE_IMPURITIES(jt,ib,nbb,Zb,Ab,regb,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
      Gb=Gb-Gt(nit)
   END IF
      
-  WRITE(900+myrank,'(22(1pe13.5),I2)') s,Zb(ib),Ab(ib),Gb/psip,&
+  WRITE(900+myrank,'(22(1pe13.5),I3)') s,Zb(ib),Ab(ib),Gb/psip,&
        & Vb/psip,Db/psip/psip,psip*dnbdpsi(ib)/nb(ib),&
        & DEr/psip/psip,      Epsi*psip/Tb(ib),&
        & DTi/psip/psip, psip*dTbdpsi(2)/Tb(2),&
@@ -187,8 +186,6 @@ SUBROUTINE TRACE_IMPURITIES(jt,ib,nbb,Zb,Ab,regb,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
        & Gan/psip,nustar_z,aleph,fnorm,eps32,nustar_i/eps32,&
        & nustar_i/(rhostar_i/eps),nustar_i/rhostar_i,&
        & Zb(ib)*(MAXVAL(phi1)-MINVAL(phi1))/Tb(2)/2.,regb(ib)
-
-  
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -796,7 +793,7 @@ END SUBROUTINE ANISOTROPY_TRACE_PS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL(jt,ib,nbb,Zb,Ab,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
+SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL_OLD(jt,ib,nbb,Zb,Ab,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
      & nalphab,B,dBdz,dBdt,dphi1dz,dphi1dt,f_c,f_s,u0,Mbb,trM,Gb)
 
 !----------------------------------------------------------------------------------------------- 
@@ -964,14 +961,14 @@ SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL(jt,ib,nbb,Zb,Ab,s,nb,dnbdpsi,Tb,dTbdpsi,
         
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   
-END SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL
+END SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL_OLD
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL2(jt,ib,nbb,Zb,Ab,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
+SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL(jt,ib,nbb,Zb,Ab,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
      & nalphab,B,phi1,f_c,f_s,u0,Mbb,trM,Gb)
 
 !----------------------------------------------------------------------------------------------- 
@@ -1093,7 +1090,7 @@ SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL2(jt,ib,nbb,Zb,Ab,s,nb,dnbdpsi,Tb,dTbdpsi
         
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   
-END SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL2
+END SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

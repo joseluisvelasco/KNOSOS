@@ -186,6 +186,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   CHARACTER*100 serr
   CHARACTER*10 nameeut
   CHARACTER*12 namegraz
+  CHARACTER*11 nametg
   CHARACTER*13 nametask3d
   CHARACTER*14 nametask3d2
   CHARACTER*15 namedr
@@ -227,7 +228,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
         q     =q     *1.0E3  !Temperatures and radial electric field are read in keV and kV/m
         dqdpsi=dqdpsi*1.0E3
      END IF
-     GOTO 1000    
+!     GOTO 1000    
   END IF
   
   !TASK3D profile format
@@ -267,7 +268,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
         q     =q     *1.0E3  !Temperatures and radial electric field are read in keV and kV/m
         dqdpsi=dqdpsi*1.0E3
      END IF
-     GOTO 1000    
+!     GOTO 1000    
   END IF
 
 
@@ -309,7 +310,58 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
         dqdpsi=-q*iota*sgnB   !dPhi/dpsi_T=-iota*omega_E
         q=0.0
      END IF
-     GOTO 1000    
+!     GOTO 1000    
+  END IF
+
+
+  !TG profile format
+  nametg="profiles.TG"
+  OPEN(unit=1,file=nametg,action='read',iostat=iostat)
+  IF(iostat.NE.0) OPEN(unit=1,file="../"//nametg,action='read',iostat=iostat)
+  IF(iostat.EQ.0) THEN
+     WRITE(1000+myrank,'(" File ",A22," read")') nametg
+     IF(filename.EQ."ti") THEN
+        nprof=568
+     ELSE IF(filename.EQ."te") THEN
+        nprof=568+305
+     ELSE IF(filename.EQ."ne") THEN
+        nprof=568+305*2
+     ELSE IF(filename.EQ."ph") THEN
+        nprof=3102
+     END IF
+     DO is=1,nprof
+        READ(1,*) line
+     END DO
+     IF(filename.EQ."ph") THEN
+        ns=50
+        DO is=1,ns
+           READ(1,*,iostat=iostat) r(is),dummy,dqdx_p(is)
+        END DO
+        s=r*r/rad_a/rad_a
+        q_p=0
+        dqdpsi_p=-dqdx_p/psip        
+     ELSE  
+        ns=300
+        DO is=1,ns
+           READ(1,*,iostat=iostat) r(is),dummy,q_p(is)
+        END DO
+        s=r*r/rad_a/rad_a
+        dqdx_p(1)=(-3*q_p(1)+4*q_p(2)-q_p(3))/(s(3)-s(1))
+        DO is=2,ns-1
+           dqdx_p(is)=(q_p(is+1)-q_p(is-1))/(s(is+1)-s(is-1))
+        END DO
+        dqdx_p(ns)=(3*q_p(ns)-4*q_p(ns-1)+q_p(ns-2))/(s(3)-s(1))
+        dqdpsi_p=dqdx_p/psip   !x=r=rho*a=sqrt(s)*a      
+     END IF
+     CLOSE(1)
+     !Interpolate at s0
+     CALL LAGRANGE(s,     q_p,ns,s0,     q,MIN(ns,3))
+     CALL LAGRANGE(s,dqdpsi_p,ns,s0,dqdpsi,MIN(ns,3)) 
+     IF(filename.NE."ne") THEN
+        q     =q     *1.0E3      !Temperatures and radial electric field are read in keV
+        dqdpsi=dqdpsi*1.0E3
+     END IF
+!     GOTO 1000    
   END IF
 
 
@@ -390,7 +442,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
         q     =q     *1.0E3    !Temperatures read in keV
         dqdpsi=dqdpsi*1.0E3
      END IF
-     !     GOTO 1000    
+!     GOTO 1000    
   END IF
 
   !EUTERPE profile format
