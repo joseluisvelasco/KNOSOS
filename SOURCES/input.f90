@@ -26,7 +26,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
        & NERR,IPERR
   !Namelist 'model' contains physics parameters
   NAMELIST /model/ CALC_DB,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,ANISOTROPY,FRICTION,FACT_CON,&
-       & SOLVE_AMB,TRIVIAL_AMB,FAST_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,D_AND_V,COMPARE_MODELS,&
+       & SCAN_ER,SOLVE_AMB,TRIVIAL_AMB,FAST_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,D_AND_V,COMPARE_MODELS,&
        & FN,FI,FS,FP,FE,FR,FB,FNE,FTI,FTE,FER,&
        & NEOTRANSP,PENTA,TASK3D,TASK3Dlike,STELLOPT,SATAKE,ANA_NTV,JPP
   !Namelist 'surfaces' contains the list of flux-surfaces calculated
@@ -183,6 +183,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   !Default values
   !Ambipolarity and quasineutrality
   FAST_AMB=   .FALSE.  
+  SCAN_ER=    .FALSE.
   SOLVE_AMB=  .TRUE.  
   TRIVIAL_AMB=.FALSE.
   SOLVE_QN=   .TRUE.  
@@ -406,7 +407,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   DO ib=3,nbb
      IF(REGB(ib).GE.10) THEN
         TRACE_IMP    =.TRUE.
-        IF(REGB(ib).LT.13) PLATEAU_OR_PS=.TRUE.
+        IF(REGB(ib).LT.13.OR.REGB(ib).EQ.22) PLATEAU_OR_PS=.TRUE.
      END IF
   END DO
   IF(TRACE_IMP) THEN

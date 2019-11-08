@@ -34,7 +34,8 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   IF(nbb.GE.3) THEN
      DO ib=3,nbb   !Incorrect if nbb>3, especially if not trace
         nb(ib)     =     ne*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
-        dnbdpsi(ib)=0 !eta'=0
+        dnbdpsi(ib)=dnedpsi*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
+!        dnbdpsi(ib)=0 !eta'=0
      END DO
   END IF
   !Impose quasineutrality
@@ -403,7 +404,11 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
      ELSE IF(filename.EQ."te") THEN
         nprof=2
      ELSE IF(filename.EQ."ne") THEN
-        nprof=NBB+2
+        IF(NBB.EQ.3) THEN
+           nprof=NBB+2
+        ELSE
+           nprof=3
+        END IF
      END IF
      DO is=1,ns0
         READ(1,*,iostat=iostat) s(is),(dlnqdx_p(is),q_p(is),iprof=1,nprof)

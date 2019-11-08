@@ -185,9 +185,14 @@ SUBROUTINE CALC_DATABASE(is,s0)
                          D11tab(icmul-1,iefield,ivmag)*SQRT(cmult(icmul)/cmult(icmul-1))+&
                         &D11tab(icmul-1,iefield,ivmag)*efieldt(iefield-1)*SQRT(efieldt(iefield-1)/efieldt(iefield))/efieldt(iefield))
                  END IF
-                 WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') &
-                      & nu(iv0)/v(iv0)/2.,Epsi/v(iv0)*psip,-D11tab(icmul,iefield,ivmag)
-                 WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
+                 IF(nvmagt.EQ.1) THEN
+                    WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') &
+                         & nu(iv0)/v(iv0)/2.,Epsi/v(iv0)*psip,-D11tab(icmul,iefield,ivmag)
+                    WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
+                 ELSE
+                    WRITE(6000+myrank,'(4(1pe13.5)," NaN")') &
+                         & nu(iv0)/v(iv0)/2.,Epsi/v(iv0)*psip,vmagt(ivmag),-D11tab(icmul,iefield,ivmag)
+                 END IF
                  IF(iefield.EQ.nefieldt.AND.icmul.EQ.ncmult.AND.ivmag.EQ.nvmagt) WRITE(6000+myrank,'("e")')
               END IF
            END DO

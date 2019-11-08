@@ -45,7 +45,11 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
   !Calculate Epsi by solving ambipolarity of the neoclassical fluxes using bisection
   IF(SOLVE_AMB) THEN
 
-     WRITE(1000+myrank,*) 'Calculating Er'
+     IF(SCAN_ER) THEN
+        WRITE(1000+myrank,*) 'Scanning Er'
+     ELSE
+        WRITE(1000+myrank,*) 'Calculating Er'
+     END IF
      Epsiacc=1E3*ERACC/psip
      !Find changes of sign of the radial neoclasical current (nroot, may be more than 1)
      IF(ERMAX-ERMIN.GT.-1E-3) THEN !between Epsimin and Epsimax
@@ -83,6 +87,11 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
         END IF
 !        IF(nroot.EQ.1.AND.FAST_AMB) EXIT
      END DO
+
+     IF(SCAN_ER) THEN 
+        CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+        RETURN
+     END IF
      
 !     IF(nroot.EQ.2) THEN
 !        serr="Two roots found, one missing?"
@@ -421,9 +430,9 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                ephi1oTsize=(MAXVAL(phi1)-MINVAL(phi1))/Tb(2)/2.
                !Check if varphi1 and M exist from previous calculations
                IF(.NOT.SOLVE_AMB) THEN
-                  CALL READ_BULKSPECIES(nalphab,"ph1",phi1,Tb(2))
-                  CALL READ_BULKSPECIES(nalphab,"Mbb",Mbb ,ONE  )
-                  CALL READ_BULKSPECIES(nalphab,"trM",trM ,ONE  )
+                  CALL READ_BULKSPECIES(nalphab,"ph1",phi1,ONE)
+                  CALL READ_BULKSPECIES(nalphab,"Mbb",Mbb ,ONE)
+                  CALL READ_BULKSPECIES(nalphab,"trM",trM ,ONE)
                END IF
                IF(QN.AND.jt.EQ.jt0) THEN
                   CALL WRITE_BULKSPECIES(s,nalphab,phi1,"ph1")
@@ -920,7 +929,7 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
 #ifdef MPIandPETSc
-  INTEGER ierr,ipow,is0,is1,is,ns,ms,lwork,rank
+  INTEGER ierr,ipow,is0,is1,is,js,ns,ms,lwork,rank
   INTEGER, ALLOCATABLE :: iwork(:)
   REAL*8 varphi1fit,dvarphi1dsfit,phi1coeff(numprocs),vars(numprocs),varphi1(numprocs)
   REAL*8 s_svd(npow),rcond,mats(numprocs,npow)
@@ -978,7 +987,7 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
      DO ia=1,nalphab
         DO il=1,nalphab
            !Calculate derivative
-           IF(array(il,ia).EQ.0) CYCLE
+!           IF(array(il,ia).EQ.0) CYCLE
            varphi1=0
            varphi1(is)=phi1(il,ia)
            CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
@@ -1021,18 +1030,33 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
               END DO
               phi1coeff(1:ms)=varphi1(is0:is1)
            END IF
-           WRITE(1000+myrank,*) 'preDGELSD',ia,il
            CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 !           CALL DGELSD(ns,npow,1,mats,ns,phi1coeff,ns,s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)  
            CALL DGELSD(ms,npow,1,mats(1:ms,:),ms,phi1coeff(1:ms),ms,s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)  
+           DO js=1,ms
+              varphi1fit=0
+              dvarphi1dsfit=0
+              mats(js,1)=1
+              DO ipow=1,npow
+                 IF(ipow.GT.1) THEN
+                    mats(js,ipow)=mats(js,ipow-1)*vars(is0+js-1)
+                    dvarphi1dsfit=dvarphi1dsfit+phi1coeff(ipow)*mats(js,ipow-1)*(ipow-1)
+                 END IF                 
+                 varphi1fit=varphi1fit+phi1coeff(ipow)*mats(js,ipow)
+              END DO
+              WRITE(1000+myrank,'(I4,8(1pe13.5),I4)') jt,vars(is0+js-1),varphi1(is0+js-1),varphi1fit
+           END DO
+           mats(1,1)=1
            varphi1fit=0
            dvarphi1dsfit=0
-           mats(1,1)=1
            DO ipow=1,npow
-              IF(ipow.GT.1) mats(1,ipow)=mats(1,ipow-1)*s
-              varphi1fit   =   varphi1fit+phi1coeff(ipow)*mats(1,ipow)
-              dvarphi1dsfit=dvarphi1dsfit+phi1coeff(ipow)*mats(1,ipow-1)*(ipow-1)
+              IF(ipow.GT.1) THEN
+                 mats(1,ipow)=mats(1,ipow-1)*s
+                 dvarphi1dsfit=dvarphi1dsfit+phi1coeff(ipow)*mats(1,ipow-1)*(ipow-1)
+              END IF
+              varphi1fit=varphi1fit+phi1coeff(ipow)*mats(1,ipow)
            END DO
+
            IF(COMPARE_MODELS) WRITE(4600+myrank,'(I4,8(1pe13.5),I4)') jt,zeta(il),theta(ia),phi1(il,ia),&
                 & varphi1fit,dvarphi1dsfit,Epsi*psip,Epsi*psip*absnablar(il,ia),&
                 & (Epsi*absnablar(il,ia)-dvarphi1dsfit/torflux)*psip,array(il,ia)
@@ -1072,8 +1096,8 @@ SUBROUTINE READ_BULKSPECIES(nalphab,filename,Q,fact)
   CHARACTER*11 name
   CHARACTER*100 serr
   INTEGER iz,it,jz,jt,nz,nt,nzp,iostat
-  REAL Q4(nalphab,nalphab),dummy
-  REAL*8 s,Qr(nalphab,nalphab)
+  REAL, ALLOCATABLE :: Qr(:,:)
+  REAL*8 s,dummy
 
   !Read quantity in EUTERPE format
   name=filename//"_2d.in"
@@ -1092,7 +1116,8 @@ SUBROUTINE READ_BULKSPECIES(nalphab,filename,Q,fact)
      READ(1,*) nzp
      nt=nt-1
      nz=nz-1
-     Q4=0
+     ALLOCATE(Qr(nz,nt))
+     Qr=0
      IF(nz.LT.nalphab.OR.nt.LT.nalphab) THEN
         IF(nz.LT.0) THEN
            WRITE(1000+myrank,*) 'varphi_1 set to zero'
@@ -1104,19 +1129,18 @@ SUBROUTINE READ_BULKSPECIES(nalphab,filename,Q,fact)
      END IF
      READ(1,*) (dummy,iz=1,nz+1)
      DO it=nt,1,-1
-        READ(1,*) (Q4(iz,it),iz=1,nz),dummy
+        READ(1,*) (Qr(iz,it),iz=1,nz,1)
      END DO
      CLOSE(1)
-     Qr=Q4     
      Q=0
      DO iz=1,nz
-        IF(MOD(iz-1,nz/nalphab).EQ.0) jz=(iz-1)/(nz/nalphab)+1
+        IF(MOD(iz-1,nz/nalphab).NE.0) CYCLE
+        jz=(iz-1)/(nz/nalphab)+1
         DO it=1,nt
-           IF(MOD(it-1,nt/nalphab).EQ.0.AND.MOD(iz-1,nz/nalphab).EQ.0) THEN
-              jt=(it-1)/(nt/nalphab)+1
-              Q(jz,jt)=Qr(iz,it)
-              WRITE(100+myrank,'(4(1pe13.5))') s,jz*(TWOPI/nzp)/nz,jt*TWOPI/nt,Q(jz,jt)/fact
-           END IF
+           IF(MOD(it-1,nt/nalphab).NE.0) CYCLE
+           jt=(it-1)/(nt/nalphab)+1
+           Q(jz,jt)=Qr(iz,it)
+           WRITE(100+myrank,'(4(1pe13.5))') s,jz*(TWOPI/nzp)/nz,jt*TWOPI/nt,Q(jz,jt)/fact
         END DO
      END DO
      CLOSE(100+myrank)
@@ -1146,7 +1170,7 @@ SUBROUTINE WRITE_BULKSPECIES(s,nalphab,Q,filename)
   CHARACTER*12 name
   INTEGER ia,il
 
-  name=filename//"_2d.in"
+  name=filename//"_2d.out"
   IF(numprocs.GT.1) WRITE(name,'(A9,".",I2.2)') filename,myrank
 
   OPEN(unit=999+myrank,file=name,form='formatted',action='write')

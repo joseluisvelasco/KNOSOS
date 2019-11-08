@@ -861,8 +861,8 @@ SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL(jt,ib,nbb,Zb,Ab,s,nb,dnbdpsi,Tb,dTbdpsi,
 !       FSA(nalphab,nalphab,(B/avB2/Zb(2))*((A1i-1.17*A2i)*(f_s+avB2u0)*f_c/(1-f_c)),aiBtpBz/B/B,1)
 !  A0_T=A0qas_T
 
-  nSf1=m_e*(Bzeta*dBdt   -Btheta*dBdz   )/(aiBtpBz)*avB2/borbic(0,0)/borbic(0,0)     
-  nSf2=   -(Bzeta*dphi1dt-Btheta*dphi1dz)/(aiBtpBz)*avB2/borbic(0,0)/borbic(0,0)    
+  nSf1=m_e*(Bzeta*dBdt   -Btheta*dBdz   )/(aiBtpBz)*avB2/borbic(0,0)/borbic(0,0)    
+  nSf2=    (Bzeta*dphi1dt-Btheta*dphi1dz)/(aiBtpBz)*avB2/borbic(0,0)/borbic(0,0)    
 !  nSf3=A0_T*m_e*B*(   dBdz+iota   *dBdt)/iBtpBz                  
   nSf3=A0_T*m_e*borbic(0,0)*(   dBdz+iota   *dBdt)/iBtpBz                  
   nSf4=A0_T    *B*(dphi1dz+iota*dphi1dt)/iBtpBz
@@ -945,10 +945,11 @@ SUBROUTINE CALC_TRACE_PLATEAU_O_LOWCOLL(jt,ib,nbb,Zb,Ab,s,nb,dnbdpsi,Tb,dTbdpsi,
   sdke2=dTbdpsi(ib)/Tb(ib)
   
   IF(FRICTION) &
-  &Gf=Gf1B*fmu2*(sdke1+fmu32*sdke2)*Ab(ib)*Ab(ib)/Zb(ib)/Zb(ib)+Gf1E*fmu1*(sdke1+fmu21*sdke2)*Ab(ib)/Zb(ib)+& !JL
+  &Gf=Gf1B*fmu2*(sdke1+fmu32*sdke2)*Ab(ib)*Ab(ib)/Zb(ib)/Zb(ib)+Gf1E*fmu1*(sdke1+fmu21*sdke2)*Ab(ib)/Zb(ib)+&
   &  +Gf2B*fmu1*(sdke1+fmu21*sdke2)*Ab(ib)/Zb(ib)              +Gf2E*fmu0*(sdke1+fmu10*sdke2)+&
   & +(Gf3B*fmu21/factmu            *Ab(ib)*Ab(ib)/Zb(ib)       +Gf3E*Ab(ib))*fmu1+&
   & +(Gf4B*fmu10/factmu            *Ab(ib)                     +Gf4E*Zb(ib))*fmu0
+
 !  &Gf=Gf1B*(fmu2*sdke1+fmu3*sdke2)*Ab(ib)*Ab(ib)/Zb(ib)/Zb(ib)+Gf1E*(fmu1*sdke1+fmu2*sdke2)*Ab(ib)/Zb(ib)+&
 !  &  +Gf2B*(fmu1*sdke1+fmu2*sdke2)*Ab(ib)/Zb(ib)              +Gf2E*(fmu0*sdke1+fmu1*sdke2)+&
 !  &  +Gf3B *fmu2                  *Ab(ib)*Ab(ib)/Zb(ib)       +Gf3E*fmu1*Ab(ib)+&
