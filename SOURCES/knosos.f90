@@ -72,13 +72,13 @@ PROGRAM KNOSOS
            IF(myrank.NE.rank(is,jerr)) CYCLE
            !Read the magnetic field
            IF(itime.EQ.1) THEN
-              CALL READ_BFIELD(s(is))
+              CALL READ_BFIELD(s(is),is,ns)
               !Create (or read) a DKES-like database of monoenergetic transport coefficients
               CALL CALC_DATABASE(is,s(is))
               IF(ONLY_DB) CYCLE
               !Read the plasma profiles 
               CALL READ_PLASMAS(nbb,Zeff,s(is),Zb,Ab,nb(:,is,jerr),dnbdpsi(:,is,jerr),&
-                   & Tb(:,is,jerr),dTbdpsi(:,is,jerr),Epsi(is,jerr))              
+                   & Tb(:,is,jerr),dTbdpsi(:,is,jerr),Epsi(is,jerr)) 
               !Read the particle and energy sources
               CALL READ_SOURCES(nbb,s(is),Sb(:,is,jerr),Pb(:,is,jerr))
            END IF

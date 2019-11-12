@@ -338,6 +338,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   CONVERGED=     .FALSE.
   TRACE_IMP=     .FALSE.
   PLATEAU_OR_PS= .FALSE.
+  DR_READ=       .FALSE.
   
   !Some of the choices above may be incompatible, have to be changed accordingly.
   DO ib=1,nbb !in case you don't remember the electron mass, just write a small number

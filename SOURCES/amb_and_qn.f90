@@ -237,7 +237,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   REAL*8 tstart
 #ifdef MPIandPETSc
   !Others
-!  INTEGER ierr
+  INTEGER ierr
   INCLUDE "mpif.h"
 #endif
 
@@ -381,6 +381,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 
             !After bulk species have been calculated, solve QN
             IF(QN.AND.kb.EQ.2) CALL CALC_QN(jt,jt0,phi1anm,phi1nm,phi1c)
+            CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
          ELSE IF(REGB(ib).EQ.3) THEN
 
@@ -391,7 +392,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                  & Gb(ib)      ,Qb(ib)      ,L1b(ib)      ,L2b(ib),&
                  & n1nmrhs(:,:,ib),Mbbnmrhs,trMnmrhs,&
                  & n1nmb(:,ib)    ,Mbbnm   ,trMnm)
-            
+            CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
          END IF
 
          IF(ZERO_PHI1) phi1c=0
@@ -423,10 +424,13 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                        & Mbb(nalphab,nalphab),trM(nalphab,nalphab))
                END IF               
                !Calculate (zeta,theta) map of varphi1, Mbb and trM
+               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
                CALL PRECALC_TRIG(nalphab,zeta(1:nalphab),theta(1:nalphab),trig,dtrigdz,dtrigdt)
+               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
                CALL PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,&
                     & n1nmb,Mbbnm,trMnm,phi1c(jt,:),Ab(2),Tb(2),Epsi,s,zeta(1:nalphab),theta(1:nalphab),&
                     & phi1,Mbb,trM)
+               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
                ephi1oTsize=(MAXVAL(phi1)-MINVAL(phi1))/Tb(2)/2.
                !Check if varphi1 and M exist from previous calculations
                IF(.NOT.SOLVE_AMB) THEN
@@ -982,7 +986,7 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
   is=myrank+1
   vars=0
   vars(is)=s
-  IF(SUM(array(:,:)).GT.0) THEN
+  IF(DR_READ) THEN
      CALL REAL_ALLREDUCE(vars,ns)
      DO ia=1,nalphab
         DO il=1,nalphab
@@ -990,9 +994,9 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
 !           IF(array(il,ia).EQ.0) CYCLE
            varphi1=0
            varphi1(is)=phi1(il,ia)
-           CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!           CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
            CALL REAL_ALLREDUCE(varphi1,ns)
-           CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!           CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
            IF(npow.LT.5) THEN
               is0=is-npoints
@@ -1044,7 +1048,7 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
                  END IF                 
                  varphi1fit=varphi1fit+phi1coeff(ipow)*mats(js,ipow)
               END DO
-              WRITE(1000+myrank,'(I4,8(1pe13.5),I4)') jt,vars(is0+js-1),varphi1(is0+js-1),varphi1fit
+!              WRITE(1000+myrank,'(I4,8(1pe13.5),I4)') jt,vars(is0+js-1),varphi1(is0+js-1),varphi1fit
            END DO
            mats(1,1)=1
            varphi1fit=0
@@ -1057,12 +1061,13 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
               varphi1fit=varphi1fit+phi1coeff(ipow)*mats(1,ipow)
            END DO
 
-           IF(COMPARE_MODELS) WRITE(4600+myrank,'(I4,8(1pe13.5),I4)') jt,zeta(il),theta(ia),phi1(il,ia),&
+           IF(COMPARE_MODELS) WRITE(4600+myrank,'(I4,8(1pe13.5),I4,3(1pe13.5))') jt,zeta(il),theta(ia),phi1(il,ia),&
                 & varphi1fit,dvarphi1dsfit,Epsi*psip,Epsi*psip*absnablar(il,ia),&
                 & (Epsi*absnablar(il,ia)-dvarphi1dsfit/torflux)*psip,array(il,ia)
-           IF(jt.EQ.jt0) WRITE(4500+myrank,'(9(1pe13.5),I4)') s,zeta(il),theta(ia),phi1(il,ia),&
-                & varphi1fit,dvarphi1dsfit,Epsi*psip,Epsi*psip*absnablar(il,ia),&
-                & (Epsi-dvarphi1dsfit/torflux)*absnablar(il,ia)*psip,array(il,ia)
+           IF(jt.EQ.jt0) WRITE(4500+myrank,'(10(1pe13.5),I4,3(1pe13.5))') s,zeta(il),theta(ia),phi1(il,ia),&
+                & varphi1fit,Ti,dvarphi1dsfit,Epsi*psip,Epsi*psip*absnablar(il,ia),&
+                & (Epsi-dvarphi1dsfit/torflux)*absnablar(il,ia)*psip,array(il,ia),&
+                & posx(is,il,ia),posy(is,il,ia),posz(is,il,ia)
         END DO
      END DO
   END IF

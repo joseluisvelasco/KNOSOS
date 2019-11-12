@@ -1,4 +1,4 @@
-for dir in slurm* *.out fort.* *knosos* *.map* *.modes* *.amb* *.comp* *.av* ? *.read log.tar.gz fit.log *.[eo][0-9][0-9][0-9][0-9][0-9][0-9][0-9]* STD*
+for dir in slurm* *.out fort.* *knosos* *.map* *.modes* *.amb* *.comp* *.av* ? *.read Mbb.* trM.* ph1.* log.tar.gz fit.log *.[eo][0-9][0-9][0-9][0-9][0-9][0-9][0-9]* STD*
 do 
     test -e $dir
     if [ $? -eq 0 ]

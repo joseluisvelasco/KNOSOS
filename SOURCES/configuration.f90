@@ -4,17 +4,18 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE READ_BFIELD(s0)
+SUBROUTINE READ_BFIELD(s0,is0,ns)
   
 !-------------------------------------------------------------------------------------------------
-!Read and process the quantities at surface s=s0 (and s0+/-ds) of the magnetic configuration
+!Read and process the quantities at surface s=s0 (and s0+/-ds) of ns of the magnetic configuration
 !-------------------------------------------------------------------------------------------------
 
   USE GLOBAL
   IMPLICIT NONE
   !Input
+  INTEGER is0,ns
   REAL*8 s0 !s0 labels the flux surface s=psi/psi_{LCMS}, where psi is the toroidal flux
-  INTEGER n,m
+  INTEGER n,m,iz,it
   !Variables from "ddkes2.data"
   INTEGER, PARAMETER :: mpold = 1100
   INTEGER, PARAMETER :: ntord = 1100
@@ -304,7 +305,7 @@ SUBROUTINE READ_BFIELD(s0)
      IF(read_boozmndata) THEN
         ixn_b=ixn_b/nfp_b
         torflux=psi_b(ns_b)
-        pmns_b=-pmns_b
+        pmns_b=-pmns_b!*TWOPI/nfp_b
      ELSE
         pmns_b=pmns_b*TWOPI/nfp_b
      END IF
@@ -430,6 +431,20 @@ SUBROUTINE READ_BFIELD(s0)
         dborbisdpsi(ixn_b(imn),ixm_b(imn))=(bmns_b(imn,js1)-bmns_b(imn,js0))/dpsi
      END DO
      CALL FILL_3DGRID(MAL,MAL,s0,x1(2,:,:),x2(2,:,:),x3(2,:,:),Bzt(2,:,:),.TRUE.)
+     ALLOCATE(posx(ns,MAL,MAL),posy(ns,MAL,MAL),posz(ns,MAL,MAL))
+     posx=0
+     posy=0
+     posz=0
+     posx(is0,:,:)=x1(2,:,:)
+     posy(is0,:,:)=x2(2,:,:)
+     posz(is0,:,:)=x3(2,:,:)
+     DO iz=1,MAL
+        DO it=1,MAL
+           CALL REAL_ALLREDUCE(posx(:,iz,it),ns)
+           CALL REAL_ALLREDUCE(posy(:,iz,it),ns)
+           CALL REAL_ALLREDUCE(posz(:,iz,it),ns)
+        END DO
+     END DO
      CALL FIND_3DPOINTS(MAL,MAL,s0)
      !Check if the coordinate system is left-handed, as expected
      CALL CHECK_JACSIGN(MAL,MAL,dpsi,x1,x2,x3,Bzt(2,:,:),LeftHanded)
@@ -1293,6 +1308,7 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s)
      IF(iarray.EQ.2) filename="exp2.dat"
      OPEN(unit=1,file=filename,iostat=iostat,action='read')
      IF(iostat.EQ.0) THEN
+        DR_READ=.TRUE.
         DO iparray=1,nparray 
            READ(1,*,iostat=iostat) dummy,&
                 & x10(iarray,iparray),x20(iarray,iparray),x30(iarray,iparray),rho0,dummy           
@@ -1301,6 +1317,7 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s)
            x10(iarray,iparray)=x10(iarray,iparray)/1e2
            x20(iarray,iparray)=x20(iarray,iparray)/1e2
            x30(iarray,iparray)=x30(iarray,iparray)/1e2
+!           IF(ABS(s0(iarray,iparray)-s).GT.0.0035) CYCLE
            DO iz=1,nz
               DO it=1,nt
                  newdist=(x1(iz,it)-x10(iarray,iparray))*(x1(iz,it)-x10(iarray,iparray))&
@@ -1329,7 +1346,7 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s)
      IF(numprocs.GT.1) WRITE(filename,'("Er.map.",I2.2)') myrank
      OPEN(unit=4500+myrank,file=filename,form='formatted',action='write',iostat=iostat)
      WRITE(4500+myrank,'("s  \zeta_{Boozer}  \theta_{Boozer}(right-handed) &
-          & varphi_1[V] varphi_1(fit[V] dvarphi_1/ds [V] &
+          & varphi_1[V] varphi_1(fit[V] T_i [eV] dvarphi_1/ds [V] &
           & -dvarphi_0/dr[V/m]  -dvarphi_0/dr*|absnablar| [V/m] -d(varphi_0+varphi_1)/dr*|absnablar| [V/m]")')
   END IF
 
@@ -1544,7 +1561,7 @@ END FUNCTION FSA
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE CHANGE_COORDS(s,nl,na,zetab,thetab,func_al,coords,npts,func_zt)
+SUBROUTINE CHANGE_COORDS(s,nalphab,zetab,thetab,B_ztb,func_ztb,func_zt)
 
 !-------------------------------------------------------------------------------------------------
 !xxxxx TO BE CHECKED
@@ -1553,169 +1570,110 @@ SUBROUTINE CHANGE_COORDS(s,nl,na,zetab,thetab,func_al,coords,npts,func_zt)
   USE GLOBAL
   IMPLICIT NONE
   !Input
-  INTEGER nl,na,coords
-  REAL*8 s,zetab(nl,na),thetab(nl,na),func_al(nl,na)
+  INTEGER nalphab
+  REAL*8 s,zetab(nalphab),thetab(nalphab),B_ztb(nalphab,nalphab),func_ztb(nalphab,nalphab)
   !Output
-  INTEGER npts
-  REAL*8 func_zt(nax,nax)
-  INTEGER il,ia,ilp,iap,na3,nl3,info,ipivot(10)
-  REAL*8 dzeta,dtheta,zeta,theta!,func_zt(3*nl,3*nl)
-  REAL*8 zeta_ext(3*nl,3*na),theta_ext(3*nl,3*na),func_ext(3*nl,3*na)
-  REAL*8 ztl,ttl,ftl,dtl
-  REAL*8 ztr,ttr,ftr,dtr
-  REAL*8 zbr,tbr,fbr,dbr
-  REAL*8 zbl,tbl,fbl,dbl
-  REAL*8 dist
+  REAL*8 zetap(nalphab,nalphab),thetap(nalphab,nalphab),func_zt(nalphab,nalphab)
+  !Others
+  INTEGER iz,it,n,m,np1,mp1,info,ipivot(10)
+  REAL*8 zeta_ext(nalphab*3,nalphab*3),theta_ext(nalphab*3,nalphab*3),func_ext(nalphab*3,nalphab*3)
+  REAL*8 ztl,ttl,ftl,ztr,ttr,ftr,zbr,tbr,fbr,zbl,tbl,fbl
+  REAL*8 rhscoord(nalphab,nalphab)
   REAL*8 mat(10,10),rhs(10)
   REAL mat4(10,10),rhs4(10)
-  REAL*8 MODANG,temp(nax,nax)
+  COMPLEX*16 rhscoordnm(nalphab,nalphab)
+  !Time
+  CHARACTER*30, PARAMETER :: routine="FILL_3DPOINTS"
+  INTEGER, SAVE :: ntotal=0
+  REAL*8,  SAVE :: ttotal=0
+  REAL*8,  SAVE :: t0=0
+  REAL*8 tstart
 
-  func_zt=0  
-  temp=0
+  CALL CPU_TIME(tstart)
 
-  IF(npts.LE.0) THEN
-     npts=1
-     IF(na.GT.1) THEN
-        DO WHILE(npts.LT.na-1.AND.npts.LT.nl-1) 
-           npts=npts*2
-        END DO
+  rhscoord=0.0*(1./B_ztb/B_ztb)
+  CALL FFTF_KN(nalphab,rhscoord,rhscoordnm)
+  DO np1=1,nalphab
+     IF(np1.LE.nalphab/2) THEN
+        n=np1-1
      ELSE
-        DO WHILE(npts.LT.SQRT(REAL(nl)))
-           npts=npts*2
-        END DO
+        n=-nalphab+np1-1
      END IF
-     npts=4*npts+1
-  END IF
+     DO mp1=1,nalphab
+        IF(mp1.LE.nalphab/2) THEN
+           m=mp1-1
+        ELSE
+           m=-nalphab+mp1-1
+        END IF
+        rhscoordnm(np1,mp1)=-NUMI*rhscoordnm(np1,mp1)/(iota*m+nzperiod*n)
+     END DO
+  END DO
+  CALL FFTB_KN(nalphab,rhscoordnm,rhscoord)
+  DO iz=1,nalphab
+     DO it=1,nalphab
+        zetap(iz,it) = zetab(iz)+rhscoord(iz,it)
+        thetap(iz,it)=thetab(it)+rhscoord(iz,it)*iota
+     END DO
+  END DO
 
-  IF(coords.EQ.2) THEN
-     OPEN(unit=1200+myrank,file='phi2d.dat',form='formatted',action='write')
-     WRITE(1200+myrank,*) '#'
-     WRITE(1200+myrank,*) '#'
-     WRITE(1200+myrank,*) '#'
-     WRITE(1200+myrank,*) '#'
-     WRITE(1200+myrank,*) s
-     WRITE(1200+myrank,*) npts
-     WRITE(1200+myrank,*) npts
-     WRITE(1200+myrank,*) nzperiod
-  END IF
-  
-  dzeta= TWOPI/(npts-1.)/nzperiod
-  dtheta=TWOPI/(npts-1.)
-
-  DO il=1,nl
-     DO ia=1,na
+  DO iz=1,nalphab
+     DO it=1,nalphab
         
-         zeta_ext(1*nl+il,1*na+ia)=MODANG( zetab(il,ia),TWOPI/nzperiod)
-        theta_ext(1*nl+il,1*na+ia)=MODANG(thetab(il,ia),TWOPI)
-         func_ext(1*nl+il,1*na+ia)=func_al(il,ia)
+         zeta_ext(1*nalphab+iz,1*nalphab+it)= zetap(iz,it)
+        theta_ext(1*nalphab+iz,1*nalphab+it)=thetap(iz,it)
+         func_ext(1*nalphab+iz,1*nalphab+it)=func_ztb(iz,it)
 
-         zeta_ext(0*nl+il,0*na+ia)= zeta_ext(1*nl+il,1*na+ia)-TWOPI/nzperiod
-        theta_ext(0*nl+il,0*na+ia)=theta_ext(1*nl+il,1*na+ia)-TWOPI
-         func_ext(0*nl+il,0*na+ia)=func_al(il,ia)
+         zeta_ext(0*nalphab+iz,0*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI/nzperiod
+        theta_ext(0*nalphab+iz,0*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI
+         func_ext(0*nalphab+iz,0*nalphab+it)=func_ztb(iz,it)
         
-         zeta_ext(0*nl+il,1*na+ia)= zeta_ext(1*nl+il,1*na+ia)-TWOPI/nzperiod
-        theta_ext(0*nl+il,1*na+ia)=theta_ext(1*nl+il,1*na+ia)
-         func_ext(0*nl+il,1*na+ia)=func_al(il,ia)
+         zeta_ext(0*nalphab+iz,1*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI/nzperiod
+        theta_ext(0*nalphab+iz,1*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)
+         func_ext(0*nalphab+iz,1*nalphab+it)=func_ztb(iz,it)
 
-         zeta_ext(0*nl+il,2*na+ia)= zeta_ext(1*nl+il,1*na+ia)-TWOPI/nzperiod
-        theta_ext(0*nl+il,2*na+ia)=theta_ext(1*nl+il,1*na+ia)+TWOPI
-         func_ext(0*nl+il,2*na+ia)=func_al(il,ia)
+         zeta_ext(0*nalphab+iz,2*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI/nzperiod
+        theta_ext(0*nalphab+iz,2*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI
+         func_ext(0*nalphab+iz,2*nalphab+it)=func_ztb(iz,it)
 
-         zeta_ext(1*nl+il,0*na+ia)= zeta_ext(1*nl+il,1*na+ia)         
-        theta_ext(1*nl+il,0*na+ia)=theta_ext(1*nl+il,1*na+ia)-TWOPI
-         func_ext(1*nl+il,0*na+ia)=func_al(il,ia)
+         zeta_ext(1*nalphab+iz,0*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)         
+        theta_ext(1*nalphab+iz,0*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI
+         func_ext(1*nalphab+iz,0*nalphab+it)=func_ztb(iz,it)
 
-         zeta_ext(1*nl+il,2*na+ia)= zeta_ext(1*nl+il,1*na+ia)
-        theta_ext(1*nl+il,2*na+ia)=theta_ext(1*nl+il,1*na+ia)+TWOPI
-         func_ext(1*nl+il,2*na+ia)=func_al(il,ia)
+         zeta_ext(1*nalphab+iz,2*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)
+        theta_ext(1*nalphab+iz,2*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI
+         func_ext(1*nalphab+iz,2*nalphab+it)=func_ztb(iz,it)
 
-         zeta_ext(2*nl+il,0*na+ia)= zeta_ext(1*nl+il,1*na+ia)+TWOPI/nzperiod
-        theta_ext(2*nl+il,0*na+ia)=theta_ext(1*nl+il,1*na+ia)-TWOPI
-         func_ext(2*nl+il,0*na+ia)=func_al(il,ia)
+         zeta_ext(2*nalphab+iz,0*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI/nzperiod
+        theta_ext(2*nalphab+iz,0*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI
+         func_ext(2*nalphab+iz,0*nalphab+it)=func_ztb(iz,it)
 
-         zeta_ext(2*nl+il,1*na+ia)= zeta_ext(1*nl+il,1*na+ia)+TWOPI/nzperiod
-        theta_ext(2*nl+il,1*na+ia)=theta_ext(1*nl+il,1*na+ia)
-         func_ext(2*nl+il,1*na+ia)=func_al(il,ia)
+         zeta_ext(2*nalphab+iz,1*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI/nzperiod
+        theta_ext(2*nalphab+iz,1*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)
+         func_ext(2*nalphab+iz,1*nalphab+it)=func_ztb(iz,it)
 
-         zeta_ext(2*nl+il,2*na+ia)= zeta_ext(1*nl+il,1*na+ia)+TWOPI/nzperiod
-        theta_ext(2*nl+il,2*na+ia)=theta_ext(1*nl+il,1*na+ia)+TWOPI
-         func_ext(2*nl+il,2*na+ia)=func_al(il,ia)
+         zeta_ext(2*nalphab+iz,2*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI/nzperiod
+        theta_ext(2*nalphab+iz,2*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI
+         func_ext(2*nalphab+iz,2*nalphab+it)=func_ztb(iz,it)
 
      END DO
   END DO
-  
-  na3=na*3
-  nl3=nl*3
 
 
-  DO iap=1,npts
-
-!     thetaPEST=(iap-1)*dtheta
-     DO ilp=1,npts        
-        
-!        zetaPEST=(ilp-1)*dzeta
-!        zetaPEST=(nl-ilp)*dzeta
-!        B=0
-!        phitor=0
-!        DO nm=1,Nnm
-!           arg=mp(nm)*theta+nzperiod*npts(nm)*zeta
-!           cosinex=COS(arg)
-!           sinex=  SIN(arg)
-!           B=B+bnmc(nm)*cosinex
-!           phitor=phitor+pnm(nm)*sinex
-!        END DO
-!        phitor=phitor*TWOPI/nzperiod
-!        theta=thetaPEST+iota*phitor
-!        zeta=zetaPEST+phitor
-
-        theta=(iap-1)*dtheta
-        zeta=(ilp-1)*dzeta
-
-        dtr=1E+5
-        dbr=1E+5
-        dtl=1E+5
-        dbl=1E+5
-        
-        DO ia=1,na3
-           DO il=1,nl3
-              dist=(zeta_ext(il,ia)-zeta)*(zeta_ext(il,ia)-zeta)+&
-                   & (theta_ext(il,ia)-theta)*(theta_ext(il,ia)-theta)
-              IF(zeta_ext(il,ia).GT.zeta) THEN
-                 IF(theta_ext(il,ia).GT.theta) THEN
-                    IF(dist.LT.dtr) THEN
-                       ztr=zeta_ext(il,ia) -zeta
-                       ttr=theta_ext(il,ia)-theta
-                       ftr=func_ext(il,ia) 
-                       dtr=dist
-                    END IF
-                 ELSE IF(theta_ext(il,ia).Le.theta) THEN
-                    IF(dist.LT.dbr) THEN
-                       zbr=zeta_ext(il,ia) -zeta
-                       tbr=theta_ext(il,ia)-theta
-                       fbr=func_ext(il,ia)
-                       dbr=dist
-                    END IF
-                 END IF
-              ELSE IF(zeta_ext(il,ia).LE.zeta) THEN
-                IF(theta_ext(il,ia).GT.theta) THEN
-                    IF(dist.LT.dtl) THEN
-                       ztl=zeta_ext(il,ia) -zeta
-                       ttl=theta_ext(il,ia)-theta
-                       ftl=func_ext(il,ia)
-                       dtl=dist
-                    END IF
-                ELSE IF(theta_ext(il,ia).LE.theta) THEN
-                   IF(dist.LT.dbl) THEN
-                       zbl=zeta_ext(il,ia) -zeta
-                       tbl=theta_ext(il,ia)-theta
-                       fbl=func_ext(il,ia)
-                       dbl=dist
-                    END IF
-                 END IF
-              END IF
-           END DO
-        END DO
-
+  DO iz=1,nalphab
+     DO it=1,nalphab
+       
+        ztr= zeta_ext(nalphab+iz+1,nalphab+it+1) -zetab(iz)
+        ttr=theta_ext(nalphab+iz+1,nalphab+it+1)-thetab(it)
+        ftr= func_ext(nalphab+iz+1,nalphab+it+1)
+        ztl= zeta_ext(nalphab+iz-1,nalphab+it+1) -zetab(iz)
+        ttl=theta_ext(nalphab+iz-1,nalphab+it+1)-thetab(it)
+        ftl= func_ext(nalphab+iz-1,nalphab+it+1)
+        zbr= zeta_ext(nalphab+iz+1,nalphab+it-1) -zetab(iz)
+        tbr=theta_ext(nalphab+iz+1,nalphab+it-1)-thetab(it)
+        fbr= func_ext(nalphab+iz+1,nalphab+it-1)
+        zbl= zeta_ext(nalphab+iz-1,nalphab+it-1) -zetab(iz)
+        tbl=theta_ext(nalphab+iz-1,nalphab+it-1)-thetab(it)
+        fbl= func_ext(nalphab+iz-1,nalphab+it-1)
         mat=0
         rhs=0
         mat(1,1)=1
@@ -1776,38 +1734,26 @@ SUBROUTINE CHANGE_COORDS(s,nl,na,zetab,thetab,func_al,coords,npts,func_zt)
 
         mat4=REAL(mat)
         rhs4=REAL(rhs)
-        CALL SGESV(10,1,mat4,10,ipivot,rhs4,10,info)
-        
-        func_zt(iap,ilp)=rhs(6)
-        func_zt(iap,ilp)=0.25*(ftl+ftr+fbl+fbr)
-!        IF(DEBUG.OR.myrank.EQ.0) WRITE(1000+myrank,1010) zeta,theta,func_zt(iap,ilp),0.25*(ftl+ftr+fbl+fbr),&
-!        IF(DEBUG.OR.s.GT.10) WRITE(1000+myrank,1010) zeta,theta,func_zt(iap,ilp),0.25*(ftl+ftr+fbl+fbr)!,&
-        IF(DEBUG) WRITE(1000+myrank,1010) zeta,theta,func_zt(iap,ilp),0.25*(ftl+ftr+fbl+fbr)!,&
-!             & ztl,ttl,ftl,&
-!             & ztr,ttr,ftr,&
-!             & zbr,tbr,fbr,&
-!             & zbl,tbl,fbl,&
-!             & rhs(1),rhs(2),rhs(3),rhs(4),rhs(5),rhs(6),s
-1010    FORMAT ('boozer',64(1pe13.5))           
-        
+        CALL SGESV(10,1,mat4,10,ipivot,rhs4,10,info)        
+        func_zt(iz,it)=rhs(6)
+!        func_zt(iap,ilp)=0.25*(ftl+ftr+fbl+fbr)
+        IF(DEBUG.OR.myrank.EQ.0) WRITE(1000+myrank,'(8(1pe13.5))') s,zetab(iz),thetab(it),func_zt(iz,it),func_ztb(iz,it)
      END DO
-
-     IF(coords.EQ.2) WRITE(1200+myrank,1011) (func_zt(iap,ilp),ilp=npts,1,-1)
-1011 FORMAT (500(1pe13.5))
-     
   END DO
 
-  DO iap=1,npts
-     temp(1:npts,iap)=func_zt(iap,1:npts)
-  END DO
-  func_zt=temp
 
-!  fc=CMPLX(func_zt,0.0)
-!  CALL DFFTW_PLAN_DFT_2d(plan_fwd,npts,npts,fc(1:npts,1:npts),fnm(1:npts,1:npts),FFTW_FORWARD,FFTW_ESTIMATE)
-!  CALL DFFTW_EXECUTE_DFT(plan_fwd,fc(1:npts,1:npts),fnm(1:npts,1:npts))
-!  CALL DFFTW_DESTROY_PLAN(plan_fwd)
-!  fnm=fnm/npts/npts
+  OPEN(unit=1200+myrank,file='phi2d.dat',form='formatted',action='write')
+  WRITE(1200+myrank,*) '#'
+  WRITE(1200+myrank,*) '#'
+  WRITE(1200+myrank,*) '#'
+  WRITE(1200+myrank,*) '#'
+  WRITE(1200+myrank,*) s
+  WRITE(1200+myrank,*) nalphab
+  WRITE(1200+myrank,*) nalphab
+  WRITE(1200+myrank,*) nzperiod
   
+
+  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   
 END SUBROUTINE CHANGE_COORDS
 
