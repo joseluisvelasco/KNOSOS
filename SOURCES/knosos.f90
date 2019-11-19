@@ -72,7 +72,7 @@ PROGRAM KNOSOS
            IF(myrank.NE.rank(is,jerr)) CYCLE
            !Read the magnetic field
            IF(itime.EQ.1) THEN
-              CALL READ_BFIELD(s(is),is,ns)
+              CALL READ_BFIELD(s(is))
               !Create (or read) a DKES-like database of monoenergetic transport coefficients
               CALL CALC_DATABASE(is,s(is))
               IF(ONLY_DB) CYCLE

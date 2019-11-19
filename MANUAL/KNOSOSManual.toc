@@ -27,9 +27,9 @@
 \contentsline {subsection}{\numberline {6.2.5}Parameters}{37}{subsection.6.2.5}
 \contentsline {chapter}{\numberline {7}Inputs}{39}{chapter.7}
 \contentsline {section}{\numberline {7.1}The {\ttfamily model} namelist}{39}{section.7.1}
-\contentsline {section}{\numberline {7.2}The {\ttfamily parameters} namelist}{52}{section.7.2}
+\contentsline {section}{\numberline {7.2}The {\ttfamily parameters} namelist}{53}{section.7.2}
 \contentsline {section}{\numberline {7.3}The {\ttfamily surfaces} namelist}{63}{section.7.3}
-\contentsline {section}{\numberline {7.4}The {\ttfamily species} namelist}{64}{section.7.4}
+\contentsline {section}{\numberline {7.4}The {\ttfamily species} namelist}{65}{section.7.4}
 \contentsline {chapter}{\numberline {8}Plasma profiles}{69}{chapter.8}
 \contentsline {section}{\numberline {8.1}Workflow}{69}{section.8.1}
 \contentsline {section}{\numberline {8.2}Kinetic profiles}{69}{section.8.2}
@@ -65,8 +65,8 @@
 \contentsline {chapter}{\numberline {A}High collisionalities}{104}{appendix.A}
 \contentsline {section}{\numberline {A.1}Bulk species in the Pfisrch-Schl\"uter regime}{104}{section.A.1}
 \contentsline {section}{\numberline {A.2}Bulk species in the plateau regime}{106}{section.A.2}
-\contentsline {section}{\numberline {A.3}Classical flux and neoclassical flux of trace impurities species in the presence of bulk ions at low collisionalities}{107}{section.A.3}
-\contentsline {chapter}{\numberline {B}{\ttfamily DKES}}{108}{appendix.B}
-\contentsline {section}{\numberline {B.1}Input}{108}{section.B.1}
-\contentsline {section}{\numberline {B.2}Use of {\ttfamily DKES}\nobreakspace {}database}{109}{section.B.2}
-\contentsline {section}{\numberline {B.3}Normalization}{110}{section.B.3}
+\contentsline {section}{\numberline {A.3}Classical flux and neoclassical flux of trace impurities species in the presence of bulk ions at low collisionalities}{108}{section.A.3}
+\contentsline {chapter}{\numberline {B}{\ttfamily DKES}}{109}{appendix.B}
+\contentsline {section}{\numberline {B.1}Input}{109}{section.B.1}
+\contentsline {section}{\numberline {B.2}Use of {\ttfamily DKES}\nobreakspace {}database}{110}{section.B.2}
+\contentsline {section}{\numberline {B.3}Normalization}{111}{section.B.3}

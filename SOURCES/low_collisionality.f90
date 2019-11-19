@@ -243,7 +243,6 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   ALLOCATE(ltemp2(nw,nw))
   ltemp2=connected(1:nw,1:nw);DEALLOCATE(connected);ALLOCATE(connected(nw,nw));connected=ltemp2
   DEALLOCATE(ltemp2)
-  
   !Create grid in alpha, then (zeta,theta)
   !Determine number of modes
   nalphab=1
@@ -583,7 +582,6 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
   !Maximum possible number of wells determined by size of arrays
   DO WHILE((nalpha.LT.nal.AND.(nwmax.LE.nwx.OR.(NTV.AND.nwmax.LE.nwx))).OR.iturn.NE.0)
      iturn=iturn+1
-     
      !Find wells along the field lines
      IF(iturn.EQ.1) THEN        
         nw0=nw2+1
@@ -2348,7 +2346,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
               d3vdlambdadK=fint*modB/sqrt1mlB*dlambda
               IF(PRE_INTV) THEN   !Calculate the linear contribution of g(ipoint)
                  D11_alp(ial)=D11_alp(ial)-d3vdlambdadK*vds_al(1,ia,il)*(1.0-0.5*lambdaB) /2.
-                 IF(QN) dn1_alp(ial)=dn1_alp(ial)+d3vdlambdadK/2.        
+                 IF(QN) dn1_alp(ial)=dn1_alp(ial)+d3vdlambdadK       
               ELSE                !Accumulate the total contribution g for each point jpoint
                  IF(.NOT.PHI1_READ.OR..NOT.IMP1NU) THEN
                     D11_alp(ial)=D11_alp(ial)-g(jpoint,1)*d3vdlambdadK*vds_al(1,ia,il)*(1.0-0.5*lambdaB)/2.
@@ -2357,7 +2355,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
                          & modB/(lambda(ila)*lambda(ila)*lambda(ila)*sqrt1mlb)*vds_al(1,ia,il)
                     
                  END IF
-                 IF(QN) dn1_alp(ial)=dn1_alp(ial)+g(jpoint,1)*d3vdlambdadK/2.        
+                 IF(QN) dn1_alp(ial)=dn1_alp(ial)+g(jpoint,1)*d3vdlambdadK        
               END IF
            END DO
 

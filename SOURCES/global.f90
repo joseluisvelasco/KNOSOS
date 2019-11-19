@@ -82,11 +82,19 @@ MODULE GLOBAL
   REAL*8 bnms(nmd),bnms0(nmd),bnms1(nmd),dbnmsdpsi(nmd)
   REAL*8 mp(nmd),np(nmd),ext_mp(nmd),ext_np(nmd)
   REAL*8, ALLOCATABLE :: absnablar(:,:)
-  REAL*8, ALLOCATABLE :: posx(:,:,:),posy(:,:,:),posz(:,:,:)
+  REAL*8, ALLOCATABLE ::  posx(:,:), posy(:,:), posz(:,:)
+  REAL*8, ALLOCATABLE :: zoomx(:,:),zoomy(:,:),zoomz(:,:),zoomdr(:,:)
 
   !Grid, resolution and experimetal points
   REAL*8 zmax,tmax,dzstep
-  INTEGER array(nax,nax)
+  INTEGER, PARAMETER :: narray=10
+  INTEGER, PARAMETER :: nparray=100
+  REAL, PARAMETER ::   zeta0_DR=1.14
+  REAL, PARAMETER ::  dzeta0_DR=0.04
+  REAL, PARAMETER ::  theta0_DR=1.88
+  REAL, PARAMETER :: dtheta0_DR=2.00
+  REAL*8 zetaDR(narray,nparray),thetaDR(narray,nparray)
+!  INTEGER array(nax,nax)
 
   !FFTs
   INTEGER*8, SAVE :: plan_fwd=0

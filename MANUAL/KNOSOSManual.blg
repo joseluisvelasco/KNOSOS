@@ -1,5 +1,5 @@
-This is BibTeX, Version 0.99d (TeX Live 2016)
-Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+This is BibTeX, Version 0.99d (TeX Live 2018)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
 The top-level auxiliary file: KNOSOSManual.aux
 A level-1 auxiliary file: cover.aux
 A level-1 auxiliary file: preface.aux
@@ -21,45 +21,45 @@ The style file: plainnat.bst
 Database file #1: /Users/velasco/Work/PAPERS/bibliography.bib
 Warning--empty year in notes_plateau
 Warning--empty year in notes_plateau
-You've used 67 entries,
+You've used 68 entries,
             2773 wiz_defined-function locations,
-            1033 strings with 25531 characters,
-and the built_in function-call counts, 55228 in all, are:
-= -- 4279
-> -- 5995
+            1038 strings with 25865 characters,
+and the built_in function-call counts, 55729 in all, are:
+= -- 4317
+> -- 6034
 < -- 17
-+ -- 2001
-- -- 1932
-* -- 5679
-:= -- 9168
-add.period$ -- 274
-call.type$ -- 67
-change.case$ -- 843
++ -- 2015
+- -- 1944
+* -- 5725
+:= -- 9245
+add.period$ -- 277
+call.type$ -- 68
+change.case$ -- 850
 chr.to.int$ -- 65
-cite$ -- 136
-duplicate$ -- 1422
-empty$ -- 2619
-format.name$ -- 2019
-if$ -- 10867
-int.to.chr$ -- 3
+cite$ -- 138
+duplicate$ -- 1446
+empty$ -- 2660
+format.name$ -- 2032
+if$ -- 10971
+int.to.chr$ -- 4
 int.to.str$ -- 1
-missing$ -- 66
-newline$ -- 415
-num.names$ -- 270
-pop$ -- 1532
+missing$ -- 67
+newline$ -- 420
+num.names$ -- 274
+pop$ -- 1548
 preamble$ -- 1
-purify$ -- 777
+purify$ -- 783
 quote$ -- 0
-skip$ -- 1489
+skip$ -- 1503
 stack$ -- 0
-substring$ -- 1172
-swap$ -- 102
+substring$ -- 1174
+swap$ -- 106
 text.length$ -- 5
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 732
+type$ -- 743
 warning$ -- 2
-while$ -- 261
+while$ -- 264
 width$ -- 0
-write$ -- 1017
+write$ -- 1030
 (There were 2 warnings)

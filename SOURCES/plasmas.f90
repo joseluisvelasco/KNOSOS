@@ -707,9 +707,12 @@ SUBROUTINE DKE_CONSTANTS(ib,nbb,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,flag)
   vdconst=v*v*AB(ib)*m_e/ZB(ib)
   vmconst=vdconst
   Sdke=dnbdpsi(ib)/nb(ib)+dTbdpsi(ib)/Tb(ib)*(x2-1.5)-ZB(ib)*Epsi/Tb(ib)
-  weight=(2./sqpi)*x*wM
-  fdkes=(2*v/vdconst/vdconst)/psip/psip
- 
+  ! This can be used to calculate numerically the integral
+  !   4\pi\int_0^\inf dv v^2 F_M f(v)=
+  ! =(2/\sqrt(\pi))*\int_0^\inf dK K^{1/2}exp{-K}g(K),
+  ! with f(v)=g(K),  K=mv^2/(2T) and x=K^{1/2}
+  weight=(2./sqpi)*x*wM 
+  fdkes=(2*v/vdconst/vdconst)/psip/psip 
   mu=v*v/2./borbic(0,0)
   ftrace1nu=-Ab(ib)*m_e*Ab(ib)*m_e*SQRT(Ab(ib)*m_e/Tb(ib))/Tb(ib)/Tb(ib)/nuzi(ib)*&
        & mu*SQRT(mu)/2./SQPI*vdconst*vdconst/4/borbic(0,0)/borbic(0,0)

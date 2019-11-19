@@ -106,7 +106,7 @@ END SUBROUTINE DISTRIBUTE_MPI
 
 #ifdef MPIandPETSc
 
-SUBROUTINE REAL_ALLREDUCE(arrayr,narray)
+SUBROUTINE REAL_ALLREDUCE(arrayr,narrayr)
 
 !----------------------------------------------------------------------------------------------- 
 !Calls MPI_ALLREDUCE
@@ -115,16 +115,16 @@ SUBROUTINE REAL_ALLREDUCE(arrayr,narray)
   USE GLOBAL
   IMPLICIT NONE
   !Input/output
-  INTEGER narray
-  REAL*8 arrayr(narray)
+  INTEGER narrayr
+  REAL*8 arrayr(narrayr)
   !Others
   INTEGER mpierr
-  REAL*8 arrays(narray)
+  REAL*8 arrays(narrayr)
   INCLUDE "mpif.h"
 
   arrays=arrayr
   arrayr=0
-  CALL MPI_ALLREDUCE(arrays,arrayr,narray,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,mpierr)
+  CALL MPI_ALLREDUCE(arrays,arrayr,narrayr,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,mpierr)
   
 END SUBROUTINE REAL_ALLREDUCE
 

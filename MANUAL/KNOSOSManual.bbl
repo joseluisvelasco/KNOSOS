@@ -1,9 +1,17 @@
-\begin{thebibliography}{67}
+\begin{thebibliography}{68}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Alonso et~al.(2017{\natexlab{a}})Alonso, Calvo, Garc\'ia-Rega{\~n}a,
+  and Velasco]{alonso2017JPP}
+A~Alonso, I~Calvo, J~M Garc\'ia-Rega{\~n}a, and J~L Velasco.
+\newblock {Can we use the relative phase of electrostatic potential and
+  impurity density asymmetries to control impurity transport in stellarators?}
+\newblock In \emph{The 1st JPP Frontiers in Plasma Physics Conference, Abbazia
+  di Spineto, Italy}, 2017{\natexlab{a}}.
 
 \bibitem[Alonso et~al.()Alonso, Calvo, and {J L Velasco}]{notes_plateau}
 J~A Alonso, I~Calvo, and {J L Velasco}.
@@ -11,15 +19,15 @@ J~A Alonso, I~Calvo, and {J L Velasco}.
   large aspect ratio stellarator in plateau regime.
 \newblock In \emph{02/02/2013}.
 
-\bibitem[Alonso et~al.(2017)Alonso, Beidler, Calvo, Dinklage, Feng, Fuchert,
-  Hirsch, Landreman, Langenberg, Maa{\ss}berg, Pablant, Smith, Velasco, Weir,
-  Zhang, and {the W7-X Team}]{alonso2017eps}
+\bibitem[Alonso et~al.(2017{\natexlab{b}})Alonso, Beidler, Calvo, Dinklage,
+  Feng, Fuchert, Hirsch, Landreman, Langenberg, Maa{\ss}berg, Pablant, Smith,
+  Velasco, Weir, Zhang, and {the W7-X Team}]{alonso2017eps}
 J~A Alonso, C~D Beidler, I~Calvo, A~Dinklage, Y~Feng, G~Fuchert, M~Hirsch,
   M~Landreman, A~Langenberg, H~Maa{\ss}berg, N~Pablant, H~Smith, J~L Velasco,
   G~Weir, D~Zhang, and {the W7-X Team}.
 \newblock {Ion heat transport in low-density Wendelstein 7-X plasmas}.
 \newblock In \emph{44th European Physical Society Conference on Plasma Physics,
-  Belfast, United Kingdom}, 2017.
+  Belfast, United Kingdom}, 2017{\natexlab{b}}.
 
 \bibitem[Ascas{\'{\i}}bar et~al.(2019)Ascas{\'{\i}}bar, Alba, Alegre, Alonso,
   Alonso, de~Arag{\'{o}}n, Baciero, Barcala, Blanco, Botija, Bueno, Cabrera,
@@ -626,7 +634,8 @@ J~L Velasco, I~Calvo, J~M Garc{\'\i}a-Rega{\~n}a, F~I Parra, S~Satake, J~A
 J~L Velasco, I~Calvo, F~I Parra, and J~M Garc\'ia-Rega\ na.
 \newblock {KNOSOS: a fast orbit-averaging neoclassical code for arbitrary
   stellarator geometry}.
-\newblock \emph{in preparation}, 2019.
+\newblock \emph{Journal of Computational Physics}, submitted,
+  https://arxiv.org/abs/1908.11615, 2019.
 
 \bibitem[Wolf and {et al.}(2017)]{wolf2017op11}
 R~C Wolf and {et al.}

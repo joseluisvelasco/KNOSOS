@@ -1,6 +1,6 @@
 \chapter{High collisionalities}\label{CHAP_HIGHCOL}
 
-In this appendix we describe how the code solves transport at higher collisionalities (for which the bounce-average technique cannot be applied). For bulk species, we will recover the results of \DKES~(i.e., without momentum conservation), while for trace impurities we will obtain those of~\citep{calvo2018nf}.
+In this appendix we describe how the code solves transport at higher collisionalities (for which the bounce-average technique cannot be applied). For bulk species, we will recover the results of \DKES~(i.e., without momentum conservation), while for trace impurities we will obtain those of~\citep{calvo2018nf}\footnote{We note that these sections have not been part of any peer-reviewed paper, and it is not impossible that some of the intermediate equations contain typos}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -64,7 +64,7 @@ D_{11}= -\frac{1}{2}\left(\frac{\partial r}{\partial\psi}\right)^2\fsa{\int_{-1}
 \end{equation}
 where the brackets denote flux-surface-average. Thanks to the large aspect-ratio approximation, we can take the Jacobian to be approximately constant and obtain 
 \begin{eqnarray}
-D_{11} \approx -\frac{1}{2}\left(\frac{\partial r}{\partial\psi}\right)^2\frac{1}{4\pi^2}\int_0^{2\pi}\mathrm{d}\theta\int_0^{2\pi}\mathrm{d}\zeta\int_{-1}^{+1}\mathrm{d}p \frac{h_{mn}}{\Upsilon F_M} \bv_M\cdot\bnabla \psi = \nonumber \\ = -\frac{1}{2}\left(\frac{\partial r}{\partial\psi}\right)^2 \sum_{m,n}\int_{-1}^{+1}\mathrm{d}\,p \frac{h_{mn}}{\Upsilon F_M}(\bv_M\cdot\bnabla\psi)_{-m,-n} =\nonumber \\ = \sum_{m,n}\exp{[i(m\theta+nN_p\zeta)]} (D_{11})_{mn}\,,
+D_{11} &\approx& -\frac{1}{2}\left(\frac{\partial r}{\partial\psi}\right)^2\frac{1}{4\pi^2}\int_0^{2\pi}\mathrm{d}\theta\int_0^{2\pi}\mathrm{d}\zeta\int_{-1}^{+1}\mathrm{d}p \frac{h}{\Upsilon F_M} \bv_M\cdot\bnabla \psi = \nonumber \\ &=& -\frac{1}{2}\left(\frac{\partial r}{\partial\psi}\right)^2 \sum_{m,n}\int_{-1}^{+1}\mathrm{d}\,p \frac{h_{mn}}{\Upsilon F_M}(\bv_M\cdot\bnabla\psi)_{-m,-n}  = \sum_{m,n}(D_{11})_{mn}\,,
 \end{eqnarray}
 with
 \begin{equation}
@@ -84,42 +84,55 @@ Our expressions can be rewritten as
 
 \section{Bulk species in the plateau regime}\label{SEC_PLATEAU}
 
-We repeat here the derivation of~section 2 of~\citep{notes_plateau}. We want to calculate $h$, the deviation of the distribution function from the Maxwellian, described by the next equation:
+We repeat here the derivation of~\citep{alonso2017JPP}, and expand it to include the effect of the radial $E\times B$ drift\footnote{Additionally, we note that the derivation of the plateau in~\citep{alonso2017JPP} contains a typo that we comment on later in this section.}. We want to calculate $h$, the deviation of the distribution function from the Maxwellian, described by the next equation:
  \begin{equation}
- vp\frac{\bB}{B}\cdot\bnabla h + \nu h = -\bv_M\cdot\bnabla\psi \Upsilon F_M\,.\label{EQ_DKEPLATEAU}
+ vp\frac{\bB}{B}\cdot\bnabla h + \nu h = -(\bv_M+\bv_E)\cdot\bnabla\psi \Upsilon F_M\,.\label{EQ_DKEPLATEAU}
  \end{equation}
- The variables in velocity space are again the particle speed $v$ and the pitch-angle $p=v_\parallel/v$. In Boozer coordinates,  equation~(\ref{EQ_DKEPLATEAU}) becomes:
-\begin{eqnarray}
-vp\frac{B}{B_\zeta+\iota B_\theta}\left(\iota\frac{\partial}{\partial \theta}+\frac{\partial}{\partial \zeta}\right) h +\nonumber\\ +v_d\frac{1+p^2}{2}\frac{1}{B|B_\zeta+\iota B_\theta|}\left(B_\theta\frac{\partial B}{\partial \zeta}-B_\zeta\frac{\partial B}{\partial \theta}\right) \Upsilon F_M = \frac{\nu}{2}\frac{\partial}{\partial p}\left((1-p^2)\frac{\partial h}{\partial p}\right)\,.
-\end{eqnarray}
- which by using the large aspect-ratio approximation, becomes
- \begin{equation}
- vp\frac{\Psi_t'}{R}\left(\iota\frac{\partial}{\partial \theta} +\frac{\partial}{\partial \zeta}\right) h + \nu h = v_d\frac{1+p^2}{2}\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|}\left(B_\zeta\frac{\partial B}{\partial \theta}-B_\theta\frac{\partial B}{\partial \zeta}\right) \Upsilon F_M\,.
- \end{equation}
- If we now expand $h$ and $B$ in Fourier components, we have, for each component
- \begin{equation}
-vp\frac{\Psi_t'}{R}i(\iota m + nN_p) h_{mn} + \nu h_{mn} = v_d\frac{1+p^2}{2}\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|} i(mB_\zeta -nN_pB_\theta)B_{mn}\Upsilon F_M\,,
- \end{equation}
- and thus
+ The variables in velocity space are again the particle speed $v$ and the pitch-angle $p=v_\parallel/v$. In Boozer coordinates,  equation~(\ref{EQ_DKEPLATEAU}) becomes, in the large aspect-ratio approximation:
  \begin{eqnarray}
- h_{mn} &=& v_d\frac{1+p^2}{2}\Upsilon F_M\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|}\frac{i(mB_\zeta-nN_pB_\theta)B_{mn}}{\frac{\Psi_t'vp}{R}i(\iota m + nN_p)+\nu} = \nonumber \\ &=&  v_d\frac{1+p^2}{2}\Upsilon F_M\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|}\frac{i(mB_\zeta-nN_pB_\theta)B_{mn}\left(\nu-i\frac{\Psi_t'vp}{R}(\iota m + nN_p)\right)}{\left(\frac{vp}{R}\right)^2(\iota m + nN_p)^2+\nu^2}\,.
+& &vp\frac{\Psi_t'}{R}\left(\iota\frac{\partial}{\partial \theta}+\frac{\partial}{\partial \zeta}\right) h + \nu h = \Upsilon F_M\frac{1}{|B_\zeta+\iota B_\theta|} \nonumber\\  &\times& \left[v_d\frac{1+p^2}{2\overline{B}}\left(B_\zeta\frac{\partial B}{\partial \theta}-B_\theta\frac{\partial B}{\partial \zeta}\right)+\left(B_\zeta\frac{\partial \varphi_1}{\partial \theta}-B_\theta\frac{\partial \varphi_1}{\partial \zeta}\right)\right]\,,
+ \end{eqnarray}
+ If we now expand $h$, $B$ and 
+ \begin{equation}
+ \varphi_1(\theta,\zeta) =  \sum_{m,n} \varphi_{1,mn}\exp{[i(m\theta+nN_p\zeta)]}\,,
+ \end{equation}
+ in Fourier components, we have, for each component
+ \begin{equation}
+vp\frac{\Psi_t'}{R}i(\iota m + nN_p) h_{mn} + \nu h_{mn} = \Upsilon F_M S_{mn}\,,
+ \end{equation}
+ with
+  \begin{equation}
+S_{mn}=   i\frac{(mB_\zeta -nN_pB_\theta)}{|B_\zeta+\iota B_\theta|}\left(v_d\frac{1+p^2}{2|B|}B_{mn}+\varphi_{1,mn}\right)\,.
+ \end{equation}
+We arrive to
+ \begin{eqnarray}
+ \frac{h_{mn}}{\Upsilon F_M} &=& \frac{S_{mn}}{\frac{\Psi_t'vp}{R}i(\iota m + nN_p)+\nu} = \frac{S_{mn}\left(\nu-i\frac{\Psi_t'vp}{R}(\iota m + nN_p)\right)}{\left(\frac{vp}{R}\right)^2(\iota m + nN_p)^2+\nu^2}\,.
  \end{eqnarray}
  Since we are going to calculate the particle and energy flux, we drop the term which is odd in $p$:
  \begin{eqnarray}
- h_{mn} =  v_d\frac{1+p^2}{2}\Upsilon F_M\frac{1}{\overline{B}|B_\zeta+\iota B_\theta|}\frac{i(mB_\zeta-nN_pB_\theta)B_{mn}\nu}{\left(\frac{vp}{R}\right)^2(\iota m + nN_p)^2+\nu^2}\,.
+ \frac{h_{mn}}{\Upsilon F_M}  = \frac{S_{mn}\nu}{\left(\frac{vp}{R}\right)^2(\iota m + nN_p)^2+\nu^2}\,.
  \end{eqnarray}
  We can rearrange this expression
  \begin{equation}
- \frac{h_{mn}}{\Upsilon F_M} = \frac{v_d}{v}\frac{R}{\overline{B}|B_\zeta+\iota B_\theta|}\frac{i(mB_\zeta-nN_pB_\theta)B_{mn}}{|\iota m+nN_p|}\frac{1+p^2}{2}\frac{\nu^*}{p^2+(\nu^*)^2}\,,
- \end{equation}
- where $\nu^*=\frac{R\nu}{v|\iota m +nN_p|}$ in a way that allows us to calculate the neoclassical transport coefficient $D_{11}$, as in the previous section. Since we are interested in the lowest order (i.e. $O(\nu^0)$) contribution to the flux~\citep{notes_plateau}, we can use the fact that
+ \frac{h_{mn}}{\Upsilon F_M}  = \frac{R}{v|\iota m + nN_p|}S_{mn}\frac{\nu^*}{p^2+(\nu^*)^2}\,,
+  \end{equation}
+ where $\nu^*=\frac{R\nu}{v|\iota m +nN_p|}$. Since we are interested in the lowest order (i.e. $O(\nu^0)$) contribution to the flux~\citep{alonso2017JPP}, we can use the fact that
  \begin{equation}
  \pi \delta(p)=\lim_{\nu^*\rightarrow 0}\frac{\nu^*}{p^2+(\nu^*)^2}\,,
  \end{equation}
  in order to integrate in the pitch angle and obtain the final expression:
  \begin{eqnarray}
- (D_{11})_{mn}&=& \frac{1}{8}\left(\frac{\partial r}{\partial\psi}\right)^2 \frac{v_d^2}{v}\frac{R}{\overline{B}^2|B_\zeta+\iota B_\theta|^2}\frac{(mB_\zeta-nN_pB_\theta)^2B_{mn}B_{-m,-n}}{|\iota m+nN_p|}\int_{-1}^{+1}\mathrm{d}p\,(1+p^2)\frac{\nu^*}{p^2+(\nu^*)^2} = \nonumber\\ &=& \frac{\pi}{8} \frac{v_d^2}{v}\frac{R}{\overline{B}^2|B_\zeta+\iota B_\theta|^2}\frac{(mB_\zeta-nN_pB_\theta)^2B_{mn}B_{-m,-n}}{|\iota m+nN_p|}\,.\label{EQ_D11PLATEAU}
+  (D_{11})_{mn}&=& \frac{\pi R}{2v|\iota m + nN_p|}\left(\frac{\partial r}{\partial\psi}\right)^2 S_{m,n}S_{-m,-n} \int_{-1}^{+1}\mathrm{d}p\,(1+p^2)\frac{\nu^*}{p^2+(\nu^*)^2} = \nonumber\\ &=&  \frac{\pi R}{2v|\iota m + nN_p|}\left(\frac{\partial r}{\partial\psi}\right)^2 S_{m,n}(p=0)S_{-m,-n}(p=0)\,.\label{EQ_D11PLATEAU}
  \end{eqnarray}
+ The cuasineutrality equation reads\footnote{We note that there is a typo in equation (3.56) of~\citep{alonso2017JPP} that leads to equation (3.58) predicting an incorrect value of $\varphi_1$, twice that of equation~\ref{EQ_QNPLATEAU}}
+ \begin{eqnarray}
+\left(\frac{Z_i}{T_i}+\frac{1}{T_e}\right) e \varphi_1&=& n_i \int_0^\infty\mathrm{d}v v^2 \int_{-1}^{+1}\mathrm{d}p\,h \nonumber\\ 
+&=& n_i R \int_0^\infty\mathrm{d}v v \Upsilon F_M \sum_{n,m} \frac{S_{mn}}{|\iota m + nN_p|}\,.\label{EQ_QNPLATEAU}
+ \end{eqnarray}
+
+
+%& \frac{\pi R}{2v|\iota m + nN_p|}\left(\frac{\partial r}{\partial\psi}\right)^2 S_{m,n}S_{-m,-n} \int_{-1}^{+1}\mathrm{d}p\,(1+p^2)\frac{\nu^*}{p^2+(\nu^*)^2} = \nonumber\\ &=&  \frac{\pi R}{2v|\iota m + nN_p|}\left(\frac{\partial r}{\partial\psi}\right)^2 S_{m,n}(p=0)S_{-m,-n}(p=0)\label{EQ_D11PLATEAU}
+% (D_{11})_{mn}&=& \frac{1}{8}\left(\frac{\partial r}{\partial\psi}\right)^2 \frac{v_d^2}{v}\frac{R}{\overline{B}^2|B_\zeta+\iota B_\theta|^2}\frac{(mB_\zeta-nN_pB_\theta)^2B_{mn}B_{-m,-n}}{|\iota m+nN_p|}\int_{-1}^{+1}\mathrm{d}p\,(1+p^2)\frac{\nu^*}{p^2+(\nu^*)^2} = \nonumber\\ &=& \frac{\pi}{8} \frac{v_d^2}{v}\frac{R}{\overline{B}^2|B_\zeta+\iota B_\theta|^2}\frac{(mB_\zeta-nN_pB_\theta)^2B_{mn}B_{-m,-n}}{|\iota m+nN_p|}\,.\label{EQ_D11PLATEAU}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

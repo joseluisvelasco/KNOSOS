@@ -1,4 +1,5 @@
 
+
 !Solve the drift kinetic equation, together with quasineutrality and ambipolarity
 
 
@@ -214,6 +215,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   REAL*8 Gb(NBB),Qb(NBB),L1b(NBB),L2b(NBB),ephi1oTsize
   !Others
   INTEGER, SAVE :: nalphab=0
+  LOGICAL regp(nbb)
   INTEGER iv,kv,ib,kb,jb(NBB),ib_kin,jt,jt0,nm,Nnmpm1,iz
   INTEGER jv(nv) /1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, & !start from high collisionality
 	& 17,18,19,20,21,22,23,24,25,26,27,28/
@@ -271,27 +273,33 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   DO ib=3,NBB
      jb(ib)=ib
   END DO
-  IF(.NOT.SOLVE_QN.AND..NOT.TANG_VM                                   ) jt0=01
-  IF(.NOT.SOLVE_QN.AND.     TANG_VM                                   ) jt0=02
-  IF(     SOLVE_QN.AND..NOT.TANG_VM.AND.(REGB(1).EQ.3.OR.REGB(2).EQ.3)) jt0=11
-  IF(     SOLVE_QN.AND.     TANG_VM.AND.(REGB(1).EQ.3.OR.REGB(2).EQ.3)) jt0=12
-  IF(     SOLVE_QN.AND..NOT.TANG_VM.AND.SUM(REGB(1:2)).EQ.6           ) jt0=21
-  IF(     SOLVE_QN.AND.     TANG_VM.AND.SUM(REGB(1:2)).EQ.6           ) jt0=22
-  IF(                                   SUM(REGB(1:2)).LT.0           ) jt0=00
+  DO ib=1,NBB
+     regp(ib)=((regb(ib).EQ.0).OR.(regb(ib).EQ.2).OR.(regb(ib).EQ.3))
+  END DO
+
+!  ki
+  IF(.NOT.SOLVE_QN.AND..NOT.TANG_VM                          ) jt0=01
+  IF(.NOT.SOLVE_QN.AND.     TANG_VM                          ) jt0=02
+  IF(     SOLVE_QN.AND..NOT.TANG_VM.AND.(regp(1) .OR.regp(2))) jt0=11
+  IF(     SOLVE_QN.AND.     TANG_VM.AND.(regp(1) .OR.regp(2))) jt0=12
+  IF(     SOLVE_QN.AND..NOT.TANG_VM.AND.(regp(1).AND.regp(2))) jt0=21
+  IF(     SOLVE_QN.AND.     TANG_VM.AND.(regp(1).AND.regp(2))) jt0=22
+  IF(REGB(1).LT.0 .AND.REGB(2).LT.0) jt0=00
 
 
-  IF(REGB(1).EQ.3) ib_kin=1
-  IF(REGB(2).EQ.3) ib_kin=2
-  IF(SUM(REGB(1:2)).EQ.6) THEN
+  IF(regp(1)) ib_kin=1
+  IF(regp(2)) ib_kin=2
+  IF(regp(1).AND.regp(2)) THEN
      ib_kin=2
      IF((AB(2).GT.AB(1).AND.Tb(1)/Tb(2).GT.3).OR. &
       & (AB(1).GT.AB(2).AND.Tb(2)/Tb(1).LT.3)) ib_kin=1
   END IF
-  
+
   phi1c=0
+  print *,'jt',jt0,regb(1),regb(2),dkes_read
   DO jt=MOD(jt0,10),jt0
      
-     IF(jt.EQ.0.AND.(.NOT.DKES_READ.OR.SUM(regb(1:nbb)).GT.0)) CYCLE
+     IF(jt.EQ.0.AND.(.NOT.DKES_READ.OR..NOT.(REGB(1).EQ.-1.AND.REGB(2).EQ.-1))) CYCLE
 !     IF(jt.GT.0.AND.SUM(regb(1:nbb)).EQ.0) CYCLE
      IF((MOD(jt0,10).NE.MOD(jt,10)).AND.jt.NE.0) CYCLE
 
@@ -319,7 +327,6 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 
         !Calculate (v,species)-dependent constants
         CALL DKE_CONSTANTS(ib,NBB,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,.TRUE.)      
-
         D11=0 !default: adiabatic
 
         IF(jt.LT.10.AND.REGB(ib).LT.10) THEN
@@ -328,7 +335,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
            DO kv=1,nv
               !Perform monoenergetic calculation
               iv=jv(kv)
-              CALL CALC_MONOENERGETIC(ib,ZB(ib),AB(ib),REGB(ib),jt,iv,Epsi,&
+              CALL CALC_MONOENERGETIC(ib,ZB(ib),AB(ib),REGB(ib),regp(ib),jt,iv,Epsi,&
                    & phi1c(jt,:),Mbbnm,trMnm,D11,nalphab,zeta,theta,dn1nmdv)
 !              IF(jt.GT.0.AND.(QN.OR.TRACE_IMP).AND.REGB(ib).EQ.3.AND.kb.EQ.1.AND.kv.EQ.1) THEN
               IF(jt.GT.0.AND.(QN.OR.TRACE_IMP).AND.kb.EQ.1.AND.kv.EQ.1) THEN
@@ -341,7 +348,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                  END IF
               END IF
               !Calculate thermal transport coefficients and radial fluxes
-              CALL INTEGRATE_V(jt,ib,Ab(ib),REGB(ib),Tb(ib),iv,D11,dn1nmdv,&
+              CALL INTEGRATE_V(jt,ib,Ab(ib),regp(ib),Tb(ib),iv,D11,dn1nmdv,&
                    & L1rhs(ib,:,:),L2rhs(ib,:,:),Grhs(ib,:,:),Qrhs(ib,:,:),&
                    & n1nmrhs(:,:,ib),Mbbnmrhs,trMnmrhs)
 
@@ -358,12 +365,12 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                      WRITE(1100+myrank,*) 'Not converged in v'
                   END IF
                END IF
-               WRITE(1000+myrank,'(" L2/L1 for species #",I1," is ",f7.4)') ib,L2rhs(ib,1,1)/L1rhs(ib,1,1)
-               WRITE(1000+myrank,'(" L2/L1 should be 3 for plateau, 5 for 1/nu, 2.75 for sqrt(nu) and 2.5 for sb-p")')
             END DO
-
+            WRITE(1000+myrank,'(" L2/L1 for species #",I1," is ",f4.1,&
+                 & " (should be 3 for plateau, 5 for 1/nu, 2.75 for sqrt(nu) and 2.5 for sb-p)")') &
+                 & ib,L2rhs(ib,1,1)/L1rhs(ib,1,1)
            !Sums over species
-            IF(QN.AND.REGB(ib).EQ.3) THEN
+            IF(QN.AND.regp(ib)) THEN
                n1nmb(:,ib)=n1nmrhs(:,1,ib)
                IF(ib.EQ.ib_kin) phi1anm=phi1anm+(Zb(ib)/ABS(Zb(ib)))*n1nmrhs(:,:,ib)/sumzot 
                IF(jt0.GT.20.OR.TRIVIAL_QN) phi1nm =phi1nm +(Zb(ib)/ABS(Zb(ib)))*n1nmrhs(:,:,ib)/sumzot
@@ -383,16 +390,29 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
             IF(QN.AND.kb.EQ.2) CALL CALC_QN(jt,jt0,phi1anm,phi1nm,phi1c)
             CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
-         ELSE IF(REGB(ib).EQ.3) THEN
+         ELSE
 
+            IF(regp(ib)) THEN
             !Calculate fluxes etc using phi1c coefficients from QN
-            CALL CALCULATE_WITH_VARPHI1(ib,regb(ib),phi1c(jt,:),&
-                 & Grhs(ib,:,:),Qrhs(ib,:,:),L1rhs(ib,:,:),L2rhs(ib,:,:),&
-                 & Gphi(ib,:)  ,Qphi(ib,:)  ,L1phi(ib,:)  ,L2phi(ib,:),&
-                 & Gb(ib)      ,Qb(ib)      ,L1b(ib)      ,L2b(ib),&
-                 & n1nmrhs(:,:,ib),Mbbnmrhs,trMnmrhs,&
-                 & n1nmb(:,ib)    ,Mbbnm   ,trMnm)
-            CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+               CALL CALCULATE_WITH_VARPHI1(ib,regb(ib),phi1c(jt,:),&
+                    & Grhs(ib,:,:),Qrhs(ib,:,:),L1rhs(ib,:,:),L2rhs(ib,:,:),&
+                    & Gphi(ib,:)  ,Qphi(ib,:)  ,L1phi(ib,:)  ,L2phi(ib,:),&
+                    & Gb(ib)      ,Qb(ib)      ,L1b(ib)      ,L2b(ib),&
+                    & n1nmrhs(:,:,ib),Mbbnmrhs,trMnmrhs,&
+                    & n1nmb(:,ib)    ,Mbbnm   ,trMnm)
+            ELSE
+               Gphi(ib,:)=0
+               Qphi(ib,:)=0  
+               L1phi(ib,:)=0
+               L2phi(ib,:)=0
+               Gb(ib)=0
+               Qb(ib)=0
+               L1b(ib)=0
+               L2b(ib)=0
+               n1nmrhs(:,:,ib)=0
+               n1nmb(:,ib)=0
+            END IF
+
          END IF
 
          IF(ZERO_PHI1) phi1c=0
@@ -474,7 +494,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
+SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
      & D11,nalphab,zeta,theta,dn1nmdv)
  
 !----------------------------------------------------------------------------------------------- 
@@ -487,6 +507,7 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
   USE GLOBAL
   IMPLICIT NONE
   !Input
+  LOGICAL regp
   INTEGER ib,regb,jt,iv
   REAL*8 Zb,Ab,Epsi,phi1c(Nnmp),Mbbnm(Nnmp),trMnm(Nnmp)
   !Output
@@ -549,7 +570,8 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
            IF(cmul.GT.cmul_PS) THEN
               CALL CALC_PS(iv,Epsi,D11(1,1))    
            ELSE IF(cmul.GT.cmul_1NU) THEN   
-              CALL CALC_PLATEAU(iv,Epsi,D11(1,1))
+!              CALL CALC_PLATEAU_OLD(iv,Epsi,D11(1,1))
+              CALL CALC_PLATEAU(iv,Epsi,D11,dn1nmdv)
            END IF
         END IF
      ELSE
@@ -563,13 +585,14 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
   ELSE IF(regb.EQ.1) THEN
      CALL CALC_PS(iv,Epsi,D11(1,1))
   ELSE IF(regb.EQ.2) THEN
-     CALL CALC_PLATEAU(iv,Epsi,D11(1,1))
+!     CALL CALC_PLATEAU_OLD(iv,Epsi,D11(1,1))
+     CALL CALC_PLATEAU(iv,Epsi,D11,dn1nmdv)
   ELSE IF(MOD(regb,10).EQ.3) THEN
      CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
           & D11,nalphab,zeta,theta,dn1dv,dn1nmdv)
   END IF
 
-  IF(DEBUG.AND.(iv.EQ.iv0.OR.TRIVIAL_QN).AND.(regb.EQ.3.OR.regb.EQ.0)) THEN
+  IF(DEBUG.AND.(iv.EQ.iv0.OR.TRIVIAL_QN).AND.regp) THEN
      DO ia=1,nalphab
         DO il=1,nalphab
            WRITE(4000+myrank,'(3I4,3(1pe13.5))') jt,ib,iv,&
@@ -640,11 +663,11 @@ END SUBROUTINE PRECALC_TRIG
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE INTEGRATE_V(jt,ib,Ab,regb,Tb,iv,D11,dn1nmdv,L1rhs,L2rhs,Grhs,Qrhs,&
+SUBROUTINE INTEGRATE_V(jt,ib,Ab,regp,Tb,iv,D11,dn1nmdv,L1rhs,L2rhs,Grhs,Qrhs,&
      & n1nmrhs,Mbbnmrhs,trMnmrhs)
 
 !----------------------------------------------------------------------------------------------- 
-!At instant j and for species ib of  mass Ab and temperature Tb in regime regb
+!At instant j and for species ib of  mass Ab and temperature Tb in regime regp
 !add contribution from monoenergetic iv to L1rhs, L2rhs, Grhs, Qrhs, n1nmrhs, 
 !Mbbnmrhs, and trMnmrhs
 !-----------------------------------------------------------------------------------------------
@@ -652,7 +675,8 @@ SUBROUTINE INTEGRATE_V(jt,ib,Ab,regb,Tb,iv,D11,dn1nmdv,L1rhs,L2rhs,Grhs,Qrhs,&
   USE GLOBAL
   IMPLICIT NONE
   !Input
-  INTEGER jt,ib,regb,iv
+  LOGICAL regp
+  INTEGER jt,ib,iv
   REAL*8 Ab,Tb,D11(Nnmp,Nnmp),dn1nmdv(Nnmp,Nnmp)
   !Output
   REAL*8 L1rhs(Nnmp,Nnmp),L2rhs(Nnmp,Nnmp),Grhs(Nnmp,Nnmp),Qrhs(Nnmp,Nnmp)
@@ -679,8 +703,8 @@ SUBROUTINE INTEGRATE_V(jt,ib,Ab,regb,Tb,iv,D11,dn1nmdv,L1rhs,L2rhs,Grhs,Qrhs,&
   Grhs = Grhs-wD11*Sdke(iv)
   Qrhs = Qrhs-wD11*Sdke(iv)*x2
 
-  wn1nmS=weight(iv)*dn1nmdv*Sdke(iv)
-  IF((QN.OR.TRACE_IMP).AND.MOD(regb,10).EQ.3.AND.jt.GT.0) THEN
+  wn1nmS=weight(iv)*(dn1nmdv/2.)*Sdke(iv)
+  IF((QN.OR.TRACE_IMP).AND.regp.AND.jt.GT.0) THEN
      n1nmrhs=n1nmrhs+wn1nmS
      IF(TRACE_IMP.AND.ib.EQ.2) THEN
         Mbbnmrhs=Mbbnmrhs+  (wn1nmS/v(ib))*(-Ab*m_e/Tb+2/v2)
@@ -924,8 +948,11 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
 !  INTEGER, PARAMETER :: npow=10
   INTEGER, PARAMETER :: npow=4
   INTEGER, PARAMETER :: npoints=10
-  INTEGER ia,il,nm,index
+  INTEGER ia,il,nm,index,iarray,iparray
   REAL*8 n1(nalphab,nalphab,nbb),dphi1dz,dphi1dt,ver,pfact,fact
+  REAL*8 dz,zeta2(nalphab),dt,theta2(nalphab),phi1DR,absnablarDR,dvarphi1dsDR,xDR,yDR,zDR
+! Plateau test
+!  REAL*8 phi1plateau(nalphab,nalphab),factphi
   !Time
   CHARACTER*30, PARAMETER :: routine="PREPARE_IMP_CALC"
   INTEGER, SAVE :: ntotal=0
@@ -935,7 +962,7 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
 #ifdef MPIandPETSc
   INTEGER ierr,ipow,is0,is1,is,js,ns,ms,lwork,rank
   INTEGER, ALLOCATABLE :: iwork(:)
-  REAL*8 varphi1fit,dvarphi1dsfit,phi1coeff(numprocs),vars(numprocs),varphi1(numprocs)
+  REAL*8 varphi1fit,dvarphi1dsfit(nalphab,nalphab),phi1coeff(numprocs),vars(numprocs),varphi1(numprocs)
   REAL*8 s_svd(npow),rcond,mats(numprocs,npow)
   REAL*8, ALLOCATABLE :: rwork(:),work(:)
   INCLUDE "mpif.h"
@@ -948,10 +975,14 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
   Mbb=0
   trM=0
 
+! This is a test for the plateau. Will work for n'=T'=0, B=B_{00}+borbic(-1,1)*cos(\theta-nzperiod*\zeta)
+!  factphi=(PI*PI)*(Ti/2)*SQRT(Ti/m_e/PI/PI/PI/2)*(-Epsi/Ti)*(m_e/borbic(0,0)/borbic(0,0))*(-Bzeta*borbic(-1,1))/(abs(nzperiod-iota))
+
   DO ia=1,nalphab
      DO il=1,nalphab
         dphi1dz=0
         dphi1dt=0
+!        phi1plateau(il,ia)=factphi*sin(theta(ia)-nzperiod*zeta(il))
         DO nm=1,Nnmp
 !           IF(ABS(mp(MOD(nm-1,Nnm)+1)).LT.0.1.AND.ABS(np(MOD(nm-1,Nnm)+1)).LT.0.1) CYCLE
            IF(ABS(ext_mp(nm)).LT.0.1.AND.ABS(ext_np(nm)).LT.0.1) CYCLE
@@ -969,10 +1000,10 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
         END DO
         ver=(Btheta*dphi1dz-Bzeta*dphi1dt)/aiBtpBz
         IF(COMPARE_MODELS) WRITE(4200+myrank,'(I4,7(1pe13.5))') jt,zeta(il),theta(ia),&
-             phi1(il,ia),phi1(il,ia)/Ti,ver/Ti,n1(il,ia,1),n1(il,ia,2)
+             phi1(il,ia),phi1(il,ia)/Ti,ver/Ti,n1(il,ia,1),n1(il,ia,2)!,phi1plateau(il,ia)
         IF(jt.EQ.jt0) WRITE(500+myrank,'(8(1pe13.5))') &
              & s,zeta(il),theta(ia),phi1(il,ia),phi1(il,ia)/Ti,ver/Ti,&
-             & n1(il,ia,1),n1(il,ia,2)
+             & n1(il,ia,1),n1(il,ia,2)!,phi1plateau(il,ia)
      END DO
   END DO
   
@@ -987,6 +1018,15 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
   vars=0
   vars(is)=s
   IF(DR_READ) THEN
+     
+     dz=dzeta0_DR/nalphab
+     dt=dtheta0_DR/nalphab
+     DO il=1,nalphab
+        zeta2(il)=zeta0_DR+(il-nalphab/2.)*dz
+     END DO
+     DO ia=1,nalphab
+        theta2(ia)=TWOPI-(theta0_DR+(ia-nalphab/2.)*dt)
+     END DO
      CALL REAL_ALLREDUCE(vars,ns)
      DO ia=1,nalphab
         DO il=1,nalphab
@@ -1038,13 +1078,13 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
 !           CALL DGELSD(ns,npow,1,mats,ns,phi1coeff,ns,s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)  
            CALL DGELSD(ms,npow,1,mats(1:ms,:),ms,phi1coeff(1:ms),ms,s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)  
            DO js=1,ms
-              varphi1fit=0
-              dvarphi1dsfit=0
+              varphi1fit=0 
+              dvarphi1dsfit(il,ia)=0
               mats(js,1)=1
               DO ipow=1,npow
                  IF(ipow.GT.1) THEN
                     mats(js,ipow)=mats(js,ipow-1)*vars(is0+js-1)
-                    dvarphi1dsfit=dvarphi1dsfit+phi1coeff(ipow)*mats(js,ipow-1)*(ipow-1)
+                    dvarphi1dsfit(il,ia)=dvarphi1dsfit(il,ia)+phi1coeff(ipow)*mats(js,ipow-1)*(ipow-1)
                  END IF                 
                  varphi1fit=varphi1fit+phi1coeff(ipow)*mats(js,ipow)
               END DO
@@ -1052,27 +1092,44 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
            END DO
            mats(1,1)=1
            varphi1fit=0
-           dvarphi1dsfit=0
+           dvarphi1dsfit(il,ia)=0
            DO ipow=1,npow
               IF(ipow.GT.1) THEN
                  mats(1,ipow)=mats(1,ipow-1)*s
-                 dvarphi1dsfit=dvarphi1dsfit+phi1coeff(ipow)*mats(1,ipow-1)*(ipow-1)
+                 dvarphi1dsfit(il,ia)=dvarphi1dsfit(il,ia)+phi1coeff(ipow)*mats(1,ipow-1)*(ipow-1)
               END IF
               varphi1fit=varphi1fit+phi1coeff(ipow)*mats(1,ipow)
            END DO
 
-           IF(COMPARE_MODELS) WRITE(4600+myrank,'(I4,8(1pe13.5),I4,3(1pe13.5))') jt,zeta(il),theta(ia),phi1(il,ia),&
-                & varphi1fit,dvarphi1dsfit,Epsi*psip,Epsi*psip*absnablar(il,ia),&
-                & (Epsi*absnablar(il,ia)-dvarphi1dsfit/torflux)*psip,array(il,ia)
-           IF(jt.EQ.jt0) WRITE(4500+myrank,'(10(1pe13.5),I4,3(1pe13.5))') s,zeta(il),theta(ia),phi1(il,ia),&
-                & varphi1fit,Ti,dvarphi1dsfit,Epsi*psip,Epsi*psip*absnablar(il,ia),&
-                & (Epsi-dvarphi1dsfit/torflux)*absnablar(il,ia)*psip,array(il,ia),&
-                & posx(is,il,ia),posy(is,il,ia),posz(is,il,ia)
+           IF(COMPARE_MODELS) WRITE(4600+myrank,'(I4,8(1pe13.5),3(1pe13.5))') jt,zeta(il),theta(ia),phi1(il,ia),&
+                & varphi1fit,Ti,dvarphi1dsfit(il,ia),Epsi*psip,Epsi*psip*absnablar(il,ia),&
+                & (Epsi*absnablar(il,ia)-dvarphi1dsfit(il,ia)/torflux)*psip,&!array(il,ia)
+                & posx(il,ia),posy(il,ia),posz(il,ia)
+           IF(jt.EQ.jt0) WRITE(4500+myrank,'(10(1pe13.5),3(1pe13.5))') s,zeta(il),theta(ia),phi1(il,ia),&
+                & varphi1fit,Ti,dvarphi1dsfit(il,ia),Epsi*psip,Epsi*psip*absnablar(il,ia),&
+                & (Epsi-dvarphi1dsfit(il,ia)/torflux)*absnablar(il,ia)*psip,&!array(il,ia),&
+                & posx(il,ia),posy(il,ia),posz(il,ia)
+        END DO
+     END DO
+     DO iarray=1,narray
+        DO iparray=1,nparray
+           IF(zetaDR(iarray,iparray).LT.-0.5) CYCLE
+           CALL BILAGRANGE(zeta, theta,         phi1,nalphab,nalphab,zetaDR(iarray,iparray),thetaDR(iarray,iparray),      phi1DR,2)
+           CALL BILAGRANGE(zeta, theta,dvarphi1dsfit,nalphab,nalphab,zetaDR(iarray,iparray),thetaDR(iarray,iparray),dvarphi1dsDR,2)
+           CALL BILAGRANGE(zeta2,theta2,       zoomx,nalphab,nalphab,zetaDR(iarray,iparray),thetaDR(iarray,iparray),         xDR,2)
+           CALL BILAGRANGE(zeta2,theta2,       zoomy,nalphab,nalphab,zetaDR(iarray,iparray),thetaDR(iarray,iparray),         yDR,2)
+           CALL BILAGRANGE(zeta2,theta2,       zoomz,nalphab,nalphab,zetaDR(iarray,iparray),thetaDR(iarray,iparray),         zDR,2)
+           CALL BILAGRANGE(zeta2,theta2,      zoomdr,nalphab,nalphab,zetaDR(iarray,iparray),thetaDR(iarray,iparray), absnablarDR,2)
+           IF(jt.EQ.jt0) WRITE(4500+myrank,'(10(1pe13.5),3(1pe13.5))') &  
+                & s,zetaDR(iarray,iparray),thetaDR(iarray,iparray),phi1DR,&
+                & iarray*Ti/Ti,Ti,dvarphi1dsDR,Epsi*psip,Epsi*psip*absnablarDR,&
+                & (Epsi-dvarphi1dsDR/torflux)*absnablarDR*psip,&
+                & xDR,yDR,zDR
         END DO
      END DO
   END IF
 #endif
-  
+
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE PREPARE_IMP_CALC

@@ -54,7 +54,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
   Mbbnm=0
   cmul0=nu(1)/v(1)/2.
   !Determine collisionalities that limit different collisionality regimes
-  IF(.NOT.SATAKE.AND..NOT.QN.AND..NOT.JPP.AND..NOT.STELLOPT(1).AND.&
+  IF(.NOT.SATAKE.AND..NOT.JPP.AND..NOT.STELLOPT(1).AND.&
        &                 .NOT.STELLOPT(2).AND..NOT.STELLOPT(3)) THEN 
      !if not low-collisionality problems 
      cmul_PS =-1.0   !this may be necessary if there is 
@@ -64,14 +64,16 @@ SUBROUTINE CALC_DATABASE(is,s0)
      IF(DKES_READ) THEN
         D11pla=D11pla/fdkes(1)
      ELSE
-        CALL CALC_PLATEAU(1,ALMOST_ZERO,D11(1,1))
+!        CALL CALC_PLATEAU_OLD(1,ALMOST_ZERO,D11(1,1))
+        CALL CALC_PLATEAU(1,ALMOST_ZERO,D11(1,1),dn1nm)
         D11pla=D11(1,1)
      END IF
      cmul_PS =ABS(D11pla/D11onu)  !CMUL such that plateau and PS transport are equal
      vmconst=0
      CALL CALC_LOW_COLLISIONALITY(1,ZERO,phi1c,Mbbnm,trMnm,&
-          & D11tab(1,1,1),nalphab,zeta,theta,dn1,dn1nm)
-!     CALCULATED_INT=.FALSE.
+          & D11,nalphab,zeta,theta,dn1,dn1nm)
+     D11tab(1,1,1)=D11(1,1)
+     CALCULATED_INT=.FALSE.
      D11nu=D11tab(1,1,1)*cmul0
      cmul_1NU=ABS(D11nu/D11pla)  !CMUL such that plateau and 1/nu transport are equal 
 !     cmul_1NU=ABS(aiota/rad_R*eps32)!Use formula, because between plateau and 1/nu there
@@ -165,7 +167,8 @@ SUBROUTINE CALC_DATABASE(is,s0)
                  IF(cmult(icmul).GT.cmul_PS) THEN
                     CALL CALC_PS(iv0,Epsi,D11tab(icmul,iefield,ivmag))   
                  ELSE IF(cmult(icmul).GT.cmul_1NU) THEN
-                    CALL CALC_PLATEAU(iv0,Epsi,D11tab(icmul,iefield,ivmag))
+!                    CALL CALC_PLATEAU_OLD(iv0,Epsi,D11tab(icmul,iefield,ivmag))
+                    CALL CALC_PLATEAU(iv0,Epsi,D11tab(icmul,iefield,ivmag),dn1nm)
                  ELSE
                     CONVERGED=.FALSE.
                     IF(ABS(efieldt(iefield)).LT.aiota*borbic(0,0)*eps) THEN
@@ -266,7 +269,7 @@ SUBROUTINE READ_DKES_TABLE(is)
   dir_cmul(18)="cl_1e-6/"
 
   file=TRIM(DIRDB)//TRIM(DIRS(is))
-  WRITE(1000+myrank,*) 'Reading DKES output in folder ',file 
+  WRITE(1000+myrank,*) 'Reading DKES output in folder ',TRIM(file) 
   !Read data
   nefield=0  
   ncmul=0
@@ -274,11 +277,9 @@ SUBROUTINE READ_DKES_TABLE(is)
   DO iefield=1,nefieldt
      DO icmul=1,ncmult
         file=TRIM(DIRDB)//TRIM(DIRS(is))//TRIM(dir_efield(iefield))//TRIM(dir_cmul(icmul))//"results.data"
-           WRITE(1000+myrank,*) 'Reading subfolder ',file
         OPEN(unit=1,file=TRIM(file),action='read',iostat=iostat) 
         IF (iostat.EQ.0) THEN 
-           WRITE(1000+myrank,*) 'Reading subfolder ',file
-           WRITE(1000+myrank,*) 'Reading subfolder ',TRIM(dir_efield(iefield))//TRIM(dir_cmul(icmul))
+           WRITE(1000+myrank,*) 'Reading file ',file
            IF(icmul.EQ.1) nefield=nefield+1
            IF(iefield.EQ.1) ncmul=ncmul+1
            READ(1,*) line

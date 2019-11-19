@@ -228,17 +228,16 @@ SUBROUTINE CALC_ABSNABLAPSI(nalphab,zeta,theta,absnablapsi2oB2)
               sine  =SIN(m*theta(it)+nzperiod*n*zeta(iz))
               R=R                  +rorbic(n,m)*cosine
               dRdtheta =dRdtheta -m*rorbic(n,m)*sine
-              dAzdtheta=dAzdtheta+m*porbis(n,m)*cosine
+              dAzdtheta=dAzdtheta-m*porbis(n,m)*cosine
               dZdtheta =dZdtheta +m*zorbis(n,m)*cosine
               IF(STELL_ANTISYMMETRIC) THEN
                  R=R                  +rorbis(n,m)*sine
                  dRdtheta =dRdtheta +m*rorbis(n,m)*cosine
-                 dAzdtheta=dAzdtheta-m*porbic(n,m)*sine
+                 dAzdtheta=dAzdtheta+m*porbic(n,m)*sine
                  dZdtheta =dZdtheta -m*zorbic(n,m)*sine
               END IF
            END DO
         END DO
-        dAzdtheta=-(TWOPI/nzperiod)*dAzdtheta
         absnablapsi2oB2(iz,it)=dRdtheta*dRdtheta+&
              & R*R*dAzdtheta*dAzdtheta+&
              & dZdtheta*dZdtheta
@@ -1151,11 +1150,11 @@ SUBROUTINE CALC_TRACE1NU_O_LOWCOLL(jt,ib,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,
   !Scan in v for the calculation of dQ/dv, dGamma/dv, etc
   DO iv=1,nv
      !Perform monoenergetic calculation
-     CALL CALC_MONOENERGETIC(ib,ZB(ib),AB(ib),13,jt,iv,ZERO,&
+     CALL CALC_MONOENERGETIC(ib,ZB(ib),AB(ib),13,.TRUE.,jt,iv,ZERO,&
           & phi1c(1:Nnmp),Mbbnm(1:Nnmp),trMnm(1:Nnmp),&
           & D11(1:Nnmp,1:Nnmp),nalphab,zeta,theta,mdummy(1:Nnmp,1:Nnmp))
      !Calculate thermal transport coefficients and radial fluxes
-     CALL INTEGRATE_V(jt,ib,Ab(ib),13,Tb(ib),iv,D11/weight(iv),mdummy(1:Nnmp,1:Nnmp),&
+     CALL INTEGRATE_V(jt,ib,Ab(ib),.TRUE.,Tb(ib),iv,D11/weight(iv),mdummy(1:Nnmp,1:Nnmp),&
           & L1b(1:Nnmp,1:Nnmp,ib,jt),L2b(1:Nnmp,1:Nnmp,ib,jt),Gbt,Qb,&
           & mdummy(1:Nnmp,1:Nnmp),mdummy(1:Nnmp,1:Nnmp),mdummy(1:Nnmp,1:Nnmp))
      !Check convergence

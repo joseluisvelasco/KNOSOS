@@ -4,18 +4,17 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE READ_BFIELD(s0,is0,ns)
+SUBROUTINE READ_BFIELD(s0)
   
 !-------------------------------------------------------------------------------------------------
-!Read and process the quantities at surface s=s0 (and s0+/-ds) of ns of the magnetic configuration
+!Read and process the quantities at surface s=s0 (and s0+/-ds) of the magnetic configuration
 !-------------------------------------------------------------------------------------------------
 
   USE GLOBAL
   IMPLICIT NONE
   !Input
-  INTEGER is0,ns
   REAL*8 s0 !s0 labels the flux surface s=psi/psi_{LCMS}, where psi is the toroidal flux
-  INTEGER n,m,iz,it
+  INTEGER n,m
   !Variables from "ddkes2.data"
   INTEGER, PARAMETER :: mpold = 1100
   INTEGER, PARAMETER :: ntord = 1100
@@ -44,7 +43,7 @@ SUBROUTINE READ_BFIELD(s0,is0,ns)
   REAL*8, ALLOCATABLE :: bmnc_js(:),bmns_js(:),pprime(:),sqrtg00(:)        
   !Grid
   LOGICAL LeftHanded
-!  INTEGER nz,nt
+  INTEGER it,jt
   REAL*8 x1(3,MAL,MAL),x2(3,MAL,MAL),x3(3,MAL,MAL),Bzt(3,MAL,MAL)
   !Find main helicity
   INTEGER ihel,imax,hel_Nmax,hel_Mmax
@@ -288,6 +287,7 @@ SUBROUTINE READ_BFIELD(s0,is0,ns)
      !Use large aspect ratio expression to estimate major and minor radius
      rad_R=ABS(Bzeta/borbic(0,0))
      rad_a=ABS(psip)/borbic(0,0)
+     torflux=borbic(0,0)*PI*rad_a*rad_a
      !Read major radius, minor (needed for radial derivatives)
      OPEN(unit=1,file='input.radius',action='read',iostat=iostat)
      IF(iostat.NE.0) OPEN(unit=1,file='../input.radius',action='read',iostat=iostat)
@@ -431,27 +431,26 @@ SUBROUTINE READ_BFIELD(s0,is0,ns)
         dborbisdpsi(ixn_b(imn),ixm_b(imn))=(bmns_b(imn,js1)-bmns_b(imn,js0))/dpsi
      END DO
      CALL FILL_3DGRID(MAL,MAL,s0,x1(2,:,:),x2(2,:,:),x3(2,:,:),Bzt(2,:,:),.TRUE.)
-     ALLOCATE(posx(ns,MAL,MAL),posy(ns,MAL,MAL),posz(ns,MAL,MAL))
-     posx=0
-     posy=0
-     posz=0
-     posx(is0,:,:)=x1(2,:,:)
-     posy(is0,:,:)=x2(2,:,:)
-     posz(is0,:,:)=x3(2,:,:)
-     DO iz=1,MAL
-        DO it=1,MAL
-           CALL REAL_ALLREDUCE(posx(:,iz,it),ns)
-           CALL REAL_ALLREDUCE(posy(:,iz,it),ns)
-           CALL REAL_ALLREDUCE(posz(:,iz,it),ns)
-        END DO
+     ALLOCATE( posx(MAL,MAL), posy(MAL,MAL), posz(MAL,MAL))
+     DO it=1,MAL  !from lhs to rhs
+        jt=MAL-it+1
+        IF(it.EQ.1) jt=1
+        posx(:,it)=x1(2,:,jt)
+        posy(:,it)=x2(2,:,jt)
+        posz(:,it)=x3(2,:,jt)
      END DO
-     CALL FIND_3DPOINTS(MAL,MAL,s0)
-     !Check if the coordinate system is left-handed, as expected
      CALL CHECK_JACSIGN(MAL,MAL,dpsi,x1,x2,x3,Bzt(2,:,:),LeftHanded)
      IF(.NOT.LeftHanded) THEN
         serr="The magnetic field was not provided in left-handed coordinates"
         CALL END_ALL(serr,.FALSE.)
      END IF
+     CALL FIND_3DPOINTS(MAL,MAL,s0,x1(1,:,:),x2(1,:,:),x3(1,:,:))
+     ALLOCATE(zoomx(MAL,MAL),zoomy(MAL,MAL),zoomz(MAL,MAL))
+     zoomx=x1(1,:,:)
+     zoomy=x2(1,:,:)
+     zoomz=x3(1,:,:)
+
+      !Check if the coordinate system is left-handed, as expected
      !Prepare for radial derivatives
      iotap  =iota_b(js1)
      iotam  =iota_b(js0)
@@ -1253,7 +1252,7 @@ END SUBROUTINE FILL_3DGRID
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE FIND_3DPOINTS(nz,nt,s)
+SUBROUTINE FIND_3DPOINTS(nz,nt,s,x1,x2,x3)
   
 !-------------------------------------------------------------------------------------------------
 !For nz x nt points uniformly distributed in the Boozer angles at flux-surface s, find points
@@ -1266,14 +1265,13 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s)
   INTEGER nz,nt
   REAL*8 s
   !Output
-  REAL*8 x1(nz,nt),x2(nz,nt),x3(nz,nt),Bzt(nz,nt)
+  REAL*8 x1(nz,nt),x2(nz,nt),x3(nz,nt)
   !Others
-  INTEGER, PARAMETER :: narray=2
-  INTEGER, PARAMETER :: nparray=20
   CHARACTER*100 filename
   INTEGER iarray,jarray,iparray,jparray,iz,it,iz0,it0,iostat
-  REAL*8 dz,dt,zeta(nz),theta(nt),dist,newdist
+  REAL*8 dz,dt,zeta(nz),theta(nt),dist,newdist,Bzt(nz,nt)
   REAL*8 x10(narray,nparray),x20(narray,nparray),x30(narray,nparray),rho0,s0(narray,nparray),dummy
+  REAL*8 absnablapsioB2(nz,nt)
   !Time
   CHARACTER*30, PARAMETER :: routine="FILL_3DPOINTS"
   INTEGER, SAVE :: ntotal=0
@@ -1283,13 +1281,13 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s)
 
   CALL CPU_TIME(tstart)
 
-  dz=TWOPI/nz/nzperiod
-  dt=TWOPI/nt
+  dz=dzeta0_DR/nz
+  dt=dtheta0_DR/nt
   DO iz=1,nz
-     zeta(iz)=(iz-1.)*dz
+     zeta(iz)=zeta0_DR+(iz-nz/2.)*dz
   END DO
   DO it=1,nt
-     theta(it)=(it-1.)*dt
+     theta(it)=theta0_DR+(it-nt/2.)*dt
   END DO
   DO iz=1,nz
      DO it=1,nt
@@ -1297,7 +1295,9 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s)
      END DO
   END DO
 
-  array=0
+!  array=0
+  zetaDR=-1.0
+  thetaDR=-1.0
   DO iarray=1,narray
      iz0=0
      it0=0
@@ -1306,6 +1306,7 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s)
      dist=1e10
      IF(iarray.EQ.1) filename="exp1.dat"
      IF(iarray.EQ.2) filename="exp2.dat"
+     IF(iarray.GT.2) filename="expn.dat"
      OPEN(unit=1,file=filename,iostat=iostat,action='read')
      IF(iostat.EQ.0) THEN
         DR_READ=.TRUE.
@@ -1334,21 +1335,30 @@ SUBROUTINE FIND_3DPOINTS(nz,nt,s)
            END DO
         END DO
         CLOSE(1)
-        WRITE(1500+myrank,'(9(1pe13.5),4I4)') s0(jarray,jparray),&
-             & x10(jarray,jparray),x20(jarray,jparray),x30(jarray,jparray),& 
-             & s,x1(iz0,it0),x2(iz0,it0),x3(iz0,it0),dist,jarray,jparray,iz0,it0
-        array(iz0,it0)=jarray
+        IF(iz0.NE.0) THEN
+           WRITE(1500+myrank,'(9(1pe13.5),4I4)') s0(jarray,jparray),&
+                & x10(jarray,jparray),x20(jarray,jparray),x30(jarray,jparray),& 
+                & s,x1(iz0,it0),x2(iz0,it0),x3(iz0,it0),dist,jarray,jparray,iz0,it0
+           !        array(iz0,it0)=jarray
+           zetaDR(jarray,jparray)=zeta(iz0)
+           thetaDR(jarray,jparray)=TWOPI-theta(it0) !From lhs to rhs
+        END IF
      END IF
   END DO
 
-  IF(SUM(array(:,:)).GT.0) THEN
+  IF(DR_READ) THEN
      IF(numprocs.EQ.1) filename="Er.map"
      IF(numprocs.GT.1) WRITE(filename,'("Er.map.",I2.2)') myrank
      OPEN(unit=4500+myrank,file=filename,form='formatted',action='write',iostat=iostat)
      WRITE(4500+myrank,'("s  \zeta_{Boozer}  \theta_{Boozer}(right-handed) &
           & varphi_1[V] varphi_1(fit[V] T_i [eV] dvarphi_1/ds [V] &
           & -dvarphi_0/dr[V/m]  -dvarphi_0/dr*|absnablar| [V/m] -d(varphi_0+varphi_1)/dr*|absnablar| [V/m]")')
+
+     CALL CALC_ABSNABLAPSI(MAL,zeta,TWOPI-theta,absnablapsioB2)
+     ALLOCATE(zoomdr(MAL,MAL))     
+     zoomdr=SQRT(absnablapsioB2*Bzt*Bzt)/psip
   END IF
+
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
      
@@ -1473,6 +1483,9 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   END DO
   IF(FLAGB1) CLOSE(100+myrank)
   IF(DEBUG) CLOSE(ifile)
+
+  CALL CALC_ABSNABLAPSI(MAL,zeta,theta,absnablar)
+  absnablar=SQRT(absnablar*Bzt*Bzt)/psip
   
 END SUBROUTINE FILL_BGRID
 
