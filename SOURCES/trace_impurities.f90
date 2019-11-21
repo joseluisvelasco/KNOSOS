@@ -72,8 +72,8 @@ SUBROUTINE TRACE_IMPURITIES(jt,ib,nbb,Zb,Ab,regb,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
   Gt=0
   IF(D_AND_V.EQ.2) THEN
      nit=2
-     f(1,1)=1   !Gamma_b
-     f(2,2)=1   !Gamma_a
+     f(  1,1)=1   !Gamma_b
+     f(2:5,2)=1   !Gamma_a
   ELSE IF(D_AND_V.EQ.3) THEN
      nit=3
      f(1  ,1)=1 !Gamma_b
@@ -724,17 +724,22 @@ SUBROUTINE FRICTION_TRACE_PS(jt,ib,nbb,Zb,Ab,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
 
   IF(DEBUG) THEN     
      !Calculate A for comparison with EUTERPE
-     A=(Tb(2)/Zb(2))*(B/avB2)*((A1i-1.5 *A2i)*(f_s+avB2*u0) &
+     A=psip*(Tb(2)/Zb(2))*(B/avB2)*((A1i-1.5 *A2i)*(f_s+avB2*u0) &
           & +(A1i-1.17*A2i)*f_c*(f_s+fsa5t)/(1-f_c))
 
+
+     func=u0*u0*B*B
+     fsa1=FSA(nalphab,nalphab,func,Jac,1)
      DO iz=1,nalphab
         DO it=1,nalphab
-           WRITE(5300+myrank,'(4(1pe13.5))') zeta(iz),theta(it),A(iz,it)*psip,psip
+           WRITE(5300+myrank,'(4(1pe13.5))') zeta(iz),theta(it),A(iz,it)
         END DO
      END DO
      
   END IF
- 
+!  WRITE(1000+myrank,*) 'GZ',Zb(ib),nuzi(ib)*Tb(ib)*Ab(ib)*m_e/Zb(ib)/Zb(2)*(A1i-1.5 *A2i)/avB2/psip,&
+!       & FSA(nalphab,nalphab,u0*u0*B*B,Jac,1)-fsa5t*fsa5t/avB2,fsa5t*fsa5t/avB2
+
 END SUBROUTINE FRICTION_TRACE_PS
 
 
