@@ -65,6 +65,7 @@ SUBROUTINE CALC_PLATEAU(jv,Epsi,D11,dn1nm)
      IF(n.EQ.0.AND.m.EQ.0) CYCLE
      nBtmmBz=n*nzperiod*Btheta-m*Bzeta     
      anpim=ABS(n*nzperiod+iota*m)
+     IF(anpim.LT.2E-1) CYCLE
      D11t(1,1)=D11t(1,1)+nBtmmBz*nBtmmBz*REAL(bmn_e(n,m)*bmn_e(-n,-m))/anpim
      IF(nm.NE.1.AND.nm.NE.Nnm+1.AND.QN) THEN
         IF(nm.LE.Nnm) THEN
@@ -72,7 +73,7 @@ SUBROUTINE CALC_PLATEAU(jv,Epsi,D11,dn1nm)
            dn1nm(nm+Nnm,nm)=-2*nBtmmBz*REAL(pmn_e(n,m))/anpim
         ELSE
            dn1nm(nm-Nnm, 1)=2*nBtmmBz*AIMAG(bmn_e(n,m))/anpim
-           dn1nm(nm,nm-Nnm)=2*nBtmmBz*AIMAG(pmn_e(n,m))/anpim
+           dn1nm(nm-Nnm,nm)=2*nBtmmBz*AIMAG(pmn_e(n,m))/anpim
         END IF
         D11t(nm,1)=        +nBtmmBz*nBtmmBz*REAL(pmn_e(n,m)*bmn_e(-n,-m))/anpim
         D11t(1,nm)=        +nBtmmBz*nBtmmBz*REAL(bmn_e(n,m)*pmn_e(-n,-m))/anpim
@@ -82,7 +83,6 @@ SUBROUTINE CALC_PLATEAU(jv,Epsi,D11,dn1nm)
         D11p=D11t(1,1)       
         EXIT
      END IF
-!     IF(n.EQ.0.AND.(m.EQ.1.OR.m.EQ.-1)) print *,m,bmn_e(n,m)
   END DO
   
 999 IF(.NOT.QN) D11t=D11p

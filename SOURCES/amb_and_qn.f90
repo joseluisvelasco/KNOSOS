@@ -221,7 +221,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 	& 17,18,19,20,21,22,23,24,25,26,27,28/
   REAL*8, ALLOCATABLE :: Grhs(:,:,:),Qrhs(:,:,:),L1rhs(:,:,:),L2rhs(:,:,:)
   REAL*8, ALLOCATABLE :: Gphi(:,:)  ,Qphi(:,:)  ,L1phi(:,:),  L2phi(:,:)
-  REAL*8, ALLOCATABLE :: n1(:,:,:),phi1(:,:),Mbb(:,:),trM(:,:)
+  REAL*8, ALLOCATABLE :: phi1(:,:),Mbb(:,:),trM(:,:)! n1(:,:,:),
   REAL*8, ALLOCATABLE :: trig(:,:),dtrigdz(:,:),dtrigdt(:,:)
   REAL*8, ALLOCATABLE :: n1nmrhs(:,:,:),Mbbnmrhs(:,:),trMnmrhs(:,:)
   REAL*8 sumzot,x2(nv)
@@ -244,15 +244,13 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 #endif
 
   CALL CPU_TIME(tstart)
-  IF(.NOT.ALLOCATED(Grhs)) THEN
-     ALLOCATE(Grhs(NBB,Nnmp,Nnmp),Qrhs(NBB,Nnmp,Nnmp),L1rhs(NBB,Nnmp,Nnmp),L2rhs(NBB,Nnmp,Nnmp))
-     Grhs=0
-     Qrhs=0
-     L1rhs=0
-     L2rhs=0
-     ALLOCATE(Gphi(NBB,Nnmp),Qphi(NBB,Nnmp),L1phi(NBB,Nnmp),L2phi(NBB,Nnmp))
-     ALLOCATE(n1nmrhs(Nnmp,Nnmp,NBULK),Mbbnmrhs(Nnmp,Nnmp),trMnmrhs(Nnmp,Nnmp))
-  END IF
+  ALLOCATE(Grhs(NBB,Nnmp,Nnmp),Qrhs(NBB,Nnmp,Nnmp),L1rhs(NBB,Nnmp,Nnmp),L2rhs(NBB,Nnmp,Nnmp))
+  Grhs=0
+  Qrhs=0
+  L1rhs=0
+  L2rhs=0
+  ALLOCATE(Gphi(NBB,Nnmp),Qphi(NBB,Nnmp),L1phi(NBB,Nnmp),L2phi(NBB,Nnmp))
+  ALLOCATE(n1nmrhs(Nnmp,Nnmp,NBULK),Mbbnmrhs(Nnmp,Nnmp),trMnmrhs(Nnmp,Nnmp))
 
   Nnmpm1=Nnmp-1
   it=it
@@ -286,7 +284,6 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   IF(     SOLVE_QN.AND.     TANG_VM.AND.(regp(1).AND.regp(2))) jt0=22
   IF(REGB(1).LT.0 .AND.REGB(2).LT.0) jt0=00
 
-
   IF(regp(1)) ib_kin=1
   IF(regp(2)) ib_kin=2
   IF(regp(1).AND.regp(2)) THEN
@@ -296,7 +293,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   END IF
 
   phi1c=0
-  print *,'jt',jt0,regb(1),regb(2),dkes_read
+
   DO jt=MOD(jt0,10),jt0
      
      IF(jt.EQ.0.AND.(.NOT.DKES_READ.OR..NOT.(REGB(1).EQ.-1.AND.REGB(2).EQ.-1))) CYCLE
@@ -323,13 +320,13 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
         ib=jb(kb)
         IF(ib.EQ.1) WRITE(1000+myrank,'(" Electrons")')
         IF(ib.EQ.2) WRITE(1000+myrank,'(" Bulk ions, Z=",f3.0,", A=",f6.3)') ZB(ib),AB(ib)
-        IF(ib.GT.2) WRITE(1000+myrank,'(" Impurities #",I1,", Z=",f3.0,", A=",f8.4)') ib,ZB(ib),AB(ib)
+        IF(ib.GT.2) WRITE(1000+myrank,'(" Impurities #",I2,", Z=",f4.0,", A=",f8.4)') ib,ZB(ib),AB(ib)
 
         !Calculate (v,species)-dependent constants
         CALL DKE_CONSTANTS(ib,NBB,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,.TRUE.)      
         D11=0 !default: adiabatic
 
-        IF(jt.LT.10.AND.REGB(ib).LT.10) THEN
+        IF(jt.LT.10.AND.REGB(ib).LT.10.AND.ib.LE.NBULK) THEN
            x2=v*v/vth(ib)/vth(ib)
            !Scan in v for the calculation of dQ/dv, dGamma/dv, etc
            DO kv=1,nv
@@ -388,11 +385,12 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 
             !After bulk species have been calculated, solve QN
             IF(QN.AND.kb.EQ.2) CALL CALC_QN(jt,jt0,phi1anm,phi1nm,phi1c)
+
             CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
          ELSE
 
-            IF(regp(ib)) THEN
+            IF(regp(ib).AND.ib.LE.NBULK) THEN
             !Calculate fluxes etc using phi1c coefficients from QN
                CALL CALCULATE_WITH_VARPHI1(ib,regb(ib),phi1c(jt,:),&
                     & Grhs(ib,:,:),Qrhs(ib,:,:),L1rhs(ib,:,:),L2rhs(ib,:,:),&
@@ -409,7 +407,6 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                Qb(ib)=0
                L1b(ib)=0
                L2b(ib)=0
-               n1nmrhs(:,:,ib)=0
                n1nmb(:,ib)=0
             END IF
 
@@ -440,8 +437,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                   END IF
                   ALLOCATE(trig(Nnmp,nalphab*nalphab),&
                        & dtrigdz(Nnmp,nalphab*nalphab),dtrigdt(Nnmp,nalphab*nalphab),&
-                       & n1(nalphab,nalphab,2),phi1(nalphab,nalphab),&
-                       & Mbb(nalphab,nalphab),trM(nalphab,nalphab))
+                       & phi1(nalphab,nalphab),Mbb(nalphab,nalphab),trM(nalphab,nalphab))
                END IF               
                !Calculate (zeta,theta) map of varphi1, Mbb and trM
                CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
@@ -480,11 +476,10 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
            & Grhs(:,1,1),Qrhs(:,1,1),L1rhs(:,1,1),L2rhs(:,1,1),Gphi,Qphi,L1phi,L2phi)
 
    END DO
-   
    DEALLOCATE(Grhs,Qrhs,L1rhs,L2rhs,Gphi,Qphi,L1phi,L2phi)
    DEALLOCATE(n1nmrhs,Mbbnmrhs,trMnmrhs)
-!   IF(QN.OR.TRACE_IMP) DEALLOCATE(trig,dtrigdz,dtrigdt,n1,phi1,Mbb,trM)
-   
+   IF(QN.OR.TRACE_IMP) DEALLOCATE(trig,dtrigdz,dtrigdt,phi1,Mbb,trM)
+
    CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
    
  END SUBROUTINE CALC_FLUXES

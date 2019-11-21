@@ -49,7 +49,6 @@ SUBROUTINE TRACE_IMPURITIES(jt,ib,nbb,Zb,Ab,regb,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
   fnorm=Zb(ib)*rhostar_z*rhostar_z*vth(ib)/eps
   nustar_z=rad_R*nuzi(ib)/aiota/vth(ib)
   nustar_i=rad_R*nuth(2)/aiota/vth(2)
-
   !Calculate |nablapsi|/B^2 transport for classical transport
   IF(CLASSICAL.AND..NOT.ALLOCATED(absnablapsi2oB2)) THEN
      ALLOCATE(absnablapsi2oB2(nalphab,nalphab))
@@ -677,9 +676,9 @@ SUBROUTINE FRICTION_TRACE_PS(jt,ib,nbb,Zb,Ab,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
   REAL*8 Gb
   !Others
   INTEGER iz,it
-  REAL*8 fact1,fact2,Ze_T,A1i,A2i,A1z,A2z
+  REAL*8 fact1,fact2,A1i,A2i,A1z,A2z
   REAL*8 FSA,B2exp(nalphab,nalphab),fsa1,fsa2,fsa3,fsa4,fsa5,fsa5t,fsa6
-  REAL*8 func(nalphab,nalphab),Jac(nalphab,nalphab),matAB(nalphab,nalphab)
+  REAL*8 func(nalphab,nalphab),Jac(nalphab,nalphab),A(nalphab,nalphab)
 
   jt=jt
 
@@ -691,7 +690,6 @@ SUBROUTINE FRICTION_TRACE_PS(jt,ib,nbb,Zb,Ab,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
    
   B2exp=B*B
   Jac=aiBtpBz/B/B
-  Ze_T=Zb(ib)/Tb(ib)
 
   B2exp=B*B/expmZepoT
   Jac=iBtpBz/B/B
@@ -725,27 +723,15 @@ SUBROUTINE FRICTION_TRACE_PS(jt,ib,nbb,Zb,Ab,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
   Gb=-fact1*(fsa1-fsa2*fsa3/fsa4)+fact2*(fsa5-fsa6*fsa3/fsa4)
 
   IF(DEBUG) THEN     
-     !Calculate AB for comparison with EUTERPE
-     matAB=Ze_T*fact2*((A1i-1.5 *A2i)*(f_s+avB2*u0) &
-          & +(A1i-1.17*A2i)*f_c*(f_s+fsa5t)/(1-f_c))*B*B/avB2
+     !Calculate A for comparison with EUTERPE
+     A=(Tb(2)/Zb(2))*(B/avB2)*((A1i-1.5 *A2i)*(f_s+avB2*u0) &
+          & +(A1i-1.17*A2i)*f_c*(f_s+fsa5t)/(1-f_c))
 
      DO iz=1,nalphab
         DO it=1,nalphab
-           WRITE(5300+myrank,'(3(1pe13.5))') zeta(iz),theta(it),matAB(iz,it)
+           WRITE(5300+myrank,'(4(1pe13.5))') zeta(iz),theta(it),A(iz,it)*psip,psip
         END DO
      END DO
-
-!!$     DO iz=1,nalphab
-!!$        DO it=1,nalphab
-!!$           WRITE(1000+myrank,100) (iz-1.)/nalphab*TWOPI/nzperiod,(it-1.)/nalphab*TWOPI,B(iz,it),expmZepoT(iz,it),&
-!!$                & U0(iz,it),U1(iz,it),U2(iz,it),matAB(iz,it),matAB(iz,it),&
-!!$                & fact1,fact2,A1i,A2i,A1z,A2z,f_c,f_s,avB2,MAXVAL(B)
-!!$        END DO
-!!$     END DO
-!!$100  FORMAT ('gammaz',64(1pe13.5))           
-!!$
-!!$     WRITE(1000+myrank,102) it,Ze_T,-fact1*fsa1,fact1*fsa2*fsa3/fsa4,fact2*fsa5,-fact2*fsa6*fsa3/fsa4,Gb
-!!$102  FORMAT ('DEr',I1,64(1pe13.5))           
      
   END IF
  
