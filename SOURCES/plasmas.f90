@@ -548,7 +548,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   END IF
 
 
-  IF(filename.NE."ph".AND.filename.NE."te".AND.q.LT.ALMOST_ZERO) THEN
+  IF(filename.NE."ph".AND.filename.NE."te".AND.q.LT.ALMOST_ZERO.AND..NOT.SATAKE) THEN
      WRITE(1000,*) filename,q
      serr="Missing profile"
      CALL END_ALL(serr,.FALSE.)

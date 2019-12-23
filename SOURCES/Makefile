@@ -8,6 +8,9 @@
 HOSTNAME := $(shell uname -n|cut -f1 -d.)
 NODENAME := $(shell uname -n|rev|cut -f2 -dl|rev)
 
+ifeq ($(HOSTNAME), xula01)
+CASE=xula
+endif
 ifeq ($(HOSTNAME), euler01)
 CASE=euler
 endif
@@ -90,6 +93,20 @@ FFLAGS   =-fpp -DMPIandPETSc -DIPPorNIFS -O3 -xHost -shared-intel -warn all -mcm
 #FFLAGS   =-fpp -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0
 IFLAGS   =-I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc
 LFLAGS   =-mkl -lpetsc -L${PETSC_DIR}/lib
+endif
+
+###### if running at Xula cluster at CIEMAT #####################################
+
+ifeq ($(CASE), xula)
+COMPILER =mpif90
+#MPI_DIR  =
+#PETSC_DIR=
+#FFT_DIR  =
+#MKL_DIR  =
+#COMP_LIB =
+FFLAGS   =-fpp -DIPPorNIFS -DMPIandPETSc -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0
+IFLAGS   =-I${PETSC_DIR}/lib/petsc/conf/variables -I${PETSC_DIR}/lib/petsc/conf/rules -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -qopenmp -I${PETSC_DIR}/include
+LFLAGS   =-L${PETSC_DIR}/lib -lpetsc -L/${MKL_HOME}/lib/intel64 -mkl -Wl,-rpath,${MKL_HOME}/lib/intel64,-rpath,${PETSC_DIR}/lib
 endif
 
 

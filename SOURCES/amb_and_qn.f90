@@ -183,7 +183,8 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
      WRITE(600+myrank,'(1000(1pe13.5))') s,Epsi*psip,&
           & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip, &
           & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
-          & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota
+          & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota,&
+          & PI*vth(1)*vth(1)*vth(1)*m_e*m_e*Ab(1)*Ab(1)/(16.*aiota*rad_R*borbic(0,0)*borbic(0,0)*Zb(1)*Zb(1))
 
      
   END IF
@@ -239,7 +240,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   REAL*8 tstart
 #ifdef MPIandPETSc
   !Others
-  INTEGER ierr
+!  INTEGER ierr
   INCLUDE "mpif.h"
 #endif
 
@@ -386,7 +387,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
             !After bulk species have been calculated, solve QN
             IF(QN.AND.kb.EQ.2) CALL CALC_QN(jt,jt0,phi1anm,phi1nm,phi1c)
 
-            CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!            CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
          ELSE
 
@@ -440,13 +441,13 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                        & phi1(nalphab,nalphab),Mbb(nalphab,nalphab),trM(nalphab,nalphab))
                END IF               
                !Calculate (zeta,theta) map of varphi1, Mbb and trM
-               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
                CALL PRECALC_TRIG(nalphab,zeta(1:nalphab),theta(1:nalphab),trig,dtrigdz,dtrigdt)
-               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
                CALL PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,&
                     & n1nmb,Mbbnm,trMnm,phi1c(jt,:),Ab(2),Tb(2),Epsi,s,zeta(1:nalphab),theta(1:nalphab),&
                     & phi1,Mbb,trM)
-               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
                ephi1oTsize=(MAXVAL(phi1)-MINVAL(phi1))/Tb(2)/2.
                !Check if varphi1 and M exist from previous calculations
                IF(.NOT.SOLVE_AMB) THEN
@@ -1069,7 +1070,7 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
               END DO
               phi1coeff(1:ms)=varphi1(is0:is1)
            END IF
-           CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!           CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 !           CALL DGELSD(ns,npow,1,mats,ns,phi1coeff,ns,s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)  
            CALL DGELSD(ms,npow,1,mats(1:ms,:),ms,phi1coeff(1:ms),ms,s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)  
            DO js=1,ms
@@ -1273,11 +1274,13 @@ SUBROUTINE PLOT_FLUX(jt,jt0,nbb,s,Epsi,Gb,Qb,L1b,L2b,Zb,nb,dnbdpsi,Tb,dTbdpsi,ep
   IF(SOLVE_AMB.AND.jt.EQ.jt0) WRITE(300+myrank,'(30(1pe13.5))') s,Epsi*psip,&  
        & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip, &
        & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
-       & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota
+       & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,psip*sgnB*iota*Zb(ib),&
+       & PI*vth(ib)*vth(ib)*vth(ib)*m_e*m_e/(16.*aiota*rad_R*borbic(0,0)*borbic(0,0)*Zb(ib)*Zb(ib))
   IF(COMPARE_MODELS) WRITE(4300+myrank,'(I4,30(1pe13.5))') jt,Epsi*psip,&
        & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip, &
        & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
-       & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize
+       & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,psip*sgnB*iota*Zb(ib),&
+       & PI*vth(ib)*vth(ib)*vth(ib)*m_e*m_e/(16.*aiota*rad_R*borbic(0,0)*borbic(0,0)*Zb(ib)*Zb(ib))
   IF(TASK3D) THEN
      IF(GEN_FLAG(2)) THEN
         WRITE(5300+myrank,'(I4,1000(1pe13.5))') jt,SQRT(s),Epsi*psip/1E3,& 

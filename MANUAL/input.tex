@@ -606,9 +606,25 @@ This namelist is contained in file {\ttfamily input.surfaces}, and it determines
 \ivar{S}
 {Determine flux-surfaces}
 {array of REAL*8}
-{Surfaces s(1) to s(\vlink{NS}) are determined}
+{Surfaces \vlink{S}(1) to \vlink{S}(\vlink{NS}) are determined}
 {1.0}% if {\ttfamily .NOT.\vlink{TASK3D}}, (0.5/40)$^2$,(1.5/40)$^2$,...,(38.5/40)$^2$ otherwise}
 {Ignored if using magnetic field from {\ttfamily ddkes2.data}}
+{}
+
+\ivar{SMIN}
+{Determine flux-surfaces}
+{REAL*8}
+{Innermost surface}
+{0.0}% if {\ttfamily .NOT.\vlink{TASK3D}}, (0.5/40)$^2$,(1.5/40)$^2$,...,(38.5/40)$^2$ otherwise}
+{Used if no \vlink{S}() values are provided: \vlink{S}(is)=\vlink{SMIN}+(\vlink{SMAX}-\vlink{SMIN})*(is-0.5)*(is-0.5)/\vlink{NS}/\vlink{NS}}
+{}
+
+\ivar{SMIN}
+{Determine flux-surfaces}
+{REAL*8}
+{Outermost surface}
+{1.0}% if {\ttfamily .NOT.\vlink{TASK3D}}, (0.5/40)$^2$,(1.5/40)$^2$,...,(38.5/40)$^2$ otherwise}
+{Used if no \vlink{S}() values are provided: \vlink{S}(is)=\vlink{SMIN}+(\vlink{SMAX}-\vlink{SMIN})*(is-0.5)*(is-0.5)/\vlink{NS}/\vlink{NS}}
 {}
 
 \ivar{DIRDB}

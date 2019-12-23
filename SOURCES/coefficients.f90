@@ -78,7 +78,6 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
   DO ialpha=1,na
      
      IF(nw0.GT.1.AND.MOD(ialpha,2).EQ.0) CYCLE
-
 !     IF(.FALSE..AND.na.EQ.1) THEN !CHECK
 !        t_ini=tmax
 !        z_ini=zmax
@@ -87,7 +86,6 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
      z_ini=zeta0
 !     END IF
      iw=iw+1
-     
      !Find maxima and minima of the magnetic field strength along line that contains (z_ini,t_ini)
      CALL EXTREME_POINT(z_ini,t_ini,0, &
           & z1(iw),t1(iw),B1(iw),hBpp1(iw),vd1(:,iw),flag)

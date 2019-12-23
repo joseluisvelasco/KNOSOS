@@ -28,9 +28,9 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   NAMELIST /model/ CALC_DB,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,ANISOTROPY,FRICTION,FACT_CON,&
        & SCAN_ER,SOLVE_AMB,TRIVIAL_AMB,FAST_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,D_AND_V,COMPARE_MODELS,&
        & FN,FI,FS,FP,FE,FR,FB,FNE,FTI,FTE,FER,&
-       & NEOTRANSP,PENTA,TASK3D,TASK3Dlike,STELLOPT,SATAKE,ANA_NTV,JPP
+       & NEOTRANSP,PENTA,TASK3D,TASK3Dlike,STELLOPT,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
   !Namelist 'surfaces' contains the list of flux-surfaces calculated
-  NAMELIST /surfaces/ NS,S,DIRDB,DIRS
+  NAMELIST /surfaces/ NS,S,SMIN,SMAX,DIRDB,DIRS
   !Namelist 'species' contains the list of species calculated
   NAMELIST /species/ NBB,ZB,AB,REGB,ZEFF
   !Namelist 'others' contains other variables
@@ -42,6 +42,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   !Other
   CHARACTER*100 serr,line
   INTEGER iline,iostat,nefield,ncmul,nvmag,iz,ia,is
+  REAL*8 SMAX,SMIN
   !DKES database
   INTEGER, PARAMETER :: ncmuld=18
   REAL*8 cmuld(ncmuld) /3E+2,1E+2,3E+1,1E+1,3E+0,1E+0,3E-1,1E-1,3E-2,1E-2,&
@@ -228,7 +229,9 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   SATAKE=    .FALSE. 
   ANA_NTV=   .FALSE. 
   JPP=       .FALSE.
-  
+  ESCOTO=    .FALSE.
+  NEQ2=      .FALSE.
+
   !Read namelist 'model'
   OPEN(unit=1,file="input.model",form='formatted',action='read',iostat=iostat) 
   IF(iostat.NE.0) OPEN(unit=1,file="../input.model",form='formatted',action='read',iostat=iostat) 
@@ -237,13 +240,15 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      READ (1,nml=model)
      CLOSE(1)
   END IF
-
+  
   !-------------------------------------------------------------------------------------------
   !Set default values for namelists 'surfaces' and 'species'
   !-------------------------------------------------------------------------------------------
 
   ns=1
   s(1)=1
+  SMIN=0
+  SMAX=1
   !Default values: low collisionality hydrogen + adiabatic electrons, no impurities
   nbb    = 2
   Zb(1)  =-1.            
@@ -302,7 +307,6 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
  !    END DO
   END IF
 
-
   !-------------------------------------------------------------------------------------------
   !Set values for namelist 'surfaces'
   !-------------------------------------------------------------------------------------------
@@ -315,7 +319,13 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      READ (1,nml=surfaces)
      CLOSE(1)
   END IF
-  
+  IF(ns.GT.1.AND.ABS(s(1)-1).LT.ALMOST_ZERO) THEN
+     DO is=1,ns
+        s(is)=SMIN+(SMAX-SMIN)*(is-0.5)*(is-0.5)/REAL(ns*ns)
+     END DO
+  END IF
+
+
   !-------------------------------------------------------------------------------------------
   !Set values for namelist 'species'
   !-------------------------------------------------------------------------------------------

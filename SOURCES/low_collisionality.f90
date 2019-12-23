@@ -168,15 +168,18 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 !#include <petsc/finclude/petscviewer.h>
 !  PetscViewer, SAVE :: viewer
   PetscErrorCode ierr
+  PetscInt ipointm1,jpointm1
+  PetscInt, PARAMETER :: oneps=1
   PetscInt, SAVE :: innz(0:npointx-1)
   KSP, SAVE :: ksp
   Mat, SAVE :: matCOL,matVEAf,matVEAb,matVMAf,matVMAb
-  INTEGER ipointm1,jpointm1,jpoint
+  INTEGER jpoint
 #else
   REAL*8, SAVE, ALLOCATABLE :: COL(:,:),VEAf(:,:),VEAb(:,:),VMAf(:,:),VMAb(:,:)
   REAL*8, ALLOCATABLE :: mat(:,:)
 #endif
   REAL*8, ALLOCATABLE :: rowCOL(:),rowVEAf(:),rowVEAb(:),rowVMAf(:),rowVMAb(:)
+  PetscScalar mat_entry
   !Time
   CHARACTER*30, PARAMETER :: routine="CALC_LOW_COLLISIONALITY"
   INTEGER, SAVE :: ntotal=0
@@ -406,16 +409,25 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
              & (TANG_VM.AND.ABS(rowVMAf(jpoint)).GT.ZERO).OR. &
              & (TANG_VM.AND.ABS(rowVMAb(jpoint)).GT.ZERO)) THEN
            jpointm1=jpoint-1
-           CALL MatSetValues(matCOL,1,ipointm1,1,jpointm1,rowCOL(jpoint),INSERT_VALUES,ierr)
+           mat_entry=rowCOL(jpoint)
+           CALL MatSetValues(matCOL,oneps,ipointm1,oneps,jpointm1,mat_entry,INSERT_VALUES,ierr)
         END IF
-        IF(ABS(rowVEAf(jpoint)).GT.ZERO) &
-             & CALL MatSetValues(matVEAf,1,ipointm1,1,jpointm1,rowVEAf(jpoint),INSERT_VALUES,ierr)
-        IF(ABS(rowVEAb(jpoint)).GT.ZERO) &
-             & CALL MatSetValues(matVEAb,1,ipointm1,1,jpointm1,rowVEAb(jpoint),INSERT_VALUES,ierr)
-        IF(TANG_VM.AND.ABS(rowVMAf(jpoint)).GT.ZERO) &
-             & CALL MatSetValues(matVMAf,1,ipointm1,1,jpointm1,rowVMAf(jpoint),INSERT_VALUES,ierr)
-        IF(TANG_VM.AND.ABS(rowVMAb(jpoint)).GT.ZERO) &
-             & CALL MatSetValues(matVMAb,1,ipointm1,1,jpointm1,rowVMAb(jpoint),INSERT_VALUES,ierr)
+        IF(ABS(rowVEAf(jpoint)).GT.ZERO) THEN
+           mat_entry=rowVEAf(jpoint)
+           CALL MatSetValues(matVEAf,oneps,ipointm1,oneps,jpointm1,mat_entry,INSERT_VALUES,ierr)
+        END IF
+        IF(ABS(rowVEAb(jpoint)).GT.ZERO) THEN
+           mat_entry=rowVEAb(jpoint)
+           CALL MatSetValues(matVEAb,oneps,ipointm1,oneps,jpointm1,mat_entry,INSERT_VALUES,ierr)
+        END IF
+        IF(TANG_VM.AND.ABS(rowVMAf(jpoint)).GT.ZERO) THEN
+           mat_entry=rowVMAf(jpoint)
+           CALL MatSetValues(matVMAf,oneps,ipointm1,oneps,jpointm1,mat_entry,INSERT_VALUES,ierr)
+        END IF
+        IF(TANG_VM.AND.ABS(rowVMAb(jpoint)).GT.ZERO) THEN
+           mat_entry=rowVMAb(jpoint)
+           CALL MatSetValues(matVMAb,oneps,ipointm1,oneps,jpointm1,mat_entry,INSERT_VALUES,ierr)
+        END IF
      END DO
 #else
      COL(ipoint,:) =rowCOL
@@ -606,6 +618,7 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
         nw1=kw 
         !Try to match well iw...
         DO iw=nw0,nw2 
+           IF(SATAKE) CYCLE
            IF(matched(iw)) CYCLE 
            !...with well jw
            DO jw=nw0,nw2
@@ -1479,8 +1492,7 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
   Mat matCOL,matVEAf,matVEAb,matVMAf,matVMAb!,matA
   !Others
   PetscErrorCode ierr
-  PetscInt iz,innz(0:npoint-1)
-  INTEGER npalpha
+  PetscInt iz,innz(0:npoint-1),npoint_ps,npalpha
 !  INTEGER, PARAMETER :: MAXITS= 1000 !these choices could go in the parameters namelist
 !  REAL, PARAMETER :: ATOL=1E-2
 !  REAL, PARAMETER :: TOL =1E-1
@@ -1496,13 +1508,15 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
 
   CALL CPU_TIME(tstart)
 
+  npoint_ps=npoint
+  
   !Number of non-zero elements per row
   DO iz=1,npoint
      innz(iz-1)=nnz(iz)
   END DO
   !Collision operator
   CALL MatCreate(PETSC_COMM_WORLD,matCOL,ierr)
-  CALL MatSetSizes(matCOL,PETSC_DECIDE,PETSC_DECIDE,npoint,npoint,ierr)
+  CALL MatSetSizes(matCOL,PETSC_DECIDE,PETSC_DECIDE,npoint_ps,npoint_ps,ierr)
   CALL MatSetType(matCOL,MATAIJ,ierr)
   !  CALL MatSeqAIJSetPreallocation(matCOL,PETSC_NULL_INTEGER,innz,ierr)
   CALL MatSeqAIJSetPreallocation(matCOL,0,innz,ierr)
@@ -1516,13 +1530,13 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
 
   !Tangential ExB drift, forward derivative
   CALL MatCreate(PETSC_COMM_WORLD,matVEAf,ierr)
-  CALL MatSetSizes(matVEAf,PETSC_DECIDE,PETSC_DECIDE,npoint,npoint,ierr)
+  CALL MatSetSizes(matVEAf,PETSC_DECIDE,PETSC_DECIDE,npoint_ps,npoint_ps,ierr)
   CALL MatSetType(matVEAf,MATAIJ,ierr)
   CALL MatSeqAIJSetPreallocation(matVEAf,npalpha,PETSC_NULL_INTEGER,ierr)
   CALL MatSetup(matVEAf,ierr)
   !Tangential ExB drift, backward derivative
   CALL MatCreate(PETSC_COMM_WORLD,matVEAb,ierr)
-  CALL MatSetSizes(matVEAb,PETSC_DECIDE,PETSC_DECIDE,npoint,npoint,ierr)
+  CALL MatSetSizes(matVEAb,PETSC_DECIDE,PETSC_DECIDE,npoint_ps,npoint_ps,ierr)
   CALL MatSetType(matVEAb,MATAIJ,ierr)
   CALL MatSeqAIJSetPreallocation(matVEAb,npalpha,PETSC_NULL_INTEGER,ierr)
   CALL MatSetup(matVEAb,ierr)
@@ -1530,13 +1544,13 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
   IF(TANG_VM) THEN
      !Tangential magnetic drift, forward derivative
      CALL MatCreate(PETSC_COMM_WORLD,matVMAf,ierr)
-     CALL MatSetSizes(matVMAf,PETSC_DECIDE,PETSC_DECIDE,npoint,npoint,ierr)
+     CALL MatSetSizes(matVMAf,PETSC_DECIDE,PETSC_DECIDE,npoint_ps,npoint_ps,ierr)
      CALL MatSetType(matVMAf,MATAIJ,ierr)
      CALL MatSeqAIJSetPreallocation(matVMAf,npalpha,PETSC_NULL_INTEGER,ierr)
      CALL MatSetup(matVMAf,ierr)
      !Tangential magnetic drift, backward derivative
      CALL MatCreate(PETSC_COMM_WORLD,matVMAb,ierr)
-     CALL MatSetSizes(matVMAb,PETSC_DECIDE,PETSC_DECIDE,npoint,npoint,ierr)
+     CALL MatSetSizes(matVMAb,PETSC_DECIDE,PETSC_DECIDE,npoint_ps,npoint_ps,ierr)
      CALL MatSetType(matVMAb,MATAIJ,ierr)
      CALL MatSeqAIJSetPreallocation(matVMAb,npalpha,PETSC_NULL_INTEGER,ierr)
      CALL MatSetup(matVMAb,ierr)
@@ -1871,6 +1885,7 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
   KSP ksp
   !Others
   PetscErrorCode ierr
+  PetscScalar factor
   Mat matA!,matA2
   PC pc
   INTEGER, PARAMETER :: MAXITS= 1000 
@@ -1894,16 +1909,18 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
 !  CALL MatAssemblyBegin(matA,MAT_FINAL_ASSEMBLY,ierr)
 !  CALL MatAssemblyEnd(  matA,MAT_FINAL_ASSEMBLY,ierr)
 
+  factor=sgnB*Epsi/nu(jv)
   IF(sgnB*Epsi.LT.0) THEN
-     CALL MatAXPY(matA,sgnB*Epsi/nu(jv),matVEAb,SUBSET_NONZERO_PATTERN,IERR)     
+     CALL MatAXPY(matA,factor,matVEAb,SUBSET_NONZERO_PATTERN,IERR)     
   ELSE IF(sgnB*Epsi.GT.0) THEN
-     CALL MatAXPY(matA,sgnB*Epsi/nu(jv),matVEAf,SUBSET_NONZERO_PATTERN,IERR)
+     CALL MatAXPY(matA,factor,matVEAf,SUBSET_NONZERO_PATTERN,IERR)
   END IF
   IF(TANG_VM) THEN
+     factor=vmconst(jv)/nu(jv)
      IF(vmconst(jv).LT.0) THEN
-        CALL MatAXPY(matA,vmconst(jv)/nu(jv),matVMAf,SUBSET_NONZERO_PATTERN,ierr)
+        CALL MatAXPY(matA,factor,matVMAf,SUBSET_NONZERO_PATTERN,ierr)
      ELSE
-        CALL MatAXPY(matA,vmconst(jv)/nu(jv),matVMAb,SUBSET_NONZERO_PATTERN,ierr)
+        CALL MatAXPY(matA,factor,matVMAb,SUBSET_NONZERO_PATTERN,ierr)
      END IF
   END IF
 
@@ -2018,9 +2035,9 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,BI3,BI7,phi1c,ksp,gint)
   !Others
   CHARACTER*100 serr
   INTEGER ii,irhs!,jrhs
-  REAL*8 c(npoint),g(npoint)
+  PetscScalar c(npoint),g(npoint)
   PetscErrorCode ierr
-  PetscInt indx(npoint)
+  PetscInt indx(npoint),npoint_ps
   Vec vecb,vecx
   !Time
   CHARACTER*30, PARAMETER :: routine="INVERT_MATRIX"
@@ -2030,14 +2047,15 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,BI3,BI7,phi1c,ksp,gint)
   REAL*8 tstart
 
   CALL CPU_TIME(tstart)
-  
+
+  npoint_ps=npoint
   phi1c=phi1c !To be removed
 
   DO ii=1,npoint
      indx(ii)=ii-1
   END DO
-  CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint,vecb,ierr)
-  CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint,vecx,ierr)
+  CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint_ps,vecb,ierr)
+  CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint_ps,vecx,ierr)
   
   !Scan in possible rhs of the DKE·(corresponding to different contributions the the radial ExB from varphi1)
   DO irhs=1,Nnmp  !Skip helicities too large for the alpha precision
@@ -2055,13 +2073,13 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,BI3,BI7,phi1c,ksp,gint)
      ELSE !radial ExB drift
         c=BI7(:,irhs)/vdconst(jv)
      END IF
-     CALL VecSetValues(vecb,npoint,indx,c,INSERT_VALUES,ierr)      
+     CALL VecSetValues(vecb,npoint_ps,indx,c,INSERT_VALUES,ierr)      
      CALL VecAssemblyBegin(vecb,ierr)
      CALL VecAssemblyEnd(vecb,ierr)
      !Solve
      CALL KSPSolve(ksp,vecb,vecx,ierr)
      g=0
-     CALL VecGetValues(vecx,npoint,indx,g,ierr)
+     CALL VecGetValues(vecx,npoint_ps,indx,g,ierr)
 !     CALL KSPView(ksp,PETSC_VIEWER_STDOUT_WORLD,ierr)
 !     CALL PetscMemoryGetCurrentUsage(ierr)
 !     CALL PetscViewerASCIIOpen(MPI_COMM_WORLD,'filename.xml',viewer,ierr)

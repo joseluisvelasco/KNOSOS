@@ -359,7 +359,7 @@ SUBROUTINE READ_BFIELD(s0)
         dborbisdpsi(ixn_b(imn),ixm_b(imn))=(bmns_b(imn,js1)-bmns_b(imn,js0))/dpsi
      END DO
      CALL FILL_3DGRID(MAL,MAL,s0,x1(2,:,:),x2(2,:,:),x3(2,:,:),Bzt(2,:,:),.TRUE.)
-     ALLOCATE( posx(MAL,MAL), posy(MAL,MAL), posz(MAL,MAL))
+     IF(.NOT.ALLOCATED(posx)) ALLOCATE( posx(MAL,MAL), posy(MAL,MAL), posz(MAL,MAL))
      DO it=1,MAL  !from lhs to rhs
         jt=MAL-it+1
         IF(it.EQ.1) jt=1
@@ -368,12 +368,12 @@ SUBROUTINE READ_BFIELD(s0)
         posz(:,it)=x3(2,:,jt)
      END DO
      CALL CHECK_JACSIGN(MAL,MAL,dpsi,x1,x2,x3,Bzt(2,:,:),LeftHanded)
-     IF(.NOT.LeftHanded) THEN
+     IF(.NOT.LeftHanded.AND..NOT.SATAKE) THEN
         serr="The magnetic field was not provided in left-handed coordinates"
         CALL END_ALL(serr,.FALSE.)
      END IF
      CALL FIND_3DPOINTS(MAL,MAL,s0,x1(1,:,:),x2(1,:,:),x3(1,:,:))
-     ALLOCATE(zoomx(MAL,MAL),zoomy(MAL,MAL),zoomz(MAL,MAL))
+     IF(.NOT.ALLOCATED(zoomx)) ALLOCATE(zoomx(MAL,MAL),zoomy(MAL,MAL),zoomz(MAL,MAL))
      zoomx=x1(1,:,:)
      zoomy=x2(1,:,:)
      zoomz=x3(1,:,:)
@@ -562,9 +562,9 @@ SUBROUTINE READ_BFIELD(s0)
   dBtdpsi  =   (Bthetap-Bthetam)/dpsi
 
   !Change the coordinates if the main helicity is N=0 (tokamak or quasi-axissymmetric stellarator, QAS)
-  IF(SATAKE) THEN
-     serr="NOT implemented, look for SATAKE or TOKPI"
-     CALL END_ALL(serr,.FALSE.)
+!  IF(SATAKE) THEN
+!     serr="NOT implemented, look for SATAKE or TOKPI"
+!     CALL END_ALL(serr,.FALSE.)
 !     siota=iota/ABS(iota)
 !     fdummy=Bzeta
 !     Bzeta=Btheta
@@ -574,7 +574,7 @@ SUBROUTINE READ_BFIELD(s0)
 !     diotadpsi=diotadpsi/iota/iota/iota
 !     iota=-siota/iota
 !     chip=psip*iota
-  END IF
+!  END IF
 
   !Find maximum helicity and truncate spectra accordingly
   hel_Nmax=0
@@ -593,8 +593,8 @@ SUBROUTINE READ_BFIELD(s0)
    IF(hel_NMAX.LT.ntorb.OR.hel_MMAX.LT.mpolb) WRITE(1000+myrank,&
      & '(" Automatically truncating spectrum of magnetic field strength from &
      & (nmax,mmax)=(",I3,",",I3,") to (",I2,",",I2,")")') ntorb,mpolb,hel_Nmax,hel_Mmax
-  ntorb=hel_Nmax
-  mpolb=hel_Mmax
+  ntorb=MIN(hel_Nmax,ntorb)
+  mpolb=MIN(hel_Mmax,mpolb)
 
   DO n=1,ntorb   !For m=0, keep only n>0
      rorbic(n,0)     =rorbic(n,0)     +rorbic(-n,0)
@@ -644,9 +644,8 @@ SUBROUTINE READ_BFIELD(s0)
 !  nz=INT(MAXVAL(ABS(np(1:Nnm))))
 !  nt=INT(MAXVAL(ABS(mp(1:Nnm))))
   dzstep=TWOPI/(nzperiod*hel_NMAX*100)
-
+!  print *,'dzstep',dzstep,nzperiod,hel_nmax
 !!$  IF(myrank.EQ.0.AND.DEBUG) THEN
-!!$     WRITE(1000+myrank,*) 'Nnm        = ',Nnm
 !!$     WRITE(1000+myrank,*) 'iota       = ',iota
 !!$     WRITE(1000+myrank,*) 'chip       = ',chip
 !  WRITE(1000+myrank,*) 'psip       = ',psip,borbi(0,0),sqrt(s0)*rad_a
@@ -706,6 +705,7 @@ SUBROUTINE FILL_NM()
              &    .AND.(ABS(borbis0(n,m)).LT.PREC_B).AND.(ABS(borbis(n,m)).LT.PREC_B)) CYCLE
 !        IF(.NOT.QN.AND.(ABS(borbic0(n,m)).LT.PREC_B).AND.(ABS(borbic(n,m)).LT.PREC_B)) CYCLE
 !             & .AND.(ABS(phorbicc(n,m)).LT.PREC_B).AND.(ABS(phorbics(n,m)).LT.PREC_B)) CYCLE
+        IF(NEQ2.AND.n.NE.1.AND.n.NE.0) CYCLE
         nm=nm+1
         bnmc(nm)     =borbic(n,m)     
         bnmc0(nm)    =borbic0(n,m)     
@@ -715,7 +715,6 @@ SUBROUTINE FILL_NM()
            bnms0(nm)    =borbis0(n,m)     
            dbnmsdpsi(nm)=dborbisdpsi(n,m)
         END IF
-       
 !        phnmc(nm)=phorbicc(n,m)
 !        phnms(nm)=phorbics(n,m)
 !        pnm(nm)=porbis(n,m)
@@ -732,7 +731,7 @@ SUBROUTINE FILL_NM()
   Nnm=nm                          !Nnm is the total number of modes
   bnmc1(1:Nnm)=bnmc(1:Nnm)-bnmc0(1:Nnm) !B1=B-B0, remember that B1<<B0
   bnms1(1:Nnm)=bnms(1:Nnm)-bnms0(1:Nnm)
-  
+
   IF(QN.OR.TRACE_IMP) THEN
      Nnmp=2*Nnm
      DO nm=1,Nnmp
@@ -998,7 +997,7 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,dpsi,x1,x2,x3,Bzt,LeftHanded)
              &                (dx1dt*dx2dz-dx2dt*dx1dz)*(dx1dt*dx2dz-dx2dt*dx1dz))/ABS(psip)/sqrtg
         IF(DEBUG) WRITE(1400+myrank,'(6(1pe13.5),L)') x1(2,iz,it),x2(2,iz,it),x3(2,iz,it),&
              & sqrtg,Bzt(iz,it),absnablar(iz,it),LeftHanded
-        IF(.NOT.LeftHanded) RETURN
+!        IF(.NOT.LeftHanded) RETURN
         IF(iz.EQ.2.AND.it.EQ.2.AND..NOT.DEBUG.AND..NOT.ONLY_PHI1) RETURN
         etet=etet+(dx1dt*dx1dt+dx2dt*dx2dt+dx3dt*dx3dt)/(Bzt(iz,it)*Bzt(iz,it))
         denom=denom+1/(Bzt(iz,it)*Bzt(iz,it))
@@ -1007,7 +1006,8 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,dpsi,x1,x2,x3,Bzt,LeftHanded)
   !Check if there is too much deviation from sqrt(g)*B^2=constant
   k=k/(nz*nt)
   k2=SQRT((k2-k*k*(nz*nt))/(nz*nt-1.0))  
-  IF(k2.GT.0.5*ABS(k)) LeftHanded=.FALSE. 
+!  IF(k2.GT.0.5*ABS(k)) LeftHanded=.FALSE. 
+  IF(k2.LT.0) LeftHanded=.FALSE. 
   IF(DEBUG) WRITE(1400+myrank,'(5(1pe13.5),L)') k,k2
   etet=etet/denom
 

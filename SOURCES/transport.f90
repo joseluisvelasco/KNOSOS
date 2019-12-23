@@ -18,9 +18,13 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
   !Others
   REAL*8, PARAMETER  ::  prefact_Epsi=1213173.45142083 !e/(8pi^2m)
   REAL*8, PARAMETER :: e4omemieps02=5516.42011 !units are m^6/s^4
+  REAL*8, PARAMETER :: ne_edge=0.1
+  REAL*8, PARAMETER :: Ti_edge=50.0
+  REAL*8, PARAMETER :: Te_edge=50.0
   INTEGER ib,is,iostat
-  REAL*8 dsdV(ns),dVdpsi(ns),dsdr(ns)
-  REAL*8 dGbdV(nbb,ns),dQbdV(nbb,ns),dEpsids(ns),dErdr(ns)
+  REAL*8 dsdV(ns),dVdpsi(ns),dsdr(ns),psi(ns)
+  REAL*8 extnb(nbb,ns+1),extTb(nbb,ns+1)
+  REAL*8 dGbdpsi(nbb,ns),dQbdpsi(nbb,ns),dEpsids(ns),dErdr(ns)
   REAL*8 Pin(ns),ohm(nbb,ns),coulomb(nbb,ns),nue(ns),loglambda(ns)
   REAL*8 dnbdt(nbb,ns),dTbdt(nbb,ns),dnbTbdt(nbb,ns),dEpsidt(ns)
   REAL*8 fact_Epsi(ns)
@@ -42,9 +46,9 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
 #endif     
 
   dsdV=1./(TWOPI*PI*rad_R*rad_a*rad_a)
-  dVdpsi=1./(dsdV*torflux)
+  dVdpsi=1./(dsdV*atorflux)
   dsdr=2*SQRT(s)/rad_a
-
+  psi=atorflux*s
  
   IF(myrank.EQ.0.AND.(STELLOPT(2).OR.STELLOPT(3))) THEN
      Pin=0
@@ -65,20 +69,20 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
   RETURN
 
   DO ib=1,nbb
-     CALL DERIVE(s/dsdV,Gb(ib,:),ns,4,dGbdV(ib,:))
-     CALL DERIVE(s/dsdV,Qb(ib,:),ns,4,dQbdV(ib,:))
+     CALL DERIVE(psi,Gb(ib,:),ns,4,dGbdpsi(ib,:))
+     CALL DERIVE(psi,Qb(ib,:),ns,4,dQbdpsi(ib,:))
   END DO
 
   !Particle balance
   DO ib=1,2
-     Sb(ib,:)=-dGbdV(ib,:) !No particle transport
+     Sb(ib,:)=-dGbdpsi(ib,:) !No particle transport
   END DO
   DO ib=3,nbb
      DO is=1,ns
         CALL READ_ADAS(Zb(ib),Ab(ib),nb(1,is),Tb(1,is),Sb(ib,is))
      END DO
   END DO
-  dnbdt  = -dGbdV+Sb
+  dnbdt  = -dGbdpsi+Sb
 
   !Energy balance
   !Ohmic term
@@ -90,7 +94,7 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
   coulomb(1,:)=3*nb(2,:)*(Tb(2,:)-Tb(1,:))*1.602*nue
   coulomb(2,:)=-coulomb(1,:)
   !
-  dnbTbdt=(-dQbdV+Pb+ohm+coulomb)*2./3
+  dnbTbdt=(-dQbdpsi+Pb+ohm+coulomb)*2./3
   dTbdt  =(dnbTbdt-Tb*dnbdt)/nb
   
   !Radial electric field evlution
@@ -104,9 +108,19 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
   !Update profiles
   nb=nb+dt*dnbdt
   Tb=Tb+dt*dTbdt
-  Epsi=Epsi+dt*dEpsidt  
-  CALL DERIVE(s*atorflux,nb(ib,:),ns,4,dnbdpsi(ib,:))
-  CALL DERIVE(s*atorflux,Tb(ib,:),ns,4,dTbdpsi(ib,:))
+  nb(:,ns+1)    =ne_edge
+  Tb(1,ns+1)    =Te_edge
+  Tb(2:nbb,ns+1)=Ti_edge
+!  extpsi(1)     =0.0
+!  extpsi(2:ns+1)=psi(1:ns)
+!  extpsi(ns+2)  =atorflux
+!  DO ib=1,nbb
+!     extnb(ib,1:ns)=nb(ib,:)
+!     extTb(ib,1:ns)=Tb(ib,:)
+!     CALL DERIVE(extpsi,extnb(ib,:),ns,4,dnbdpsi(ib,:))
+!     CALL DERIVE(extpsi,extTb(ib,:),ns,4,dTbdpsi(ib,:))
+!  END DO
+  Epsi=Epsi+dt*dEpsidt    
 
 END SUBROUTINE TRANSPORT
 
