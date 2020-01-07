@@ -274,6 +274,14 @@ This namelist is contained in file {\ttfamily input.model}, and it  determines w
 {-}
 {}
 
+\ivarl{ONLY\_B0}
+{Particular physics problem}
+{LOGICAL}
+{After calculating omnigenous $B_0$, exit}
+{\false}
+{}
+{\citep{landreman2012omni,parra2015omni}
+
 \ivarl{TASK3D}
 {Particular physics problem}
 {LOGICAL}
@@ -405,19 +413,19 @@ This namelist is contained in file {\ttfamily input.parameters} and it includes 
 {For the moment, $B_0$ and $B_1$ have to be provided explicitly}
 {\S\ref{SEC_BINPUT}, \citep{calvo2017sqrtnu,velasco2018phi1}}
 
-%\ivarl{QS\_B0}
-%{Describe the magnetic field structure}
-%{LOGICAL}
-%{Closeness to quasisymmetry is used as in~\citep{velasco2018phi1}}
-%{\false}
-%{Ignored if \notf\vlink{FIND\_B0}}
+\ivarl{QS\_B0}
+{Describe the magnetic field structure}
+{LOGICAL}
+{When looking for the closest omnigenous configuration, look for quasisimmetric stellarator}
+{\false}
+{}
 
-%\ivarl{ONEHEL\_B0}
-%{Describe the magnetic field structure}
-%{LOGICAL}
-%{Closeness to quasisymmetry is used as in~\citep{velasco2018phi1}, but with only one helicity in $B_0$}
-%{\false}
-%{Ignored if \notf\vlink{QS\_B0}}
+\ivarl{QS\_B0\_1HEL}
+{Describe the magnetic field structure}
+{LOGICAL}
+{When looking for the closest omnigenous configuration, look for quasisimmetric stellarator with only one helicity}
+{\false}
+{}
 
 %\ivarl{PRE\_INTV}
 %{Determine algorithms to be used}

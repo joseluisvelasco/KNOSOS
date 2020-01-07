@@ -18,14 +18,14 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   !Namelist 'parameters' contains simulation parameters, including
   !decisions on how to solve some equations and what to plot
   NAMELIST /parameters/  GEN_FLAG,DEBUG,TIME,I0,PLOTG,&
-       & USE_B1,USE_B0pB1,&
+       & USE_B1,USE_B0pB1,QS_B0,QS_B0_1HEL,&
        & REMOVE_DIV,DELTA,&
        & MLAMBDA,MAL,TRUNCATE_B,PREC_B,PREC_EXTR,PREC_BINT,PREC_DQDV,PREC_INTV,&
        & NEFIELD,EFIELD,NCMUL,CMUL,NVMAG,VMAG,&
        & NER,ERMIN,ERMAX,ERACC,&
        & NERR,IPERR
   !Namelist 'model' contains physics parameters
-  NAMELIST /model/ CALC_DB,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,ANISOTROPY,FRICTION,FACT_CON,&
+  NAMELIST /model/ ONLY_B0,CALC_DB,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,ANISOTROPY,FRICTION,FACT_CON,&
        & SCAN_ER,SOLVE_AMB,TRIVIAL_AMB,FAST_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,D_AND_V,COMPARE_MODELS,&
        & FN,FI,FS,FP,FE,FR,FB,FNE,FTI,FTE,FER,&
        & NEOTRANSP,PENTA,TASK3D,TASK3Dlike,STELLOPT,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
@@ -138,8 +138,10 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   I0=      -1        
   PLOTG=   .FALSE.  
   !How to describe magnetic field structure
-  USE_B1=   .FALSE.  
-  USE_B0pB1=.FALSE.  
+  USE_B1=    .FALSE.  
+  USE_B0pB1 =.FALSE.
+  QS_B0     =.FALSE.
+  QS_B0_1HEL=.FALSE.  
   !Determine algorithms to be used
   REMOVE_DIV=    .FALSE.  
   DELTA=         .TRUE.   
@@ -202,7 +204,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   FACT_CON=  -3      
   !Equations to be solved
   DIRDB  ="./"          
-  DIRS   ="./"           
+  DIRS="./"
   CALC_DB=.FALSE.   
   ONLY_DB=.FALSE.   
   !Scan in parameters
@@ -247,6 +249,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
 
   ns=1
   s(1)=1
+  s(2:nsx)=0
   SMIN=0
   SMAX=1
   !Default values: low collisionality hydrogen + adiabatic electrons, no impurities
@@ -324,7 +327,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
         s(is)=SMIN+(SMAX-SMIN)*(is-0.5)*(is-0.5)/REAL(ns*ns)
      END DO
   END IF
-
+  DIRS(ns+1:nsx)=' '
 
   !-------------------------------------------------------------------------------------------
   !Set values for namelist 'species'
@@ -415,6 +418,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      vmag=0.0
   END IF
   USE_B0=USE_B1.OR.USE_B0pB1
+  IF(QS_B0_1HEL) QS_B0=.TRUE.
   DO ib=3,nbb
      IF(REGB(ib).GE.10) THEN
         TRACE_IMP    =.TRUE.
@@ -492,7 +496,6 @@ SUBROUTINE INIT_FILES()
   INTEGER iostat
   
   IF(DEBUG) THEN
-     OPEN(unit=1300+myrank,form='formatted',action='write',iostat=iostat)
      OPEN(unit=1400+myrank,form='formatted',action='write',iostat=iostat)
      OPEN(unit=1500+myrank,form='formatted',action='write',iostat=iostat)
      OPEN(unit=2000+myrank,form='formatted',action='write',iostat=iostat)
@@ -511,6 +514,7 @@ SUBROUTINE INIT_FILES()
      OPEN(unit=5400+myrank,form='formatted',action='write',iostat=iostat)
      OPEN(unit=5500+myrank,form='formatted',action='write',iostat=iostat)
      OPEN(unit=5600+myrank,form='formatted',action='write',iostat=iostat)
+     OPEN(unit=7000+myrank,form='formatted',action='write',iostat=iostat)
   END IF
 
   IF(numprocs.EQ.1) THEN
@@ -528,10 +532,16 @@ SUBROUTINE INIT_FILES()
   
   IF(numprocs.EQ.1) filename="B.map"
   IF(numprocs.GT.1) WRITE(filename,'("B.map.",I2.2)') myrank
-  OPEN(unit=100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+  OPEN(unit=1200+myrank,file=filename,form='formatted',action='write',iostat=iostat)
   WRITE(100+myrank,&
        & '("s \zeta_{Boozer}  \theta_{Boozer}(right-handed)  B[T]  (v_B.\nabla\psi)[A.U.]")')
 
+  IF(numprocs.EQ.1) filename="B0.map"
+  IF(numprocs.GT.1) WRITE(filename,'("B.map.",I2.2)') myrank
+  OPEN(unit=1300+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+  WRITE(100+myrank,&
+       & '("s \zeta_{Boozer}  \theta_{Boozer}(right-handed)  B[T]  (v_B.\nabla\psi)[A.U.]")')
+  
 !  IF(numprocs.EQ.1) filename="results.knosos"
 !  IF(numprocs.GT.1) WRITE(filename,'("results.knosos.",I2.2)') myrank
 !  OPEN(unit=200+myrank,file=filename,form='formatted',action='write',iostat=iostat)

@@ -276,7 +276,6 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
      regp(ib)=((regb(ib).EQ.0).OR.(regb(ib).EQ.2).OR.(regb(ib).EQ.3))
   END DO
 
-!  ki
   IF(.NOT.SOLVE_QN.AND..NOT.TANG_VM                          ) jt0=01
   IF(.NOT.SOLVE_QN.AND.     TANG_VM                          ) jt0=02
   IF(     SOLVE_QN.AND..NOT.TANG_VM.AND.(regp(1) .OR.regp(2))) jt0=11
@@ -392,7 +391,9 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
          ELSE
 
             IF(regp(ib).AND.ib.LE.NBULK) THEN
-            !Calculate fluxes etc using phi1c coefficients from QN
+               !Calculate fluxes etc using phi1c coefficients from QN
+!               CALL WRITE_PHI1(nalphab,Tb(2))
+               CALL READ_PHI1(nalphab,phi1c(jt,:))
                CALL CALCULATE_WITH_VARPHI1(ib,regb(ib),phi1c(jt,:),&
                     & Grhs(ib,:,:),Qrhs(ib,:,:),L1rhs(ib,:,:),L2rhs(ib,:,:),&
                     & Gphi(ib,:)  ,Qphi(ib,:)  ,L1phi(ib,:)  ,L2phi(ib,:),&
@@ -1130,7 +1131,88 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
 
 END SUBROUTINE PREPARE_IMP_CALC
 
-                 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+SUBROUTINE READ_PHI1(nalphab,phi1c)
+
+!----------------------------------------------------------------------------------------------- 
+!Read varphi1(nakphab,nalphab) and write Fourier coefficients in phi1c
+!----------------------------------------------------------------------------------------------- 
+
+  USE GLOBAL
+  IMPLICIT NONE
+  !Input
+  INTEGER nalphab
+  !Output
+  REAL*8 phi1c(Nnmp)
+  !Others
+  CHARACTER*12 filename
+  INTEGER il,ia,iostat
+  REAL*8 dummy,fact,phi1(nalphab,nalphab)
+  COMPLEX*16 phi1c_nm(nalphab,nalphab)
+  
+  !Read original file
+  filename="ph1_2D.in"
+  OPEN(unit=999+myrank,file=filename,action='read',iostat=iostat)
+  IF(iostat.NE.0) RETURN
+  WRITE(1000+myrank,*) 'File ',filename,' read'
+  READ(999+myrank,*) fact
+  DO il=1,nalphab
+     DO ia=1,nalphab
+        READ(999+myrank,*) dummy,dummy,phi1(il,ia)
+     END DO
+  END DO
+  CLOSE(999+myrank)
+  phi1=phi1*fact
+  CALL FFTF_KN(nalphab,phi1,phi1c_nm)
+  CALL FILL_ORBI(nalphab,nalphab,phi1c_nm,Nnmp,phi1c)
+
+END SUBROUTINE READ_PHI1
+
+                
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+SUBROUTINE WRITE_PHI1(nalphab,Ti)
+
+!----------------------------------------------------------------------------------------------- 
+!Read varphi1(nakphab,nalphab) and write Fourier coefficients in phi1c
+!----------------------------------------------------------------------------------------------- 
+
+  USE GLOBAL
+  IMPLICIT NONE
+  !Input
+  INTEGER nalphab
+  REAL*8 Ti
+  !Others
+  CHARACTER*12 filename
+  INTEGER iz,it
+  REAL*8, PARAMETER :: fact=1
+  REAL*8 zeta,theta,phi1
+
+  filename="ph1_2D.in"
+  OPEN(unit=999+myrank,file=filename,action='write')
+  WRITE(999+myrank,*) fact
+  DO iz=1,nalphab
+     DO it=1,nalphab
+        zeta=((iz-1.)*TWOPI/nzperiod)/nalphab
+        theta=(it-1.)*TWOPI/nalphab
+        phi1=0.5*Ti*cos((theta-nzperiod*zeta))
+!        phi1=0.0
+        WRITE(999+myrank,*) zeta,theta,phi1
+        
+     END DO
+  END DO
+  CLOSE(999+myrank)
+
+END SUBROUTINE WRITE_PHI1
+
+                
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

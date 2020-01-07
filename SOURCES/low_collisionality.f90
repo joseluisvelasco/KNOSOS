@@ -1934,14 +1934,17 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
   CALL KSPSetType(ksp,KSPPREONLY,ierr)
   CALL KSPGetPC(ksp,pc,ierr)
   CALL PCSetType(pc,PCLU,ierr)
-!     CALL PCFactorSetMatOrderingType(pc,"natural",ierr)
   CALL PCFactorSetMatOrderingType(pc,"nd",ierr)
-!     CALL PCFactorSetReuseOrdering(pc,PETSC_TRUE,ierr)
-!     CALL PCFactorSetReuseFill(pc,PETSC_TRUE,ierr)
-!#ifdef PETSC_HAVE_MUMPS
-!     call PCFactorSetMatSolverType(pc,MATSOLVERMUMPS,ierr)
-!     call PCFactorSetUpMatSolverType(pc,ierr)
-!#endif
+#if defined(PETSC_HAVE_SUPERLU)
+  CALL PCFactorSetMatSolverType(pc,MATSOLVERSUPERLU,ierr)
+#endif
+  !!     CALL PCFactorSetMatOrderingType(pc,"natural",ierr)
+!!     CALL PCFactorSetReuseOrdering(pc,PETSC_TRUE,ierr)
+!!     CALL PCFactorSetReuseFill(pc,PETSC_TRUE,ierr)
+!!#ifdef PETSC_HAVE_MUMPS
+!!     call PCFactorSetMatSolverType(pc,MATSOLVERMUMPS,ierr)
+!!     call PCFactorSetUpMatSolverType(pc,ierr)
+!!#endif
 
   CALL KSPSetOperators(ksp,matA,matA,ierr)
 

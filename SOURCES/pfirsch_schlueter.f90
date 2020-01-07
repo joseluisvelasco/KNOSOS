@@ -26,6 +26,7 @@ SUBROUTINE CALC_PS(jv,Epsi,D11)
 
   WRITE(1000+myrank,*) 'Calculating PS'
 
+  nu=nu/2. !Different definition than standard
   !Change Fourier representation
   bmn_e=0
   DO m=-mpolb,mpolb
@@ -40,7 +41,7 @@ SUBROUTINE CALC_PS(jv,Epsi,D11)
         END IF
         umn(n,m) =sgnB*v(jv)*(iota*m+n*nzperiod)/rad_R
         omn(n,m) =-Epsi*(m*Bzeta-n*nzperiod*Btheta)/aiBtpBz
-       vdmn(n,m)=bmn_e(n,m)*(m*Bzeta-n*nzperiod*Btheta)/aiBtpBz
+       vdmn(n,m)=bmn_e(n,m)*(m*Bzeta-n*nzperiod*Btheta)
      END DO
   END DO
 
@@ -53,22 +54,23 @@ SUBROUTINE CALC_PS(jv,Epsi,D11)
         D11=D11-REAL(vdmn(n,m)*vdmn(-n,-m))/(umn2+9.*omn(n,m)*omn(n,m)*nu(jv)*nu(jv)/umn2)
      END DO
   END DO
-  fact=vdconst(jv)/(2.*borbic(0,0))
-  D11=(16./3.)*D11*(nu(jv)/2.)*fact*fact
+  fact=vdconst(jv)/(2.*borbic(0,0)*aiBtpBz)
+  D11=(16./3.)*D11*(nu(jv))*fact*fact
 
+  nu=nu*2.
   cmul=nu(jv)/v(jv)/2.
   IF(FACT_CON.GT.0.AND.cmul_PS.GT.0.AND.cmul.LT.cmul_PS*FACT_CON) D11=D11+D11pla/fdkes(jv)
 
   G11dkes=(2*v(jv)/vdconst(jv)/vdconst(jv))/(psip*psip)*D11
   WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5),&
        & "  NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
-       & nu(jv)/v(jv)/2,Epsi/v(jv)*psip,vmconst(jv)/v(jv),G11dkes,G11dkes
+       & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),G11dkes,G11dkes
   IF(DEBUG) THEN
      IF(cmul_PS.GT.0) THEN
-        WRITE(10000+myrank,'("1 ",7(1pe13.5))') nu(jv)/v(jv)/2,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
+        WRITE(10000+myrank,'("1 ",7(1pe13.5))') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
              & G11dkes,weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv)
      ELSE
-        WRITE(10000+myrank,'("0 ",7(1pe13.5))') nu(jv)/v(jv)/2,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
+        WRITE(10000+myrank,'("0 ",7(1pe13.5))') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
              & G11dkes,weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv)
      END IF
   END IF

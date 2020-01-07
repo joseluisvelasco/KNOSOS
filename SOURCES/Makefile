@@ -104,7 +104,7 @@ COMPILER =mpif90
 #FFT_DIR  =
 #MKL_DIR  =
 #COMP_LIB =
-FFLAGS   =-fpp -DIPPorNIFS -DMPIandPETSc -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0
+FFLAGS   =-fpp -DIPPorNIFS -DMPIandPETSc -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0 --with-scalar-type=real --with-precision=double
 IFLAGS   =-I${PETSC_DIR}/lib/petsc/conf/variables -I${PETSC_DIR}/lib/petsc/conf/rules -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -qopenmp -I${PETSC_DIR}/include
 LFLAGS   =-L${PETSC_DIR}/lib -lpetsc -L/${MKL_HOME}/lib/intel64 -mkl -Wl,-rpath,${MKL_HOME}/lib/intel64,-rpath,${PETSC_DIR}/lib
 endif
@@ -192,7 +192,7 @@ ana_ntv.o: ana_ntv.f90
 	${COMPILER} ${FFLAGS} -c ana_ntv.f90
 
 banana.o: banana.f90
-	${COMPILER} ${FFLAGS} -c banana.f90
+	${COMPILER} ${FFLAGS} ${LFLAGS} -c banana.f90
 
 coefficients.o: coefficients.f90
 	${COMPILER} ${FFLAGS} -c coefficients.f90

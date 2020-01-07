@@ -78,7 +78,7 @@ test -e log.tar.gz
 if [ $? -eq 1 ]
 then
   mkdir LOG
-  for dir in *.modes B.map ???_2d.in fort.* *.[0-9][0-9]
+  for dir in *.modes B*.map ???_2d.in fort.* *.[0-9][0-9]
   do
     test -e $dir
     if [ $? -eq 0 ]

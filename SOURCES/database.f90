@@ -70,6 +70,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
      END IF
      cmul_PS =ABS(D11pla/D11onu)  !CMUL such that plateau and PS transport are equal
      vmconst=0
+     CALL CALC_BANANA(1,Epsi,D11(1,1))
      CALL CALC_LOW_COLLISIONALITY(1,ZERO,phi1c,Mbbnm,trMnm,&
           & D11,nalphab,zeta,theta,dn1,dn1nm)
      D11tab(1,1,1)=D11(1,1)
@@ -80,6 +81,13 @@ SUBROUTINE CALC_DATABASE(is,s0)
      D11pla=D11pla*fdkes(1)           !might exist banana regime
   END IF
 
+  IF(.NOT.USE_B0) THEN
+     bnmc0(1:Nnm)=bnmc(1:Nnm)
+     bnms0(1:Nnm)=bnms(1:Nnm)
+     bnmc1(1:Nnm)=0
+     bnms1(1:Nnm)=0
+  END IF
+  
   IF(numprocs.EQ.1) filename="results.knosos"
   IF(numprocs.GT.1) WRITE(filename,'("results.knosos.",I2.2)') myrank
   OPEN(unit=200+myrank,file=filename,form='formatted',action='write',iostat=iostat)

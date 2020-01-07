@@ -50,7 +50,7 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
   END DO
 
   !Calculate B_0 at (0,0) and (0,pi) and find location of maximum
-  CALL CALCB(ZERO       ,ZERO,0,USE_B0,Bp1,&
+  CALL CALCB(ZERO       ,ZERO,0,.FALSE.,Bp1,&
        & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
 
   !Set starting point around a maximum
@@ -61,7 +61,7 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
 !     IF(Bp2.GT.Bp1) offset=PI/nzperiod
 !     zeta0=offset
 !  ELSE
-  CALL CALCB(ZERO,PI,0,USE_B0,Bp2,&
+  CALL CALCB(ZERO,PI,0,.FALSE.,Bp2,&
        & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
   IF(Bp2.GT.Bp1) THEN
      offset=PI
@@ -213,10 +213,10 @@ SUBROUTINE EXTREME_POINT(z_in,t_in,flag_in,z_out,t_out,B_out,hBpp_out,vd,flag_ou
 
   IF(DEL) THEN
      CALL FILL_PHASE(z_l,t_l,cosnm,sinnm)
-     CALL CALCB_DEL(cosnm,sinnm,1,USE_B0,dummy,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy)
+     CALL CALCB_DEL(cosnm,sinnm,1,.FALSE.,dummy,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy)
      CALL FILL_PHASE(dz_l,dt_l,cosnm_del,sinnm_del)
   ELSE
-     CALL CALCB(z_l,t_l,1,USE_B0,dummy,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
+     CALL CALCB(z_l,t_l,1,.FALSE.,dummy,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
   END IF
   dB=(dBdz+dBdt*iota)/iBtpBz  !not exactly dBdl, but proportional to it and with the same sign
 
@@ -227,9 +227,9 @@ SUBROUTINE EXTREME_POINT(z_in,t_in,flag_in,z_out,t_out,B_out,hBpp_out,vd,flag_ou
      t_l=t_l+dt_l 
      IF(DEL) THEN
         CALL DELTA_PHASE(cosnm,sinnm,cosnm_del,sinnm_del)
-        CALL CALCB_DEL(cosnm,sinnm,1,USE_B0,dummy,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy)
+        CALL CALCB_DEL(cosnm,sinnm,1,.FALSE.,dummy,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy)
      ELSE
-        CALL CALCB(z_l,t_l,1,USE_B0,dummy,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
+        CALL CALCB(z_l,t_l,1,.FALSE.,dummy,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
      END IF
      dB=(dBdz+dBdt*iota)/iBtpBz
      IF((dB-dBold)/dz_l/sgnB.GT.0) THEN !check sign of the second derivative
@@ -729,10 +729,10 @@ SUBROUTINE BOUNCE_POINT(z_in,t_in,Bbounce,z_lim,t_lim, &
 
   IF(DEL) THEN
      CALL FILL_PHASE(z_l,t_l,cosnm,sinnm)
-     CALL CALCB_DEL(cosnm,sinnm,0,USE_B0,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy)
+     CALL CALCB_DEL(cosnm,sinnm,0,.FALSE.,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy)
      CALL FILL_PHASE(dz_l,dt_l,cosnm_del,sinnm_del)
   ELSE
-     CALL CALCB(z_l,t_l,0,USE_B0,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
+     CALL CALCB(z_l,t_l,0,.FALSE.,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
   END IF
 
   !Locate extrema of B by finding (z_l,t_l) where B-Bbounce changes sign
@@ -750,9 +750,9 @@ SUBROUTINE BOUNCE_POINT(z_in,t_in,Bbounce,z_lim,t_lim, &
      END IF 
      IF(DEL) THEN
         CALL DELTA_PHASE(cosnm,sinnm,cosnm_del,sinnm_del)
-        CALL CALCB_DEL(cosnm,sinnm,0,USE_B0,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy) 
+        CALL CALCB_DEL(cosnm,sinnm,0,.FALSE.,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy) 
      ELSE
-        CALL CALCB(z_l,t_l,0,USE_B0,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
+        CALL CALCB(z_l,t_l,0,.FALSE.,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
      END IF
      IF((B-Bbounce)*(B_old-Bbounce).LE.0) THEN
         dz_l=-dz_l/2.
@@ -760,7 +760,7 @@ SUBROUTINE BOUNCE_POINT(z_in,t_in,Bbounce,z_lim,t_lim, &
 !        IF(ABS(dz_l).LT.PREC_EXTR) DEL=.FALSE.
         IF(DEL) THEN
            CALL FILL_PHASE(z_l,t_l,cosnm,sinnm)
-           CALL CALCB_DEL(cosnm,sinnm,0,USE_B0,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy)
+           CALL CALCB_DEL(cosnm,sinnm,0,.FALSE.,B,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy)
            CALL FILL_PHASE(dz_l,dt_l,cosnm_del,sinnm_del)  
         END IF
      END IF

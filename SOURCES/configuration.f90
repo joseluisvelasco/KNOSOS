@@ -407,8 +407,11 @@ SUBROUTINE READ_BFIELD(s0)
   !Add an extra magnetic field B_1 to previously read B_0
   !If USE_B0 is .TRUE. , use [Calvo 2017 PPCF], but B_0 MUST be omnigenous!
   !If USE_B0 is .FALSE., calculation using the total B=B_0+B_1
+
   borbic0=borbic
   borbis0=borbis
+  CALL CALC_B0()
+  
   read_addkes=.FALSE.
   OPEN(unit=1,file='add_ddkes2.data',form='formatted',iostat=iostat,action='read')
   IF(iostat.EQ.0) THEN
@@ -417,15 +420,14 @@ SUBROUTINE READ_BFIELD(s0)
      borbic_add=0
      borbis_add=0
      READ (1,nml=dataadd)
-     IF(.NOT.USE_B0) borbic =borbic +borbic_add
-     borbic0=borbic0+borbic_add
-     IF(.NOT.USE_B0) borbis =borbis +borbis_add
-     borbis0=borbis0+borbis_add
+     borbic=borbic+borbic_add
+     borbis=borbis+borbis_add
      IF(SUM(borbis_add).GT.PREC_B) STELL_ANTISYMMETRIC=.TRUE.
      CLOSE(1)
   END IF
 
   !Change from left-handed to a right-handed coordinate system
+  helN     =-helN
   Btheta   =-Btheta
   Bthetap  =-Bthetap
   Bthetam  =-Bthetam
@@ -443,7 +445,7 @@ SUBROUTINE READ_BFIELD(s0)
      psip=-psip
      chip=-chip
   END IF
-
+  
   IF(NEOTRANSP) FB=1./borbic(0,0)
 
   !Update quantities if there is scan in parameters
@@ -660,11 +662,16 @@ SUBROUTINE READ_BFIELD(s0)
 !!$     WRITE(1000+myrank,*) 'avB2       = ',avB2
 !!$  END IF
   !Calculate quantities on the flux surface, such as <B^2> or the location of the maximum of B
+  CALL FILL_BGRID(MAL,MAL,s0,.FALSE.)
   IF(read_addkes.OR.USE_B0) CALL FILL_BGRID(MAL,MAL,s0,.FALSE.)
   CALL FILL_BGRID(MAL,MAL,s0,.TRUE.)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
-
+  IF(ONLY_B0) THEN 
+     serr="B0 calculated"
+     CALL END_ALL(serr,.FALSE.)
+  END IF
+  
 END SUBROUTINE READ_BFIELD
 
 
@@ -708,7 +715,7 @@ SUBROUTINE FILL_NM()
         IF(NEQ2.AND.n.NE.1.AND.n.NE.0) CYCLE
         nm=nm+1
         bnmc(nm)     =borbic(n,m)     
-        bnmc0(nm)    =borbic0(n,m)     
+        bnmc0(nm)    =borbic0(n,m)
         dbnmcdpsi(nm)=dborbicdpsi(n,m)
         IF(STELL_ANTISYMMETRIC) THEN
            bnms(nm)     =borbis(n,m)     
@@ -1059,7 +1066,7 @@ SUBROUTINE CALC_XYZ(s,z,t,x1,x2,x3,Bzt,flag_plot)
   x1=R*COS(p)
   x2=R*SIN(p)
   
-  IF(DEBUG.AND.flag_plot) WRITE(1300+myrank,'(9(1pe13.5))') x1,x2,x3,R,p,Bzt,s,z,t
+  IF(DEBUG.AND.flag_plot) WRITE(1600+myrank,'(9(1pe13.5))') x1,x2,x3,R,p,Bzt,s,z,t
 
 END SUBROUTINE CALC_XYZ
 
@@ -1374,13 +1381,12 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   REAL*8 FSA
 
   Bmax=0
-  IF(DEBUG) THEN
-     IF(flagB1) THEN
-        ifile=1200+myrank
-     ELSE 
-        ifile=1100+myrank
-     END IF
+  IF(flagB1) THEN
+     ifile=1200+myrank
+  ELSE 
+     ifile=1300+myrank
   END IF
+
   dz=TWOPI/nz/nzperiod
   dt=TWOPI/nt
   DO iz=1,nz
@@ -1402,15 +1408,13 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   END DO
   avB2=FSA(nz,nt,Bzt*Bzt,Jac,1)
 
-  IF(DEBUG) OPEN(unit=ifile,form='formatted',action='write')
+  OPEN(unit=ifile,form='formatted',action='write')
   DO iz=1,nz
      DO it=1,nt
-        IF(DEBUG) WRITE(ifile,'(7(1pe13.5))') s,zeta(iz),theta(it),Bzt(iz,it),vds_Bzt(1,iz,it)
-        WRITE(100+myrank,'(7(1pe13.5))') s,zeta(iz),theta(it),Bzt(iz,it),vds_Bzt(1,iz,it)
-     END DO
+        WRITE(ifile,'(7(1pe13.5))') s,zeta(iz),theta(it),Bzt(iz,it),vds_Bzt(1,iz,it)
+      END DO
   END DO
-  IF(FLAGB1) CLOSE(100+myrank)
-  IF(DEBUG) CLOSE(ifile)
+  CLOSE(ifile)
 
   CALL CALC_ABSNABLAPSI(MAL,zeta,theta,absnablar)
   absnablar=SQRT(absnablar*Bzt*Bzt)/psip

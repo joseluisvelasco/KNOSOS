@@ -23,7 +23,7 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
   REAL*8, PARAMETER :: Te_edge=50.0
   INTEGER ib,is,iostat
   REAL*8 dsdV(ns),dVdpsi(ns),dsdr(ns),psi(ns)
-  REAL*8 extnb(nbb,ns+1),extTb(nbb,ns+1)
+!  REAL*8 extnb(nbb,ns+1),extTb(nbb,ns+1)
   REAL*8 dGbdpsi(nbb,ns),dQbdpsi(nbb,ns),dEpsids(ns),dErdr(ns)
   REAL*8 Pin(ns),ohm(nbb,ns),coulomb(nbb,ns),nue(ns),loglambda(ns)
   REAL*8 dnbdt(nbb,ns),dTbdt(nbb,ns),dnbTbdt(nbb,ns),dEpsidt(ns)
