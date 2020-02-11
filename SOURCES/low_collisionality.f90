@@ -174,12 +174,12 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   KSP, SAVE :: ksp
   Mat, SAVE :: matCOL,matVEAf,matVEAb,matVMAf,matVMAb
   INTEGER jpoint
+  PetscScalar mat_entry
 #else
   REAL*8, SAVE, ALLOCATABLE :: COL(:,:),VEAf(:,:),VEAb(:,:),VMAf(:,:),VMAb(:,:)
   REAL*8, ALLOCATABLE :: mat(:,:)
 #endif
   REAL*8, ALLOCATABLE :: rowCOL(:),rowVEAf(:),rowVEAb(:),rowVMAf(:),rowVMAb(:)
-  PetscScalar mat_entry
   !Time
   CHARACTER*30, PARAMETER :: routine="CALC_LOW_COLLISIONALITY"
   INTEGER, SAVE :: ntotal=0
@@ -2225,7 +2225,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
 
   CALL CPU_TIME(tstart)
      
-  PRE_INTV=(SOLVE_AMB.OR.(SOLVE_QN.AND..NOT..NOT.PHI1_READ.AND..NOT.ZERO_PHI1).OR.NERR.GT.1).AND.CONVERGED
+  PRE_INTV=(SOLVE_AMB.OR.(SOLVE_QN.AND..NOT.PHI1_READ.AND..NOT.ZERO_PHI1).OR.NERR.GT.1).AND.CONVERGED
   D11=0
   dn1=0
   dn1nm=0

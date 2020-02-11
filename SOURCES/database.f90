@@ -35,7 +35,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
   REAL*8 tstart
 
   CALL CPU_TIME(tstart)
-
+  
   !Read a DKES database of monoenergetic transport coefficients
   IF(.NOT.(PENTA.OR.NEOTRANSP.OR.PENTA.OR.FAST_AMB&
        &.OR.STELLOPT(1).OR.STELLOPT(2).OR.STELLOPT(3))) CALL READ_DKES_TABLE(is)
@@ -194,7 +194,8 @@ SUBROUTINE CALC_DATABASE(is,s0)
                   ((D11tab(icmul,iefield,ivmag).GT.D11tab(icmul-1,iefield,ivmag))))) THEN
                     D11tab(icmul,iefield,ivmag)=0.5*(&
                          D11tab(icmul-1,iefield,ivmag)*SQRT(cmult(icmul)/cmult(icmul-1))+&
-                        &D11tab(icmul-1,iefield,ivmag)*efieldt(iefield-1)*SQRT(efieldt(iefield-1)/efieldt(iefield))/efieldt(iefield))
+                        &D11tab(icmul-1,iefield,ivmag)*&
+			&efieldt(iefield-1)*SQRT(efieldt(iefield-1)/efieldt(iefield))/efieldt(iefield))
                  END IF
                  IF(nvmagt.EQ.1) THEN
                     WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') &
@@ -255,7 +256,7 @@ SUBROUTINE READ_DKES_TABLE(is)
   dir_efield(7) ="omega_3e-3/"   !these lines may produce warnings depending on the compiler
   dir_efield(8) ="omega_1e-2/"
   dir_efield(9) ="omega_3e-2/"
-  dir_efield(10)="omega_1e-1/"  
+!  dir_efield(10)="omega_1e-1/"  
   !Subfolders of omega_?e-? for different values of CMUL
   dir_cmul(1) ="cl_3e+2/"
   dir_cmul(2) ="cl_1e+2/"
@@ -284,6 +285,7 @@ SUBROUTINE READ_DKES_TABLE(is)
   D11pla=1e10
   DO iefield=1,nefieldt
      DO icmul=1,ncmult
+
         file=TRIM(DIRDB)//TRIM(DIRS(is))//TRIM(dir_efield(iefield))//TRIM(dir_cmul(icmul))//"results.data"
         OPEN(unit=1,file=TRIM(file),action='read',iostat=iostat) 
         IF (iostat.EQ.0) THEN 
@@ -312,6 +314,7 @@ SUBROUTINE READ_DKES_TABLE(is)
      ncmult  =ncmul
      DKES_READ=.TRUE.
   END IF
+
 
 END SUBROUTINE READ_DKES_TABLE
 
