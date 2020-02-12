@@ -59,13 +59,14 @@ REAL*8 FUNCTION RGAUSS(sigma)
 
   rgauss=0
   IF(sigma.LT.0) RETURN
-
-!  CALL RANDOM_SEED()
+  !  CALL RANDOM_SEED()
+  w=10
   DO WHILE (w.GE.1.0.OR.w.EQ.0)
      x1=2.0*rand(0)-1.0
      x2=2.0*rand(0)-1.0
      w=x1*x1+x2*x2
   END DO
+
   w=sigma*SQRT((-2.0*LOG(w))/w)
   y1=x1*w
   y2=x2*w
