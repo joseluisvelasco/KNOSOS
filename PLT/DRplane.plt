@@ -17,7 +17,8 @@ p "Er.map" u (sqrt($12*$12+$11*$11)):((($12-y0-$11*m>-d)&&($12-y0-$11*m<+d))?$13
 
 pause -1
 
-l "/home/u6156/KNOSOS/PLT/palette.plt" 
+palette=system("echo ${HOME}/KNOSOS/PLT/palette.plt")
+l palette
 set palette defined (-3 "blue", 0 "white", 1 "red")
 set cblabel '-d_r\varphi_1 [kV/m]'
 p "Er.map" u (sqrt($12*$12+$11*$11)):((($12-y0-$11*m>-d)&&($12-y0-$11*m<+d))?$13:1/0):(($10-$9)*$8/$9/1e3) palette pt 5 ps 2 notitle

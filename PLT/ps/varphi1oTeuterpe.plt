@@ -1,5 +1,6 @@
 reset
-l "/home/u6156/KNOSOS/PLT/palette.plt" 
+palette=system("echo ${HOME}/KNOSOS/PLT/palette.plt")
+l palette
 dz=`tail -1 B.map |cut -f5 -d" "`
 N=int(2*pi/dz)
 f=100

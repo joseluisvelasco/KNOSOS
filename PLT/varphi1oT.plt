@@ -1,5 +1,5 @@
 reset
-l "/home/u6156/KNOSOS/PLT/palette.plt" 
+l '$HOME/KNOSOS/PLT/palette.plt'
 dz=`tail -1 varphi1.map |cut -f5 -d" "`
 N=int(2*pi/dz)
 f=100
