@@ -35,10 +35,11 @@ SUBROUTINE CALC_DATABASE(is,s0)
   REAL*8 tstart
 
   CALL CPU_TIME(tstart)
-  
+
   !Read a DKES database of monoenergetic transport coefficients
-  IF(.NOT.(PENTA.OR.NEOTRANSP.OR.PENTA.OR.FAST_AMB&
-       &.OR.STELLOPT(1).OR.STELLOPT(2).OR.STELLOPT(3))) CALL READ_DKES_TABLE(is)
+!  IF(.NOT.(PENTA.OR.NEOTRANSP.OR.PENTA.OR.FAST_AMB.OR.&
+  IF(.NOT.(PENTA.OR.NEOTRANSP.OR.PENTA.OR.&
+       &STELLOPT(1).OR.STELLOPT(2).OR.STELLOPT(3))) CALL READ_DKES_TABLE(is)
 
   CALCULATED_INT=.FALSE.
   !Calculate dummy sources, etc
@@ -70,7 +71,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
      END IF
      cmul_PS =ABS(D11pla/D11onu)  !CMUL such that plateau and PS transport are equal
      vmconst=0
-     CALL CALC_BANANA(1,Epsi,D11(1,1))
+!     CALL CALC_BANANA(1,Epsi,D11(1,1))
      CALL CALC_LOW_COLLISIONALITY(1,ZERO,phi1c,Mbbnm,trMnm,&
           & D11,nalphab,zeta,theta,dn1,dn1nm)
      D11tab(1,1,1)=D11(1,1)
@@ -81,12 +82,12 @@ SUBROUTINE CALC_DATABASE(is,s0)
      D11pla=D11pla*fdkes(1)           !might exist banana regime
   END IF
 
-  IF(.NOT.USE_B0) THEN
-     bnmc0(1:Nnm)=bnmc(1:Nnm)
-     bnms0(1:Nnm)=bnms(1:Nnm)
-     bnmc1(1:Nnm)=0
-     bnms1(1:Nnm)=0
-  END IF
+!  IF(.NOT.USE_B0) THEN
+!     bnmc0(1:Nnm)=bnmc(1:Nnm)
+!     bnms0(1:Nnm)=bnms(1:Nnm)
+!     bnmc1(1:Nnm)=0
+!     bnms1(1:Nnm)=0
+!  END IF
   
   IF(numprocs.EQ.1) filename="results.knosos"
   IF(numprocs.GT.1) WRITE(filename,'("results.knosos.",I2.2)') myrank
@@ -155,7 +156,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
 
   DO iturn=1,2
      DO iefield=1,nefieldt
-        IF((PENTA.OR.STELLOPT(1)).AND.iturn.GT.1)    EXIT
+!        IF((PENTA.OR.STELLOPT(1)).AND.iturn.GT.1)    EXIT
         IF(STELLOPT(1).AND.nefieldt.EQ.3) TANG_VM=.FALSE.
         DO icmul=1,ncmult
            DO ivmag=1,nvmagt
@@ -186,7 +187,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
                        D11tab(icmul,iefield,ivmag)=D11tab(icmul,iefield-1,ivmag)
                     END IF
                  END IF
-              ELSE IF(NEOTRANSP.OR.PENTA) THEN
+              ELSE! IF(NEOTRANSP.OR.PENTA) THEN
                  IF(ABS(efieldt(iefield)).GT.0.2*aiota*borbic(0,0)*eps) THEN
                     D11tab(icmul,iefield,ivmag)=D11tab(icmul,iefield-1,ivmag)
                  ELSE IF(cmult(icmul-1).LT.cmul_1NU.AND.D11tab(icmul-1,iefield,ivmag).LT.D11pla.AND.&
@@ -194,18 +195,20 @@ SUBROUTINE CALC_DATABASE(is,s0)
                   ((D11tab(icmul,iefield,ivmag).GT.D11tab(icmul-1,iefield,ivmag))))) THEN
                     D11tab(icmul,iefield,ivmag)=0.5*(&
                          D11tab(icmul-1,iefield,ivmag)*SQRT(cmult(icmul)/cmult(icmul-1))+&
-                        &D11tab(icmul-1,iefield,ivmag)*&
-			&efieldt(iefield-1)*SQRT(efieldt(iefield-1)/efieldt(iefield))/efieldt(iefield))
+                        &D11tab(icmul-1,iefield,ivmag)*efieldt(iefield-1)*&
+ 			&SQRT(efieldt(iefield-1)/efieldt(iefield))/efieldt(iefield))
                  END IF
-                 IF(nvmagt.EQ.1) THEN
-                    WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') &
-                         & nu(iv0)/v(iv0)/2.,Epsi/v(iv0)*psip,-D11tab(icmul,iefield,ivmag)
-                    WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
-                 ELSE
-                    WRITE(6000+myrank,'(4(1pe13.5)," NaN")') &
-                         & nu(iv0)/v(iv0)/2.,Epsi/v(iv0)*psip,vmagt(ivmag),-D11tab(icmul,iefield,ivmag)
+                 IF(NEOTRANSP.OR.PENTA) THEN
+                    IF(nvmagt.EQ.1) THEN
+                       WRITE(6000+myrank,'(3(1pe13.5)," NaN NaN")') &
+                            & nu(iv0)/v(iv0)/2.,Epsi/v(iv0)*psip,-D11tab(icmul,iefield,ivmag)
+                       WRITE(6000+myrank,'(">3                  NaN NaN 0.00000E+00 NaN NaN")')
+                    ELSE
+                       WRITE(6000+myrank,'(4(1pe13.5)," NaN")') &
+                            & nu(iv0)/v(iv0)/2.,Epsi/v(iv0)*psip,vmagt(ivmag),-D11tab(icmul,iefield,ivmag)
+                    END IF
+                    IF(iefield.EQ.nefieldt.AND.icmul.EQ.ncmult.AND.ivmag.EQ.nvmagt) WRITE(6000+myrank,'("e")')
                  END IF
-                 IF(iefield.EQ.nefieldt.AND.icmul.EQ.ncmult.AND.ivmag.EQ.nvmagt) WRITE(6000+myrank,'("e")')
               END IF
            END DO
         END DO
@@ -241,7 +244,7 @@ SUBROUTINE READ_DKES_TABLE(is)
   !Others
   CHARACTER*100 line,file,dir_efield(nefieldt),dir_cmul(ncmult)
   INTEGER iefield,icmul,iostat,nefield,ncmul
-  REAL*8 D11p,D11m,dummy
+  REAL*8 D11p,D11m,D31p,D31m,dummy
   !Database used by DKES
   INTEGER, PARAMETER :: ncmuld=18
   INTEGER, PARAMETER :: nefieldd=9
@@ -283,9 +286,8 @@ SUBROUTINE READ_DKES_TABLE(is)
   nefield=0  
   ncmul=0
   D11pla=1e10
-  DO iefield=1,nefieldt
-     DO icmul=1,ncmult
-
+  DO iefield=1,nefieldd
+     DO icmul=1,ncmuld
         file=TRIM(DIRDB)//TRIM(DIRS(is))//TRIM(dir_efield(iefield))//TRIM(dir_cmul(icmul))//"results.data"
         OPEN(unit=1,file=TRIM(file),action='read',iostat=iostat) 
         IF (iostat.EQ.0) THEN 
@@ -295,7 +297,7 @@ SUBROUTINE READ_DKES_TABLE(is)
            READ(1,*) line
            READ(1,*) line
            READ(1,*) dummy,dummy,dummy,dummy,D11m,D11p,&
-                & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy
+                & D31m,D31p,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy
            CLOSE(1)
            !Logarithms are stored
            IF(D11p/D11m.GT.1E4.OR.D11p.LT.0) D11p=EXP(lD11dkes1(icmul-1,iefield))*cmult(icmul-1)/cmult(icmul)
@@ -304,6 +306,7 @@ SUBROUTINE READ_DKES_TABLE(is)
                 & cmult(icmul),efieldt(iefield),0.5*(D11m+D11p)
            lD11dkes1(icmul,iefield)=LOG(0.5*(D11p+D11m)) !both values are the same, which means
            lD11dkes2(icmul,iefield)=LOG(0.5*(D11p+D11m)) !ignoring error bars in D11
+           D31dkes(icmul,iefield)=0.5*(D31p+D31m)
         END IF
      END DO
   END DO
@@ -315,7 +318,6 @@ SUBROUTINE READ_DKES_TABLE(is)
      DKES_READ=.TRUE.
   END IF
 
-
 END SUBROUTINE READ_DKES_TABLE
 
 
@@ -323,7 +325,7 @@ END SUBROUTINE READ_DKES_TABLE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,knososdb)
+SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,D31,knososdb)
 
 !----------------------------------------------------------------------------------------------- 
 !Calculate monoenergetic transport coefficient D11 from database, interpolating
@@ -338,7 +340,7 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,knososdb)
   INTEGER it,jv
   REAL*8 Epsi
   !Output
-  REAL*8 D11
+  REAL*8 D11,D31
   !Others
   INTEGER nvmagtt
   REAL*8 efield,cmul,vmag,lD11,lD11dkes(ncmult,nefieldt)
@@ -399,10 +401,14 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,knososdb)
      IF(efield.GT.0.1*efieldt(2)) THEN
         CALL BILAGRANGE(lcmult(1:ncmult),lefieldt(2:nefieldt),lD11dkes(1:ncmult,2:nefieldt),&
              & ncmult,nefieldt-1,LOG(cmul),LOG(efield),lD11,1)
+        CALL BILAGRANGE(lcmult(1:ncmult),lefieldt(2:nefieldt),D31dkes(1:ncmult,2:nefieldt),&
+             & ncmult,nefieldt-1,LOG(cmul),LOG(efield),D31,1)
      ELSE
         !If the radial electric field is close to zero, use only coefficients of efield=0
         CALL LAGRANGE(lcmult(1:ncmult),lD11dkes(1:ncmult,1),&
-             & ncmult,LOG(cmul),lD11,1)     
+             & ncmult,LOG(cmul),lD11,1)
+        CALL LAGRANGE(lcmult(1:ncmult),D31dkes(1:ncmult,1),&
+             & ncmult,LOG(cmul),D31,1)     
      END IF
     
   END IF
@@ -413,11 +419,12 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,knososdb)
   WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5)," &
           & NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
           & cmul,Epsi*psip/v(jv),vmconst(jv)/v(jv),D11,D11
-  WRITE(10000+myrank,'(I3,6(1pe13.5))') it,cmul,Epsi*psip/v(jv),vmconst(jv)/v(jv),D11,&
+  WRITE(10000+myrank,'(I3,7(1pe13.5))') it,cmul,Epsi*psip/v(jv),vmconst(jv)/v(jv),D11,D31,&
         & weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv)
 
   !Normalize
   D11=D11/fdkes(jv)
+  D31=D31/fdkes2(jv)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   

@@ -38,6 +38,8 @@ PROGRAM KNOSOS
 
   CALL CPU_TIME(tstart)
   !Initialize MPI
+  myrank=0
+  numprocs=1
   CALL INITIALIZE_MPI()
   !Read input files (simulation parameters, models, flux-surfaces, species...)
   CALL READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)

@@ -18,7 +18,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   !Namelist 'parameters' contains simulation parameters, including
   !decisions on how to solve some equations and what to plot
   NAMELIST /parameters/  GEN_FLAG,DEBUG,TIME,I0,PLOTG,&
-       & USE_B1,USE_B0pB1,QS_B0,QS_B0_1HEL,&
+       & USE_B1,USE_B0pB1,QS_B0,QS_B0_1HEL,USE_SHAING,SHAING_1NU,SHAING_SQRTNU,SHAING_SBP,&
        & REMOVE_DIV,DELTA,&
        & MLAMBDA,MAL,TRUNCATE_B,PREC_B,PREC_EXTR,PREC_BINT,PREC_DQDV,PREC_INTV,&
        & NEFIELD,EFIELD,NCMUL,CMUL,NVMAG,VMAG,&
@@ -28,13 +28,13 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   NAMELIST /model/ ONLY_B0,CALC_DB,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,ANISOTROPY,FRICTION,FACT_CON,&
        & SCAN_ER,SOLVE_AMB,TRIVIAL_AMB,FAST_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,D_AND_V,COMPARE_MODELS,&
        & FN,FI,FS,FP,FE,FR,FB,FNE,FTI,FTE,FER,&
-       & NEOTRANSP,PENTA,TASK3D,TASK3Dlike,STELLOPT,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
+       & NEOTRANSP,PENTA,TASK3D,TASK3Dlike,STELLOPT,NTV,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
   !Namelist 'surfaces' contains the list of flux-surfaces calculated
   NAMELIST /surfaces/ NS,S,SMIN,SMAX,DIRDB,DIRS
   !Namelist 'species' contains the list of species calculated
   NAMELIST /species/ NBB,ZB,AB,REGB,ZEFF
   !Namelist 'others' contains other variables
-  NAMELIST /others/ QN,TRACE_IMP,PLATEAU_OR_PS,USE_B0,NTV,&
+  NAMELIST /others/ QN,TRACE_IMP,PLATEAU_OR_PS,USE_B0,&
        & IMP1NU,CENTERED_ALPHA,CLOSEST_LAMBDA,CLOSEST_LAMBDA1
   !Output
   INTEGER NS,ib,NBB,REGB(nbx)
@@ -141,7 +141,11 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   USE_B1=    .FALSE.  
   USE_B0pB1 =.FALSE.
   QS_B0     =.FALSE.
-  QS_B0_1HEL=.FALSE.  
+  QS_B0_1HEL=.FALSE.
+  USE_SHAING=.FALSE.
+  SHAING_1NU=.FALSE.
+  SHAING_SQRTNU=.FALSE.
+  SHAING_SBP=.FALSE.
   !Determine algorithms to be used
   REMOVE_DIV=    .FALSE.  
   DELTA=         .TRUE.   
@@ -228,6 +232,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   TASK3Dlike=.FALSE. 
   PENTA=     .FALSE. 
   STELLOPT=  .FALSE.
+  NTV=       .FALSE.
   SATAKE=    .FALSE. 
   ANA_NTV=   .FALSE. 
   JPP=       .FALSE.
@@ -442,7 +447,6 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   END IF
   IF(.NOT.SOLVE_QN) COMPARE_MODELS=.FALSE.
   IF(SATAKE) TRUNCATE_B=20
-  NTV=SATAKE
   IF(PLOT_XYZ) THEN
      PREC_B=-1E-9
      TRUNCATE_B=-10
@@ -458,6 +462,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   ALLOCATE( cmult(ncmult), efieldt(nefieldt), vmagt(nvmagt))
   ALLOCATE(lcmult(ncmult),lefieldt(nefieldt),lvmagt(nvmagt))
   ALLOCATE(lD11dkes1(ncmult,nefieldt),lD11dkes2(ncmult,nefieldt),lD11tab(ncmult,nefieldt,nvmagt))
+  ALLOCATE(D31dkes(ncmult,nefield))
   cmult  =cmul
   efieldt=efield
   vmagt  =vmag
@@ -537,7 +542,7 @@ SUBROUTINE INIT_FILES()
        & '("s \zeta_{Boozer}  \theta_{Boozer}(right-handed)  B[T]  (v_B.\nabla\psi)[A.U.]")')
 
   IF(numprocs.EQ.1) filename="B0.map"
-  IF(numprocs.GT.1) WRITE(filename,'("B.map.",I2.2)') myrank
+  IF(numprocs.GT.1) WRITE(filename,'("B0.map.",I2.2)') myrank
   OPEN(unit=1300+myrank,file=filename,form='formatted',action='write',iostat=iostat)
   WRITE(100+myrank,&
        & '("s \zeta_{Boozer}  \theta_{Boozer}(right-handed)  B[T]  (v_B.\nabla\psi)[A.U.]")')

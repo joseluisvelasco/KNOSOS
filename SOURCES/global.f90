@@ -44,7 +44,8 @@ MODULE GLOBAL
 
   !Input parameters
   !Namellist /param/
-  LOGICAL GEN_FLAG(10),DEBUG,TIME,PLOTG,USE_B1,USE_B0pB1,QS_B0,QS_B0_1HEL,REMOVE_DIV,DELTA,FAST_AMB
+  LOGICAL GEN_FLAG(10),DEBUG,TIME,PLOTG,USE_SHAING,SHAING_1NU,SHAING_SQRTNU,SHAING_SBP
+  LOGICAL USE_B1,USE_B0pB1,QS_B0,QS_B0_1HEL,REMOVE_DIV,DELTA,FAST_AMB
   INTEGER I0,TRUNCATE_B,NER,NERR,MLAMBDA,MAL
   REAL*8 PREC_B,PREC_EXTR,PREC_BINT,PREC_DQDV,PREC_INTV,IPERR,ERMIN,ERMAX,ERACC
   !Namellist /model/
@@ -52,20 +53,21 @@ MODULE GLOBAL
   CHARACTER*7 DIRS(nsx)
   LOGICAL ONLY_B0,CALC_DB,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,FRICTION,ANISOTROPY
   LOGICAL SCAN_ER,SOLVE_AMB,TRIVIAL_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,COMPARE_MODELS
-  LOGICAL NEOTRANSP,TASK3D,TASK3Dlike,PENTA,STELLOPT(10),SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
+  LOGICAL NEOTRANSP,TASK3D,TASK3Dlike,PENTA,STELLOPT(10),NTV,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
   INTEGER D_AND_V
   REAL*8 FN,FI,FS,FP,FE,FR,FB,FACT_CON,FNE,FTE,FTI,FDLNE,FDLTE,FDLTI,FER
   !Global
-  LOGICAL DKES_READ,PHI1_READ,CALCULATED_INT,PRE_INTV,NTV,QN,USE_B0,CONVERGED,TRACE_IMP,PLATEAU_OR_PS
+  LOGICAL DKES_READ,PHI1_READ,CALCULATED_INT,PRE_INTV,QN,USE_B0,CONVERGED,TRACE_IMP,PLATEAU_OR_PS
   LOGICAL IMP1NU,CLOSEST_LAMBDA,CLOSEST_LAMBDA1,CENTERED_ALPHA,FIRST_ORDER_ALPHA,STELL_ANTISYMMETRIC,DR_READ
   LOGICAL, PARAMETER :: PLOT_XYZ=.FALSE.
 
   !Flux-surface constants
-  INTEGER helN,helM
+  INTEGER helN,helM,sgnhel
   REAL*8 rad_a,rad_R,eps,eps32,avB2,etet
   REAL*8 atorflux,psip,iota,siota,aiota,iota2,diotadpsi,Bzeta,Btheta,torflux
   REAL*8 iBtpBz,aiBtpBz,sgnB,dBzdpsi,dBtdpsi,dB0dpsi
   REAL*8 Bmax_av,Bmin_av
+  REAL*8 spol,dspolds
 
   !Magnetic field map
   INTEGER, PARAMETER :: mpolbd=128
@@ -77,6 +79,7 @@ MODULE GLOBAL
   REAL(rprec) borbic(-ntorbd:ntorbd,0:mpolbd)  ,borbis(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) borbic0(-ntorbd:ntorbd,0:mpolbd),borbis0(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) dborbicdpsi(-ntorbd:ntorbd,0:mpolbd),dborbisdpsi(-ntorbd:ntorbd,0:mpolbd)
+  REAL(rprec) dborbic0dpsi(-ntorbd:ntorbd,0:mpolbd),dborbis0dpsi(-ntorbd:ntorbd,0:mpolbd)   
   REAL*8 rorbic(-ntorbd:ntorbd,0:mpolbd),rorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 zorbic(-ntorbd:ntorbd,0:mpolbd),zorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 porbic(-ntorbd:ntorbd,0:mpolbd),porbis(-ntorbd:ntorbd,0:mpolbd)
@@ -105,7 +108,7 @@ MODULE GLOBAL
   !Velocity integral
   INTEGER, PARAMETER :: nv=28
   INTEGER, PARAMETER :: iv0=6   !Representative velocity (v~=v_th) 
-  REAL*8 v(nv),weight(nv),Sdke(nv),vdconst(nv),vmconst(nv),fdkes(nv),nu(nv),mu(nv),ftrace1nu(nv),mmuoT(nv)
+  REAL*8 v(nv),weight(nv),Sdke(nv),vdconst(nv),vmconst(nv),fdkes(nv),fdkes2(nv),nu(nv),mu(nv),ftrace1nu(nv),mmuoT(nv)
   REAL*8 nuth(nbx),vth(nbx),nuzi(nbx)
 
   !Collisionality and normalized radial electric field
@@ -116,8 +119,8 @@ MODULE GLOBAL
   INTEGER ncmult,nefieldt,nvmagt
   REAL*8, ALLOCATABLE ::  cmult(:), efieldt(:), vmagt(:)
   REAL*8, ALLOCATABLE :: lcmult(:),lefieldt(:),lvmagt(:)
-  REAL*8, ALLOCATABLE :: lD11dkes1(:,:),lD11dkes2(:,:),lD11tab(:,:,:)
-
+  REAL*8, ALLOCATABLE :: lD11dkes1(:,:),lD11dkes2(:,:),lD11tab(:,:,:),D31dkes(:,:)
+  
   INTEGER, ALLOCATABLE :: seed(:)
 
 END MODULE GLOBAL

@@ -1,3 +1,4 @@
+
 !Read the kinetic profiles of every species (and electrostatic potential) and
 !prepare the integrals in v
 
@@ -186,6 +187,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   CHARACTER*100 serr
   CHARACTER*10 nameeut
   CHARACTER*12 namegraz
+  CHARACTER*13 namegraz2
   CHARACTER*11 nametg
   CHARACTER*13 nametask3d
   CHARACTER*14 nametask3d2
@@ -194,7 +196,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   CHARACTER*10 nameprof
   CHARACTER*7 namepoint
   CHARACTER*200 line
-  REAL*8 r(ns0),rho(ns0),dummy,q_p(ns0),dqdx_p(ns0),dlnqdx_p(ns0),s(ns0),dqdpsi_p(ns0)
+  REAL*8 r(ns0),rho(ns0),s_pol(ns0),dummy,q_p(ns0),dqdx_p(ns0),dlnqdx_p(ns0),s(ns0),dqdpsi_p(ns0)
   REAL*8 sqs,coeff(0:nc-1)
 
   q=-1.0
@@ -289,6 +291,52 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
         nprof=5
      END IF
      DO is=1,ns0
+        READ(1,*,iostat=iostat) s_pol(is),(q_p(is),iprof=1,nprof)
+        IF(iostat.NE.0) EXIT
+     END DO
+     ns=is-1
+     CLOSE(1)
+     dqdx_p(1)=(-3*q_p(1)+4*q_p(2)-q_p(3))/(s_pol(3)-s_pol(1))
+     DO is=2,ns-1
+        dqdx_p(is)=(q_p(is+1)-q_p(is-1))/(s_pol(is+1)-s_pol(is-1))
+     END DO
+     dqdx_p(ns)=(3*q_p(ns)-4*q_p(ns-1)+q_p(ns-2))/(s_pol(3)-s_pol(1))
+     dqdpsi_p=dqdx_p*dspolds/atorflux   !x=spol
+     !Interpolate at spol(s0)
+     CALL LAGRANGE(s_pol,     q_p,ns,spol,     q,MIN(ns,3))
+     CALL LAGRANGE(s_pol,dqdpsi_p,ns,spol,dqdpsi,MIN(ns,3))        
+     IF(filename.EQ."ne") THEN
+        q     =q     /1.0E19 
+        dqdpsi=dqdpsi/1.0E19
+     ELSE IF(filename.EQ."ph") THEN
+        iota=-iota
+        IF(NTV) iota=sgnhel/iota
+        dqdpsi=-q*iota   !dPhi/dpsi_T=-iota*omega_E
+        iota=-iota
+        IF(NTV) iota=sgnhel/iota
+        q=0.0
+     END IF
+!     GOTO 1000    
+  END IF
+
+  
+  !GRAZ profile format
+  namegraz2="profiles2.txt"
+  OPEN(unit=1,file=namegraz2,action='read',iostat=iostat)
+  IF(iostat.NE.0) OPEN(unit=1,file="../"//namegraz2,action='read',iostat=iostat)
+  IF(iostat.EQ.0) THEN
+     WRITE(1000+myrank,'(" File ",A22," read")') namegraz2
+     READ(1,*) line
+     IF(filename.EQ."ti") THEN
+        nprof=6
+     ELSE IF(filename.EQ."te") THEN
+        nprof=5
+     ELSE IF(filename.EQ."ne") THEN
+        nprof=3
+     ELSE IF(filename.EQ."ph") THEN
+        nprof=11
+     END IF
+     DO is=1,ns0
         READ(1,*,iostat=iostat) s(is),(q_p(is),iprof=1,nprof)
         IF(iostat.NE.0) EXIT
      END DO
@@ -299,21 +347,21 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
         dqdx_p(is)=(q_p(is+1)-q_p(is-1))/(s(is+1)-s(is-1))
      END DO
      dqdx_p(ns)=(3*q_p(ns)-4*q_p(ns-1)+q_p(ns-2))/(s(3)-s(1))
-     dqdpsi_p=dqdx_p/atorflux   !x=s=rho^2=(r/a)^2
-     !Interpolate at s0
+     dqdpsi_p=dqdx_p/atorflux      !x=s=rho^2=(r/a)^2
+     !Interpolate at spol(s0)
      CALL LAGRANGE(s,     q_p,ns,s0,     q,MIN(ns,3))
      CALL LAGRANGE(s,dqdpsi_p,ns,s0,dqdpsi,MIN(ns,3))        
      IF(filename.EQ."ne") THEN
-        q     =q     /1.0E19 
-        dqdpsi=dqdpsi/1.0E19
+        q     =q     /1.0E13
+        dqdpsi=dqdpsi/1.0E13
      ELSE IF(filename.EQ."ph") THEN
-        dqdpsi=-q*iota*sgnB   !dPhi/dpsi_T=-iota*omega_E
-        q=0.0
+        dqdpsi=-q*29979.19999934/psip  !E_r read in stV/cm
+        q=0
      END IF
 !     GOTO 1000    
   END IF
 
-
+  
   !TG profile format
   nametg="profiles.TG"
   OPEN(unit=1,file=nametg,action='read',iostat=iostat)
@@ -351,7 +399,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
            dqdx_p(is)=(q_p(is+1)-q_p(is-1))/(s(is+1)-s(is-1))
         END DO
         dqdx_p(ns)=(3*q_p(ns)-4*q_p(ns-1)+q_p(ns-2))/(s(3)-s(1))
-        dqdpsi_p=dqdx_p/psip   !x=r=rho*a=sqrt(s)*a      
+
      END IF
      CLOSE(1)
      !Interpolate at s0
@@ -712,7 +760,8 @@ SUBROUTINE DKE_CONSTANTS(ib,nbb,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,flag)
   ! =(2/\sqrt(\pi))*\int_0^\inf dK K^{1/2}exp{-K}g(K),
   ! with f(v)=g(K),  K=mv^2/(2T) and x=K^{1/2}
   weight=(2./sqpi)*x*wM 
-  fdkes=(2*v/vdconst/vdconst)/psip/psip 
+  fdkes=(2*v/vdconst/vdconst)/psip/psip
+  fdkes2=2/vdconst/psip
   mu=v*v/2./borbic(0,0)
   ftrace1nu=-Ab(ib)*m_e*Ab(ib)*m_e*SQRT(Ab(ib)*m_e/Tb(ib))/Tb(ib)/Tb(ib)/nuzi(ib)*&
        & mu*SQRT(mu)/2./SQPI*vdconst*vdconst/4/borbic(0,0)/borbic(0,0)

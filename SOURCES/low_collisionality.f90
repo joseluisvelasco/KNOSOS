@@ -592,7 +592,7 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
   fath=0
   alphap_w=-1000.0 
   !Maximum possible number of wells determined by size of arrays
-  DO WHILE((nalpha.LT.nal.AND.(nwmax.LE.nwx.OR.(NTV.AND.nwmax.LE.nwx))).OR.iturn.NE.0)
+  DO WHILE((nalpha.LT.nal.AND.(nwmax.LE.nwx.OR.(SATAKE.AND.nwmax.LE.nwx))).OR.iturn.NE.0)
      iturn=iturn+1
      !Find wells along the field lines
      IF(iturn.EQ.1) THEN        
@@ -660,7 +660,7 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
      nw=nw2
      
      !If there were matches, continue matching for the same alphas
-     IF(.NOT.NTV.AND.nw2.GE.nw1) THEN
+     IF(.NOT.SATAKE.AND.nw2.GE.nw1) THEN
 
         IF(DEBUG) THEN
            maxBt=-1E3
@@ -786,10 +786,15 @@ SUBROUTINE CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
   dzeta=TWOPI/nzperiod/nalphab
   DO il=1,nalphab
      zetap(il)=(il-1)*dzeta
+     IF(NTV) zetap(il)=zetap(il)+PI/nzperiod                
+!     IF(NTV) zetap(il)=zetap(il)+PI/nzperiod
      DO ia=1,nalpha !note that dalphap can be negative, if iota is, but...
-        thetap(ia,il)=offset+ia*dalphap+(il-1)*iota*dzeta 
-        zetax(ia,il) =zetap(il)+INT((ia-1)/na)*TWOPI/nzperiod              
+        thetap(ia,il)=offset+ia*dalphap+(il-1)*iota*dzeta
+!        IF(NTV) thetap(ia,il)=thetap(ia,il)+PI 
+        zetax(ia,il) =zetap(il)+INT((ia-1)/na)*TWOPI/nzperiod
+        IF(NTV) thetap(ia,il)=thetap(ia,il)+iota*PI/nzperiod
         CALL FILL_BNODE(zetap(il),thetap(ia,il),dummy,B_al(ia,il),vds_al(:,ia,il),.FALSE.)
+        IF(USE_B0) CALL FILL_BNODE(zetap(il),thetap(ia,il),dummy,dummy,vds_al(:,ia,il),.TRUE.)
         IF(DEBUG) WRITE(3000+myrank,'(5(1pe13.5),2I5)') zetap(il),thetap(ia,il),&
              &  zetax(ia,il),thetap(ia,il),B_al(ia,il),ia,il
      END DO
@@ -2284,7 +2289,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
   END DO
 !!$  doff=offset-(TWOPI/nalphab)*INT(offset*nalphab/TWOPI)
 !!$  DO ia=1,nalphab
-!!$!     IF(NTV) THEN 
+!!$!     IF(SATAKE) THEN 
 !!$!        IF(siota.LT.0) THEN
 !!$!           theta(ia)=TWOPI-(ia-1)*TWOPI/nalphab!+offsetb-doff
 !!$!        ELSE
@@ -2321,6 +2326,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
      DO ia=1,nalphab
         DO il=1,nalphab
            CALL FILL_BNODE(zetap(il),theta(ia),Jac(ia,il),dummy,vds_zt(:,ia,il),.FALSE.)
+           IF(USE_B0) CALL FILL_BNODE(zetap(il),theta(ia),dummy,dummy,vds_zt(:,ia,il),.TRUE.)
         END DO
      END DO
 
@@ -2342,7 +2348,9 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
            IF(jla.NE.0) fdlambda=(one_o_modB-lambda(jla))/dlambda
            kpoint=npoint
            !Integral in lambda
-           DO ila=jla,2,-1 
+!           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3452+myrank,'(5(1pe13.5),10I6)') &
+!                & zetap(il),thetap(ia,il),lambda(1),g(1,1)-g(1,1)
+           DO ila=jla,2,-1
               jpoint=i_p(ila,ia,il)
               fint=1
               IF(jpoint.EQ.npoint) THEN
@@ -2354,6 +2362,9 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
                  kla=ila
               END IF
               IF(PRE_INTV.AND.jpoint.NE.ipoint) CYCLE
+              IF(DEBUG.AND.ipoint.EQ.1) WRITE(3453+myrank,'(5(1pe13.5),10I6)') &
+                   & zetap(il),thetap(ia,il),lambda(1),g(1,1)-g(1,1)
+              
               fhdlambda2=0.5*fdlambda*fdlambda
               IF(ila.EQ.jla) THEN
                  fint=fint*(F5o12+fdlambda+fhdlambda2)
@@ -2371,17 +2382,18 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
               ELSE                !Accumulate the total contribution g for each point jpoint
                  IF(.NOT.PHI1_READ.OR..NOT.IMP1NU) THEN
                     D11_alp(ial)=D11_alp(ial)-g(jpoint,1)*d3vdlambdadK*vds_al(1,ia,il)*(1.0-0.5*lambdaB)/2.
+                    IF(DEBUG.AND.ipoint.EQ.1) WRITE(3452+myrank,'(5(1pe13.5),10I6)') &
+                         & zetap(il),thetap(ia,il),lambda(ila),g(jpoint,1),modB
                  ELSE
                     D11_alp(ial)=D11_alp(ial)+g(jpoint,1)*&
                          & modB/(lambda(ila)*lambda(ila)*lambda(ila)*sqrt1mlb)*vds_al(1,ia,il)
-                    
                  END IF
                  IF(QN) dn1_alp(ial)=dn1_alp(ial)+g(jpoint,1)*d3vdlambdadK        
               END IF
            END DO
 
-           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3451+myrank,'(4(1pe13.5),10I6)') &
-                & zetap(il),thetap(ia,il),dn1_alp(ial),D11_alp(ial)
+           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3451+myrank,'(5(1pe13.5),10I6)') &
+                & zetap(il),thetap(ia,il),dn1_alp(ial),D11_alp(ial),vds_al(1,ia,il)
 
         END DO
 

@@ -11,6 +11,7 @@ SUBROUTINE READ_BFIELD(s0)
 !-------------------------------------------------------------------------------------------------
 
   USE GLOBAL
+  USE KNOSOS_STELLOPT
   IMPLICIT NONE
   !Input
   REAL*8 s0 !s0 labels the flux surface s=psi/psi_{LCMS}, where psi is the toroidal flux
@@ -39,6 +40,7 @@ SUBROUTINE READ_BFIELD(s0)
   REAL*8 torbic(-ntorbd:ntorbd,0:mpolbd)
   !Variables from "boozer.txt"
   LOGICAL read_boozmnbc
+  INTEGER Strumberger
   REAL*8, PARAMETER   :: mu0_o_2pi=2.000000000e-7
   REAL*8, ALLOCATABLE :: bmnc_js(:),bmns_js(:),pprime(:),sqrtg00(:)        
   !Grid
@@ -51,7 +53,8 @@ SUBROUTINE READ_BFIELD(s0)
   INTEGER is,js0,js1,iostat
   REAL*8 iotap,Bzetap,Bthetap
   REAL*8 iotam,Bzetam,Bthetam
-  REAL*8 fs0,fs1,chip,dpsi
+  REAL*8 fs0,fs1,chip,dpsi,int_iota,fdummy
+  REAL*8, ALLOCATABLE :: spol_b(:)
   !Time
   CHARACTER*30, PARAMETER :: routine="READ_BFIELD"
   INTEGER, SAVE :: ntotal=0
@@ -147,16 +150,18 @@ SUBROUTINE READ_BFIELD(s0)
      IF(iostat.EQ.0) THEN
         read_boozmnbc=.TRUE.
         WRITE(1000+myrank,*) 'File "boozer.txt" found'
-!        DO is=1,8           
-!           READ(1,*) version
-!        END DO
-        DO is=1,20
+        Strumberger=0
+        DO is=1,5
+           READ(1,'(A)') version
+           Strumberger=MAX(Strumberger,INDEX(version,'Strumberger'))
+        END DO
+        DO is=1,15
            READ(1,*,iostat=iostat) mboz_b,nboz_b,ns_b,nfp_b,torflux,rad_a,rad_R!,fdummy,fdummy,fdummy
            IF(iostat.EQ.0) EXIT
         END DO
-        mnboz_b=mboz_b*(2*nboz_b+1)+nboz_b+1
+        mnboz_b=MAX(mboz_b*(2*nboz_b+1)+nboz_b+1,(mboz_b+1)*(2*nboz_b+1))
         ALLOCATE (s_b(ns_b),iota_b(ns_b),psip_b(ns_b),psi_b(ns_b),bvco_b(ns_b),buco_b(ns_b))
-        ALLOCATE(pprime(ns_b),sqrtg00(ns_b))
+        ALLOCATE(spol_b(ns_b),pprime(ns_b),sqrtg00(ns_b))
         ALLOCATE(rmnc_b(mnboz_b,ns_b),zmns_b(mnboz_b,ns_b),pmns_b(mnboz_b,ns_b),bmnc_b(mnboz_b,ns_b))
         ALLOCATE(rmns_b(mnboz_b,ns_b),zmnc_b(mnboz_b,ns_b),pmnc_b(mnboz_b,ns_b),bmns_b(mnboz_b,ns_b))
         ALLOCATE(ixm_b(mnboz_b),ixn_b(mnboz_b),bmnc_js(mnboz_b),bmns_js(mnboz_b))
@@ -172,9 +177,20 @@ SUBROUTINE READ_BFIELD(s0)
         bmns_b=0
         !Reads the profiles Boozer spectra at every flux-surface
         DO is=1,ns_b
+           IF(is.NE.1.AND.imn.LT.mnboz_b) THEN
+              mnboz_b=imn-1
+           ELSE
+              READ(1,*) version
+           END IF
            READ(1,*) version
-           READ(1,*) version
-           READ(1,*) s_b(is),iota_b(is),bvco_b(is),buco_b(is),pprime(is),sqrtg00(is)  
+           READ(1,*) s_b(is),iota_b(is),bvco_b(is),buco_b(is),pprime(is),sqrtg00(is)
+           IF(is.EQ.1) THEN
+              spol_b(is)=iota_b(1)*s_b(1)
+              int_iota=iota_b(1)*s_b(1)
+           ELSE
+              int_iota=int_iota+(iota_b(is)+iota_b(is-1))*(s_b(is)-s_b(is-1))/2.
+              spol_b(is)=spol_b(is-1)+(iota_b(is)+iota_b(is-1))*(s_b(is)-s_b(is-1))/2.
+           END IF
            READ(1,'(A)') version
            STELL_ANTISYMMETRIC=INDEX(version,"rmns",.TRUE.).GT.0
            DO imn=1,mnboz_b
@@ -188,8 +204,11 @@ SUBROUTINE READ_BFIELD(s0)
                  READ(1,*,iostat=iostat) ixm_b(imn),ixn_b(imn),&
                       & rmnc_b(imn,is),zmns_b(imn,is),pmns_b(imn,is),bmnc_b(imn,is)
               END IF
+              IF(iostat.NE.0) EXIT
            END DO
+           IF(Strumberger.GT.0) ixn_b=-ixn_b           
         END DO
+        spol_b=spol_b/int_iota
         buco_b=buco_b*nfp_b*mu0_o_2pi
         bvco_b=bvco_b*nfp_b*mu0_o_2pi
         CLOSE(1)
@@ -197,7 +216,7 @@ SUBROUTINE READ_BFIELD(s0)
      END IF
      
   END IF
-  
+
   !------------------------------------------------------------------------------------------- 
   !Read output from DKES_INPUT_PREPARE
   !------------------------------------------------------------------------------------------- 
@@ -249,18 +268,17 @@ SUBROUTINE READ_BFIELD(s0)
         END DO
      END IF
      WRITE(1000+myrank,*) 's=',s0,s_b(js0),s_b(js0+1)
-
 !     DO imn=1,mnboz_b
 !        WRITE(1000+myrank,'(2I4,1000(1pe13.5))') ixn_b(imn),ixm_b(imn),rmnc_b(imn,js0+1),zmns_b(imn,js0+1),pmns_b(imn,js0+1),bmnc_b(imn,js0+1),iota_b(js0+1),psi_b(js0+1)
 !     END DO
-
      js1=js0+1
      fs0=(s_b(js1)-s0)/(s_b(js1)-s_b(js0))
      fs1=(s0-s_b(js0))/(s_b(js1)-s_b(js0))
+     IF(ALLOCATED(spol_b)) spol  =spol_b(js0)*fs0+spol_b(js1)*fs1
      bzeta =bvco_b(js0)*fs0+bvco_b(js1)*fs1
      btheta=buco_b(js0)*fs0+buco_b(js1)*fs1
      iota=  iota_b(js0)*fs0+iota_b(js1)*fs1
-     psip=2*torflux/rad_a*sqrt(s0)
+     psip=2*torflux*sqrt(s0)/rad_a
      chip=iota*psip
      mpolb=mboz_b
      ntorb=nboz_b
@@ -275,30 +293,32 @@ SUBROUTINE READ_BFIELD(s0)
      zorbic=0
      dborbicdpsi=0
      dborbisdpsi=0
+
      !Keep the largest TRUNCATE_B values of Bmn (if positive)
-     IF(TRUNCATE_B>0.AND.TRUNCATE_B.LT.mnboz_b) THEN
+     IF(TRUNCATE_B>0.AND.TRUNCATE_B.LT.mnboz_b) THEN !JL Check if this works fine
         bmnc_js=0
         WRITE(1000+myrank,'(" Truncating spectrum of magnetic field strength from",&
              & I5," to ",I3," largest cosines")') mnboz_b,TRUNCATE_B
         DO js=js0,js1
-           bmnc_js(2:mnboz_b)  =bmnc_b(2:mnboz_b,js)
-           bmnc_b(2:mnboz_b,js)=0
+           bmnc_js(1:mnboz_b)  =bmnc_b(1:mnboz_b,js)
+           bmnc_b(1:mnboz_b,js)=0
            IF(STELL_ANTISYMMETRIC) THEN
-              bmns_js(2:mnboz_b)  =bmns_b(2:mnboz_b,js)
-              bmns_b(2:mnboz_b,js)=0
+              bmns_js(1:mnboz_b)  =bmns_b(1:mnboz_b,js)
+              bmns_b(1:mnboz_b,js)=0
            END IF
            DO ihel=1,MIN(TRUNCATE_B,mnboz_b)
               imax=MAXLOC(ABS(bmnc_js(:)),1)
-              bmnc_b(imax,js)=bmnc_js(imax)
+              bmnc_b(ihel,js)=bmnc_js(imax)
               bmnc_js(imax)=0
               IF(STELL_ANTISYMMETRIC) THEN
-                 bmns_b(imax,js)=bmns_js(imax)
+                 bmns_b(ihel,js)=bmns_js(imax)
                  bmns_js(imax)=0
               END IF
            END DO
         END DO
      END IF
 
+     IF(ALLOCATED(spol_b)) dspolds=(spol_b(js1)-spol_b(js0))/(s_b(js1)-s_b(js0))
      !The radial coordinate is the toroidal flux over 2pi
      dpsi=(s_b(js1)-s_b(js0))*ABS(torflux) !the radial coordinate must grow from core to edge
      !Fill borbic,dborbicdps,rorbic,etc
@@ -410,7 +430,7 @@ SUBROUTINE READ_BFIELD(s0)
 
   borbic0=borbic
   borbis0=borbis
-  CALL CALC_B0()
+  IF(USE_B0) CALL CALC_B0()
   
   read_addkes=.FALSE.
   OPEN(unit=1,file='add_ddkes2.data',form='formatted',iostat=iostat,action='read')
@@ -426,34 +446,13 @@ SUBROUTINE READ_BFIELD(s0)
      CLOSE(1)
   END IF
 
-  !Change from left-handed to a right-handed coordinate system
-  helN     =-helN
-  Btheta   =-Btheta
-  Bthetap  =-Bthetap
-  Bthetam  =-Bthetam
-  chip     =-chip
-  iota     =-iota
-  iotap    =-iotap
-  iotam    =-iotam
-  borbis   =-borbis
-  porbis   =-porbis
-  rorbis   =-rorbis
-  zorbis   =-zorbis
-  !If torflux(a)<torflux(0), change direction of radial coordinate
-  IF(torflux.LT.0) THEN
-     torflux=-torflux
-     psip=-psip
-     chip=-chip
-  END IF
-  
+
   IF(NEOTRANSP) FB=1./borbic(0,0)
 
   !Update quantities if there is scan in parameters
   borbic0(0,0) =borbic0(0,0) /FE
   borbic(0,0)  =borbic(0,0)  /FE
-  borbis0(0,0) =borbis0(0,0) /FE
-  borbis(0,0)  =borbis(0,0)  /FE
-  nzperiod=INT(nzperiod*FP)
+  nzperiod=INT(nzperiod*FP+0.1)
   iota =iota  *FI
   iotap=iotap *FI
   iotam=iotam *FI
@@ -472,6 +471,35 @@ SUBROUTINE READ_BFIELD(s0)
   Bzeta  =Bzeta  *FB      *FR
   Bzetap =Bzetap *FB      *FR
   Bzetam =Bzetam *FB      *FR
+
+  IF(ABS(FI*FE*FB*FR-1).GT.ALMOST_ZERO) THEN
+     borbi=borbic
+     OPEN(unit=1,file='ddkes3.data',form='formatted',action='write',iostat=iostat)
+     WRITE(1,nml=datain)
+     CLOSE(1)
+  END IF
+  
+  !Change from left-handed to a right-handed coordinate system
+  helN     =-helN
+  Btheta   =-Btheta
+  Bthetap  =-Bthetap
+  Bthetam  =-Bthetam
+  chip     =-chip
+  iota     =-iota
+  iotap    =-iotap
+  iotam    =-iotam
+  borbis   =-borbis
+  borbis0  =-borbis0
+  porbis   =-porbis
+  rorbis   =-rorbis
+  zorbis   =-zorbis
+  !If torflux(a)<torflux(0), change direction of radial coordinate
+  IF(torflux.LT.0) THEN
+     torflux=-torflux
+     psip=-psip
+     chip=-chip
+  END IF
+  
 
   IF(NEOTRANSP) THEN
      dpsi=dpsi*rad_a*sqrt(s0)/psip
@@ -563,12 +591,11 @@ SUBROUTINE READ_BFIELD(s0)
   dBzdpsi  =   (Bzetap -Bzetam )/dpsi
   dBtdpsi  =   (Bthetap-Bthetam)/dpsi
 
-  !Change the coordinates if the main helicity is N=0 (tokamak or quasi-axissymmetric stellarator, QAS)
-!  IF(SATAKE) THEN
+!Change the coordinates if the main helicity is N=0 (tokamak or quasi-axissymmetric stellarator, QAS)
+  IF(NTV) THEN
 !     serr="NOT implemented, look for SATAKE or TOKPI"
 !     CALL END_ALL(serr,.FALSE.)
 !     siota=iota/ABS(iota)
-!     fdummy=Bzeta
 !     Bzeta=Btheta
 !     Btheta=-siota*fdummy
 !     psip=psip*ABS(iota)
@@ -576,7 +603,22 @@ SUBROUTINE READ_BFIELD(s0)
 !     diotadpsi=diotadpsi/iota/iota/iota
 !     iota=-siota/iota
 !     chip=psip*iota
-!  END IF
+     sgnhel=-1
+     fdummy=Bzeta
+     Bzeta =Btheta
+     Btheta=sgnhel*fdummy
+     psip=psip*ABS(iota)
+     dpsi=dpsi*ABS(iota)
+     dborbicdpsi=dborbicdpsi/ABS(iota)
+     dborbisdpsi=dborbisdpsi/ABS(iota)
+     dBzdpsi=dBzdpsi/ABS(iota)
+     dBtdpsi=dBtdpsi/ABS(iota)
+     torflux=torflux*ABS(iota)
+     atorflux=atorflux*ABS(iota)
+     diotadpsi=diotadpsi/iota/iota/iota
+     iota=sgnhel/iota
+     chip=psip*iota
+  END IF
 
   !Find maximum helicity and truncate spectra accordingly
   hel_Nmax=0
@@ -598,7 +640,7 @@ SUBROUTINE READ_BFIELD(s0)
   ntorb=MIN(hel_Nmax,ntorb)
   mpolb=MIN(hel_Mmax,mpolb)
 
-  DO n=1,ntorb   !For m=0, keep only n>0
+  DO n=1,ntorb   !For m=0, keep only n>0, possibly redundant
      rorbic(n,0)     =rorbic(n,0)     +rorbic(-n,0)
      zorbis(n,0)     =zorbis(n,0)     -zorbis(-n,0)
      porbis(n,0)     =porbis(n,0)     -porbis(-n,0)
@@ -671,6 +713,8 @@ SUBROUTINE READ_BFIELD(s0)
      serr="B0 calculated"
      CALL END_ALL(serr,.FALSE.)
   END IF
+
+  dpsidr=psip
   
 END SUBROUTINE READ_BFIELD
 
@@ -725,13 +769,13 @@ SUBROUTINE FILL_NM()
 !        phnmc(nm)=phorbicc(n,m)
 !        phnms(nm)=phorbics(n,m)
 !        pnm(nm)=porbis(n,m)
-!        IF(SATAKE) THEN
-!           np(nm)=m
-!           mp(nm)=-siota*n
-!        ELSE
-        np(nm)=n
-        mp(nm)=m
- !       END IF   
+        IF(NTV) THEN
+           np(nm)=m
+           mp(nm)=sgnhel*n*nzperiod           
+        ELSE
+           np(nm)=n
+           mp(nm)=m
+        END IF
      END DO
   END DO
   
@@ -750,6 +794,8 @@ SUBROUTINE FILL_NM()
   ELSE
      Nnmp=1
   END IF
+
+  IF(NTV) nzperiod=1
   !Tokamak or QAS
 !  IF(SATAKE) TOKPI=.TRUE.
 
@@ -1379,7 +1425,7 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   INTEGER iz,it,ifile
   REAL*8 dz,dt,zeta(nz),theta(nt),Bzt(nz,nt),Bmax,Jac(nz,nt),vds_Bzt(Nnmp,nz,nt)
   REAL*8 FSA
-
+  
   Bmax=0
   IF(flagB1) THEN
      ifile=1200+myrank
@@ -1506,119 +1552,148 @@ END FUNCTION FSA
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE CHANGE_COORDS(s,nalphab,zetab,thetab,B_ztb,func_ztb,func_zt)
+SUBROUTINE INTERPOLATE_2DMAP(npt,zeta_i,theta_i,func_i,func_o)
 
 !-------------------------------------------------------------------------------------------------
-!xxxxx TO BE CHECKED
 !-------------------------------------------------------------------------------------------------
 
   USE GLOBAL
   IMPLICIT NONE
   !Input
-  INTEGER nalphab
-  REAL*8 s,zetab(nalphab),thetab(nalphab),B_ztb(nalphab,nalphab),func_ztb(nalphab,nalphab)
+  INTEGER npt
+  REAL*8 zeta_i(npt,npt),theta_i(npt,npt),func_i(npt,npt)
   !Output
-  REAL*8 zetap(nalphab,nalphab),thetap(nalphab,nalphab),func_zt(nalphab,nalphab)
+  REAL*8 func_o(npt,npt)
   !Others
-  INTEGER iz,it,n,m,np1,mp1,info,ipivot(10)
-  REAL*8 zeta_ext(nalphab*3,nalphab*3),theta_ext(nalphab*3,nalphab*3),func_ext(nalphab*3,nalphab*3)
+  INTEGER zer_nptpiz,one_nptpiz,two_nptpiz,zer_nptpit,one_nptpit,two_nptpit,thr_npt
+  INTEGER iz,it,info,ipivot(10),ipoint,jpoint
+  REAL*8 dist,zeta_t,theta_t,dist_t
+  REAL*8 zeta(npt),theta(npt)
+  REAL*8 zeta_e(9*npt*npt),theta_e(9*npt*npt),func_e(9*npt*npt)
   REAL*8 ztl,ttl,ftl,ztr,ttr,ftr,zbr,tbr,fbr,zbl,tbl,fbl
-  REAL*8 rhscoord(nalphab,nalphab)
   REAL*8 mat(10,10),rhs(10)
-  REAL mat4(10,10),rhs4(10)
-  COMPLEX*16 rhscoordnm(nalphab,nalphab)
+!  INTEGER IWK(max(31,27+4)*9*npt*npt+npt*npt)
+!  REAL*8 WK(5*9*npt*npt)
   !Time
   CHARACTER*30, PARAMETER :: routine="FILL_3DPOINTS"
   INTEGER, SAVE :: ntotal=0
   REAL*8,  SAVE :: ttotal=0
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
+  INTEGER, PARAMETER :: md=1
+  INTEGER, PARAMETER :: ncp=4
 
   CALL CPU_TIME(tstart)
 
-  rhscoord=0.0*(1./B_ztb/B_ztb)
-  CALL FFTF_KN(nalphab,rhscoord,rhscoordnm)
-  DO np1=1,nalphab
-     IF(np1.LE.nalphab/2) THEN
-        n=np1-1
-     ELSE
-        n=-nalphab+np1-1
-     END IF
-     DO mp1=1,nalphab
-        IF(mp1.LE.nalphab/2) THEN
-           m=mp1-1
-        ELSE
-           m=-nalphab+mp1-1
-        END IF
-        rhscoordnm(np1,mp1)=-NUMI*rhscoordnm(np1,mp1)/(iota*m+nzperiod*n)
-     END DO
-  END DO
-  CALL FFTB_KN(nalphab,rhscoordnm,rhscoord)
-  DO iz=1,nalphab
-     DO it=1,nalphab
-        zetap(iz,it) = zetab(iz)+rhscoord(iz,it)
-        thetap(iz,it)=thetab(it)+rhscoord(iz,it)*iota
-     END DO
-  END DO
+  DO iz=1,npt
+     DO it=1,npt
 
-  DO iz=1,nalphab
-     DO it=1,nalphab
+        zer_nptpiz=iz
+        one_nptpiz=npt+iz
+        two_nptpiz=2*npt+iz
+        zer_nptpit=it
+        one_nptpit=npt+it
+        two_nptpit=2*npt+it
+        thr_npt=3*npt
         
-         zeta_ext(1*nalphab+iz,1*nalphab+it)= zetap(iz,it)
-        theta_ext(1*nalphab+iz,1*nalphab+it)=thetap(iz,it)
-         func_ext(1*nalphab+iz,1*nalphab+it)=func_ztb(iz,it)
+         zeta_e((one_nptpiz-1)*thr_npt+one_nptpit)= zeta_i(iz,it)
+        theta_e((one_nptpiz-1)*thr_npt+one_nptpit)=theta_i(iz,it)
+         func_e((one_nptpiz-1)*thr_npt+one_nptpit)= func_i(iz,it)
 
-         zeta_ext(0*nalphab+iz,0*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI/nzperiod
-        theta_ext(0*nalphab+iz,0*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI
-         func_ext(0*nalphab+iz,0*nalphab+it)=func_ztb(iz,it)
+         zeta_e((zer_nptpiz-1)*thr_npt+zer_nptpit)= zeta_i(iz,it)-TWOPI/nzperiod
+        theta_e((zer_nptpiz-1)*thr_npt+zer_nptpit)=theta_i(iz,it)-TWOPI
+         func_e((zer_nptpiz-1)*thr_npt+zer_nptpit)= func_i(iz,it)
         
-         zeta_ext(0*nalphab+iz,1*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI/nzperiod
-        theta_ext(0*nalphab+iz,1*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)
-         func_ext(0*nalphab+iz,1*nalphab+it)=func_ztb(iz,it)
+         zeta_e((zer_nptpiz-1)*thr_npt+one_nptpit)= zeta_i(iz,it)-TWOPI/nzperiod
+        theta_e((zer_nptpiz-1)*thr_npt+one_nptpit)=theta_i(iz,it)
+         func_e((zer_nptpiz-1)*thr_npt+one_nptpit)= func_i(iz,it)
 
-         zeta_ext(0*nalphab+iz,2*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI/nzperiod
-        theta_ext(0*nalphab+iz,2*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI
-         func_ext(0*nalphab+iz,2*nalphab+it)=func_ztb(iz,it)
+         zeta_e((zer_nptpiz-1)*thr_npt+two_nptpit)= zeta_i(iz,it)-TWOPI/nzperiod
+        theta_e((zer_nptpiz-1)*thr_npt+two_nptpit)=theta_i(iz,it)+TWOPI
+         func_e((zer_nptpiz-1)*thr_npt+two_nptpit)= func_i(iz,it)
 
-         zeta_ext(1*nalphab+iz,0*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)         
-        theta_ext(1*nalphab+iz,0*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI
-         func_ext(1*nalphab+iz,0*nalphab+it)=func_ztb(iz,it)
+         zeta_e((one_nptpiz-1)*thr_npt+zer_nptpit)= zeta_i(iz,it)         
+        theta_e((one_nptpiz-1)*thr_npt+zer_nptpit)=theta_i(iz,it)-TWOPI
+         func_e((one_nptpiz-1)*thr_npt+zer_nptpit)= func_i(iz,it)
 
-         zeta_ext(1*nalphab+iz,2*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)
-        theta_ext(1*nalphab+iz,2*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI
-         func_ext(1*nalphab+iz,2*nalphab+it)=func_ztb(iz,it)
+         zeta_e((one_nptpiz-1)*thr_npt+two_nptpit)= zeta_i(iz,it)
+        theta_e((one_nptpiz-1)*thr_npt+two_nptpit)=theta_i(iz,it)+TWOPI
+         func_e((one_nptpiz-1)*thr_npt+two_nptpit)= func_i(iz,it)
 
-         zeta_ext(2*nalphab+iz,0*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI/nzperiod
-        theta_ext(2*nalphab+iz,0*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)-TWOPI
-         func_ext(2*nalphab+iz,0*nalphab+it)=func_ztb(iz,it)
+         zeta_e((two_nptpiz-1)*thr_npt+zer_nptpit)= zeta_i(iz,it)+TWOPI/nzperiod
+        theta_e((two_nptpiz-1)*thr_npt+zer_nptpit)=theta_i(iz,it)-TWOPI
+         func_e((two_nptpiz-1)*thr_npt+zer_nptpit)= func_i(iz,it)
 
-         zeta_ext(2*nalphab+iz,1*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI/nzperiod
-        theta_ext(2*nalphab+iz,1*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)
-         func_ext(2*nalphab+iz,1*nalphab+it)=func_ztb(iz,it)
+         zeta_e((two_nptpiz-1)*thr_npt+one_nptpit)= zeta_i(iz,it)+TWOPI/nzperiod
+        theta_e((two_nptpiz-1)*thr_npt+one_nptpit)=theta_i(iz,it)
+         func_e((two_nptpiz-1)*thr_npt+one_nptpit)= func_i(iz,it)
 
-         zeta_ext(2*nalphab+iz,2*nalphab+it)= zeta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI/nzperiod
-        theta_ext(2*nalphab+iz,2*nalphab+it)=theta_ext(1*nalphab+iz,1*nalphab+it)+TWOPI
-         func_ext(2*nalphab+iz,2*nalphab+it)=func_ztb(iz,it)
+         zeta_e((two_nptpiz-1)*thr_npt+two_nptpit)= zeta_i(iz,it)+TWOPI/nzperiod         
+        theta_e((two_nptpiz-1)*thr_npt+two_nptpit)=theta_i(iz,it)+TWOPI
+        func_e((two_nptpiz-1)*thr_npt+two_nptpit)= func_i(iz,it)
 
      END DO
   END DO
 
+  DO iz=1,3*npt
+     DO it=1,3*npt
+        WRITE(1000+myrank,'(I2,8(1pe13.5))') iz-iz,zeta_e((iz-1)*thr_npt+it),theta_e((iz-1)*thr_npt+it),func_e((iz-1)*thr_npt+it)
+     END DO
+  END DO
 
-  DO iz=1,nalphab
-     DO it=1,nalphab
-       
-        ztr= zeta_ext(nalphab+iz+1,nalphab+it+1) -zetab(iz)
-        ttr=theta_ext(nalphab+iz+1,nalphab+it+1)-thetab(it)
-        ftr= func_ext(nalphab+iz+1,nalphab+it+1)
-        ztl= zeta_ext(nalphab+iz-1,nalphab+it+1) -zetab(iz)
-        ttl=theta_ext(nalphab+iz-1,nalphab+it+1)-thetab(it)
-        ftl= func_ext(nalphab+iz-1,nalphab+it+1)
-        zbr= zeta_ext(nalphab+iz+1,nalphab+it-1) -zetab(iz)
-        tbr=theta_ext(nalphab+iz+1,nalphab+it-1)-thetab(it)
-        fbr= func_ext(nalphab+iz+1,nalphab+it-1)
-        zbl= zeta_ext(nalphab+iz-1,nalphab+it-1) -zetab(iz)
-        tbl=theta_ext(nalphab+iz-1,nalphab+it-1)-thetab(it)
-        fbl= func_ext(nalphab+iz-1,nalphab+it-1)
+  DO iz=1,npt
+     zeta(iz) =(iz-1)*(TWOPI/nzperiod)/npt
+     theta(iz)=(iz-1)* TWOPI/npt
+  END DO
+
+  DO iz=1,npt
+     DO it=1,npt
+
+        DO jpoint=1,4
+           dist=1e9
+           DO ipoint=1,9*npt*npt
+              zeta_t = zeta_e(ipoint)- zeta(iz)
+              theta_t=theta_e(ipoint)-theta(it)
+              IF(jpoint.EQ.1.AND.(zeta_t.GT.0.OR.theta_t.GT.0)) CYCLE
+              IF(jpoint.EQ.2.AND.(zeta_t.LT.0.OR.theta_t.GT.0)) CYCLE
+              IF(jpoint.EQ.3.AND.(zeta_t.GT.0.OR.theta_t.LT.0)) CYCLE
+              IF(jpoint.EQ.4.AND.(zeta_t.LT.0.OR.theta_t.LT.0)) CYCLE
+              dist_t=zeta_t*zeta_t+theta_t*theta_t
+              IF(dist_t.LT.dist) THEN
+                 dist=dist_t
+                 IF(jpoint.EQ.1) THEN
+                    ztl=zeta_t
+                    ttl=theta_t
+                    ftl=func_e(ipoint)
+                 ELSE IF(jpoint.EQ.2) THEN
+                    ztr=zeta_t
+                    ttr=theta_t
+                    ftr=func_e(ipoint)
+                 ELSE IF(jpoint.EQ.3) THEN
+                    zbl=zeta_t
+                    tbl=theta_t
+                    fbl=func_e(ipoint)
+                 ELSE IF(jpoint.EQ.4) THEN
+                    zbr=zeta_t
+                    tbr=theta_t
+                    fbr=func_e(ipoint)
+                 END IF
+              END IF
+           END DO
+        END DO
+        
+!!$        ztr= zeta_e((npt+iz+1)*thr_npt+npt+it+1) -zeta(iz)
+!!$        ttr=theta_e((npt+iz+1)*thr_npt+npt+it+1)-theta(it)
+!!$        ftr= func_e((npt+iz+1)*thr_npt+npt+it+1)
+!!$        ztl= zeta_e((npt+iz-1)*thr_npt+npt+it+1) -zeta(iz)
+!!$        ttl=theta_e((npt+iz-1)*thr_npt+npt+it+1)-theta(it)
+!!$        ftl= func_e((npt+iz-1)*thr_npt+npt+it+1)
+!!$        zbr= zeta_e((npt+iz+1)*thr_npt+npt+it-1) -zeta(iz)
+!!$        tbr=theta_e((npt+iz+1)*thr_npt+npt+it-1)-theta(it)
+!!$        fbr= func_e((npt+iz+1)*thr_npt+npt+it-1)
+!!$        zbl= zeta_e((npt+iz-1)*thr_npt+npt+it-1) -zeta(iz)
+!!$        tbl=theta_e((npt+iz-1)*thr_npt+npt+it-1)-theta(it)
+!!$        fbl= func_e((npt+iz-1)*thr_npt+npt+it-1)
         mat=0
         rhs=0
         mat(1,1)=1
@@ -1672,35 +1747,25 @@ SUBROUTINE CHANGE_COORDS(s,nalphab,zetab,thetab,B_ztb,func_ztb,func_zt)
         mat(10,4)=zbl
         mat(10,5)=tbl
         mat(10,6)=1
+
         rhs(7)=ftl
         rhs(8)=ftr
         rhs(9)=fbr
         rhs(10)=fbl
 
-        mat4=REAL(mat)
-        rhs4=REAL(rhs)
-        CALL SGESV(10,1,mat4,10,ipivot,rhs4,10,info)        
-        func_zt(iz,it)=rhs(6)
-!        func_zt(iap,ilp)=0.25*(ftl+ftr+fbl+fbr)
-        IF(DEBUG.OR.myrank.EQ.0) WRITE(1000+myrank,'(8(1pe13.5))') s,zetab(iz),thetab(it),func_zt(iz,it),func_ztb(iz,it)
+        CALL DGESV(10,1,mat,10,ipivot,rhs,10,info)
+        func_o(iz,it)=rhs(6)
+        !        IF(DEBUG.OR.myrank.EQ.0)
+!        WRITE(1000+myrank,*) 'ewhere',iz,it
+!        CALL IDBVIP(2,4,9*npt*npt,zeta_e,theta_e,func_e,1,zeta(iz),theta(it),func_o(iz,it),iwk,wk)        
+!        WRITE(1000+myrank,*) 'ewhere',iz,it
+        WRITE(1000+myrank,'(I2,7(1pe13.5),I3)') iz-iz-1,zeta(iz),theta(it),func_o(iz,it),ftl,ftr,fbl,fbr
      END DO
   END DO
 
-
-  OPEN(unit=1200+myrank,file='phi2d.dat',form='formatted',action='write')
-  WRITE(1200+myrank,*) '#'
-  WRITE(1200+myrank,*) '#'
-  WRITE(1200+myrank,*) '#'
-  WRITE(1200+myrank,*) '#'
-  WRITE(1200+myrank,*) s
-  WRITE(1200+myrank,*) nalphab
-  WRITE(1200+myrank,*) nalphab
-  WRITE(1200+myrank,*) nzperiod
-  
-
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   
-END SUBROUTINE CHANGE_COORDS
+END SUBROUTINE INTERPOLATE_2DMAP
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1856,3 +1921,31 @@ END SUBROUTINE FFTB_KN
 !!$  y=r*sin(p);
 !!$
 !!$END SUBROUTINE P3D_PHI1
+
+
+!!$  rhscoord=0.0*(1./B_ztb/B_ztb)
+!!$  CALL FFTF_KN(nalphab,rhscoord,rhscoordnm)
+!!$  DO np1=1,nalphab
+!!$     IF(np1.LE.nalphab/2) THEN
+!!$        n=np1-1
+!!$     ELSE
+!!$        n=-nalphab+np1-1
+!!$     END IF
+!!$     DO mp1=1,nalphab
+!!$        IF(mp1.LE.nalphab/2) THEN
+!!$           m=mp1-1
+!!$        ELSE
+!!$           m=-nalphab+mp1-1
+!!$        END IF
+!!$        rhscoordnm(np1,mp1)=-NUMI*rhscoordnm(np1,mp1)/(iota*m+nzperiod*n)
+!!$     END DO
+!!$  END DO
+!!$  CALL FFTB_KN(nalphab,rhscoordnm,rhscoord)
+!!$  DO iz=1,nalphab
+!!$     DO it=1,nalphab
+!!$        zetap(iz,it) = zetab(iz)+rhscoord(iz,it)
+!!$        thetap(iz,it)=thetab(it)+rhscoord(iz,it)*iota
+!!$     END DO
+!!$  END DO
+
+

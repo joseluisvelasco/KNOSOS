@@ -1111,8 +1111,8 @@ SUBROUTINE CALC_TRACE1NU_O_LOWCOLL(jt,ib,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,
 !  REAL*8 zeta(nax),theta(nax),mdummy(1,1)
 !here
   REAL*8 L1b(Nnmp,Nnmp,nbx,10),L2b(Nnmp,Nnmp,nbx,10)
-  REAL*8 D11(Nnmp,Nnmp),Gbt(Nnmp,Nnmp),Qb(Nnmp,Nnmp)
-  REAL*8 zeta(nax),theta(nax),mdummy(Nnmp,Nnmp)
+  REAL*8 D11(Nnmp,Nnmp),Gbt(Nnmp,Nnmp),Qb(Nnmp,Nnmp)!,D31
+  REAL*8 zeta(nax),theta(nax),dummy,mdummy(Nnmp,Nnmp)
 !here
   !Time
   CHARACTER*30, PARAMETER :: routine="CALC_TRACE1NU_O_LOWCOLL"
@@ -1143,11 +1143,11 @@ SUBROUTINE CALC_TRACE1NU_O_LOWCOLL(jt,ib,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,
      !Perform monoenergetic calculation
      CALL CALC_MONOENERGETIC(ib,ZB(ib),AB(ib),13,.TRUE.,jt,iv,ZERO,&
           & phi1c(1:Nnmp),Mbbnm(1:Nnmp),trMnm(1:Nnmp),&
-          & D11(1:Nnmp,1:Nnmp),nalphab,zeta,theta,mdummy(1:Nnmp,1:Nnmp))
+          & D11(1:Nnmp,1:Nnmp),nalphab,zeta,theta,mdummy(1:Nnmp,1:Nnmp),dummy)
      !Calculate thermal transport coefficients and radial fluxes
      CALL INTEGRATE_V(jt,ib,Ab(ib),.TRUE.,Tb(ib),iv,D11/weight(iv),mdummy(1:Nnmp,1:Nnmp),&
           & L1b(1:Nnmp,1:Nnmp,ib,jt),L2b(1:Nnmp,1:Nnmp,ib,jt),Gbt,Qb,&
-          & mdummy(1:Nnmp,1:Nnmp),mdummy(1:Nnmp,1:Nnmp),mdummy(1:Nnmp,1:Nnmp))
+          & mdummy(1:Nnmp,1:Nnmp),mdummy(1:Nnmp,1:Nnmp),mdummy(1:Nnmp,1:Nnmp),dummy,dummy,dummy)
      !Check convergence
      IF(DEBUG) WRITE(5600+myrank,'(2I4,30(1pe13.5))') ib,iv,s,Epsi*psip,D11(1,1),L1b(1,1,ib,jt)
      !Check convergence

@@ -69,10 +69,15 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
      offset=TWOPI
   END IF
   offset=offset-iota*PI/nzperiod    
-
-  zeta0=0
+  
+  IF(NTV) THEN
+     zeta0=0!PI
+  ELSE
+     zeta0=0
+  END IF
   theta0=theta0+offset
-!  END IF
+  
+  !  END IF
 
   iw=nw0-1  !nw0 wells have already been found, look for more
   DO ialpha=1,na
@@ -293,11 +298,11 @@ SUBROUTINE CALC_VDBP(z_in,t_in,B_out,Bp_out,hBpp_out,vd)
      vd(1)=0.5*(Btheta*dBdz_0-Bzeta*dBdt_0)/denom
      IF(USE_B0pB1) vd(1)=vd(1)+0.5*(Btheta*dBdz_1-Bzeta*dBdt_1)/denom
   END IF
-  vd(2)=0.5*(iBtpBz*dBdpsi+((Bzeta*dBdt_0-Btheta*dBdz_0)*diotadpsi*z_in))/denom     !tangential v_M 
+  vd(2)=0.5*(iBtpBz*dBdpsi+(Bzeta*dBdt_0-Btheta*dBdz_0)*diotadpsi*z_in)/denom     !tangential v_M 
   vd(3)=B_0*B_0/avB2   !incompressibility factor
-  IF(USE_B0) THEN
-     vd(1)=vd(1)+0.5*(Btheta*dBdz_1-Bzeta*dBdt_1)/denom !CHECK
-  END IF
+!  IF(USE_B0) THEN
+!     vd(1)=vd(1)+0.5*(Btheta*dBdz_1-Bzeta*dBdt_1)/denom !CHECK
+!  END IF
 
 END SUBROUTINE CALC_VDBP
 
@@ -992,7 +997,7 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
      Qint(1)=1./sqrt1mlb              ! tau
      Qint(2)=lambd*sqrt1mlb/B_0       ! vpar
      Qint(3)=vds/sqrt1mlb             ! radial magnetic drift
-     IF(USE_B1) Qint(3)=factB*(Btheta*dBdz_1-Bzeta*dBdt_1)     
+!     IF(USE_B1) Qint(3)=factB*(Btheta*dBdz_1-Bzeta*dBdt_1)     
      Qint(4)=vda/sqrt1mlb             ! tangential magnetic drift
      Qint(5)=B_0*B_0/avB2/sqrt1mlb    ! factor for incompressible ExB tangential drift 
      Qint(6)=sqrt1mlb                 ! J

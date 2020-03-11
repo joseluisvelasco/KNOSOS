@@ -11,6 +11,9 @@ NODENAME := $(shell uname -n|rev|cut -f2 -dl|rev)
 ifeq ($(HOSTNAME), xula01)
 CASE=xula
 endif
+ifeq ($(HOSTNAME), xula02)
+CASE=xula
+endif
 ifeq ($(HOSTNAME), euler01)
 CASE=euler
 endif
@@ -171,12 +174,12 @@ endif
 ###### Targets, pre-requisites and commands ######################################
 
 knosos.x: \
-	global.o \
+	global.o knosos_stellopt.o \
 	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o database.o  \
 	errors.o input.o knosos.o lagrange.o low_collisionality.o  mpi_and_end.o \
 	plasmas.o plateau.o pfirsch_schlueter.o times.o trace_impurities.o transport.o
 
-	${COMPILER} -o knosos.x global.o \
+	${COMPILER} -o knosos.x global.o knosos_stellopt.o \
 	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o database.o \
 	errors.o input.o knosos.o lagrange.o low_collisionality.o mpi_and_end.o \
 	plasmas.o plateau.o pfirsch_schlueter.o times.o trace_impurities.o transport.o \
@@ -184,6 +187,9 @@ knosos.x: \
 
 global.o: global.f90
 	${COMPILER} ${FFLAGS} -c global.f90
+
+knosos_stellopt.o: knosos_stellopt.f90
+	${COMPILER} ${FFLAGS} -c knosos_stellopt.f90
 
 amb_and_qn.o: amb_and_qn.f90
 	${COMPILER} ${FFLAGS} -c amb_and_qn.f90
@@ -240,4 +246,4 @@ transport.o: transport.f90
 	${COMPILER} ${FFLAGS} -c transport.f90
 
 clean:
-	rm knosos.x *genmod* *.o global.mod
+	rm knosos.x *genmod* *.o global.mod knosos_stellopt.mod

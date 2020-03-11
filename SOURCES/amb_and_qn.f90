@@ -140,7 +140,7 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
         WRITE(600+myrank,'(1000(1pe13.5))') s,Epsi*psip,&
              & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip,&
              & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
-             & zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota
+             & zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota,spol,psip
 
         IF(TASK3D) WRITE(5600+myrank,'(1000(1pe13.5))') SQRT(s),&
              & nb(1)*1E19,nb(2)*1E19,ZERO,Tb(1),Tb(2),ZERO,&
@@ -183,8 +183,8 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
      WRITE(600+myrank,'(1000(1pe13.5))') s,Epsi*psip,&
           & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip, &
           & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
-          & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota,&
-          & PI*vth(1)*vth(1)*vth(1)*m_e*m_e*Ab(1)*Ab(1)/(16.*aiota*rad_R*borbic(0,0)*borbic(0,0)*Zb(1)*Zb(1))
+          & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota,spol,psip,(rad_R*Epsi/vth(1)/-iota),(rad_R*Epsi/vth(2)/-iota),rad_R
+!          & PI*vth(1)*vth(1)*vth(1)*m_e*m_e*Ab(1)*Ab(1)/(16.*aiota*rad_R*borbic(0,0)*borbic(0,0)*Zb(1)*Zb(1))
 
      
   END IF
@@ -232,6 +232,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   REAL*8 Mbbnm(Nnmp),trMnm(Nnmp)
   REAL*8 phi1c(100,Nnmp)
   REAL*8 Db(NBB),Vb(NBB),n1nmb(Nnmp,NBB)!,ipf(NBB),f_eta(NBB)
+  REAL*8 D31,L31(NBB),L32(NBB)
   !Time
   CHARACTER*30, PARAMETER :: routine="CALC_FLUXES"
   INTEGER, SAVE :: ntotal=0
@@ -244,12 +245,27 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
   INCLUDE "mpif.h"
 #endif
 
+  IF(USE_SHAING) THEN
+     DO ib=1,MIN(2,nbb)
+        CALL DKE_CONSTANTS(ib,NBB,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,.TRUE.)      
+        CALL CALC_NTV(jt,s,ib,regb(ib),Zb(ib),Ab(ib),nb(ib),dnbdpsi(ib),Tb(ib),dTbdpsi(ib),Epsi,L1b(ib),Gb(ib))
+     END DO
+     WRITE(600+myrank,'(1000(1pe13.5))') s,Epsi*psip,&
+          & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip,&
+          & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
+          & zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota,spol,psip
+     RETURN
+  END IF
+
   CALL CPU_TIME(tstart)
+
   ALLOCATE(Grhs(NBB,Nnmp,Nnmp),Qrhs(NBB,Nnmp,Nnmp),L1rhs(NBB,Nnmp,Nnmp),L2rhs(NBB,Nnmp,Nnmp))
   Grhs=0
   Qrhs=0
   L1rhs=0
   L2rhs=0
+  L31=0
+  L32=0
   ALLOCATE(Gphi(NBB,Nnmp),Qphi(NBB,Nnmp),L1phi(NBB,Nnmp),L2phi(NBB,Nnmp))
   ALLOCATE(n1nmrhs(Nnmp,Nnmp,NBULK),Mbbnmrhs(Nnmp,Nnmp),trMnmrhs(Nnmp,Nnmp))
 
@@ -333,7 +349,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
               !Perform monoenergetic calculation
               iv=jv(kv)
               CALL CALC_MONOENERGETIC(ib,ZB(ib),AB(ib),REGB(ib),regp(ib),jt,iv,Epsi,&
-                   & phi1c(jt,:),Mbbnm,trMnm,D11,nalphab,zeta,theta,dn1nmdv)
+                   & phi1c(jt,:),Mbbnm,trMnm,D11,nalphab,zeta,theta,dn1nmdv,D31)
 !              IF(jt.GT.0.AND.(QN.OR.TRACE_IMP).AND.REGB(ib).EQ.3.AND.kb.EQ.1.AND.kv.EQ.1) THEN
               IF(jt.GT.0.AND.(QN.OR.TRACE_IMP).AND.kb.EQ.1.AND.kv.EQ.1) THEN
                  phi1nm=0
@@ -347,7 +363,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
               !Calculate thermal transport coefficients and radial fluxes
               CALL INTEGRATE_V(jt,ib,Ab(ib),regp(ib),Tb(ib),iv,D11,dn1nmdv,&
                    & L1rhs(ib,:,:),L2rhs(ib,:,:),Grhs(ib,:,:),Qrhs(ib,:,:),&
-                   & n1nmrhs(:,:,ib),Mbbnmrhs,trMnmrhs)
+                   & n1nmrhs(:,:,ib),Mbbnmrhs,trMnmrhs,D31,L31(ib),L32(ib))
 
               !Check convergence
               dL2dv=D11(1,1)*x2(iv)*weight(iv)
@@ -492,7 +508,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 
 
 SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
-     & D11,nalphab,zeta,theta,dn1nmdv)
+     & D11,nalphab,zeta,theta,dn1nmdv,D31)
  
 !----------------------------------------------------------------------------------------------- 
 !Calculate monoenergetic transport coefficient D11 and contribution quasineutrality dn1nmdv
@@ -509,7 +525,7 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
   REAL*8 Zb,Ab,Epsi,phi1c(Nnmp),Mbbnm(Nnmp),trMnm(Nnmp)
   !Output
   INTEGER nalphab
-  REAL*8 D11(Nnmp,Nnmp),zeta(nax),theta(nax),dn1nmdv(Nnmp,Nnmp)
+  REAL*8 D11(Nnmp,Nnmp),zeta(nax),theta(nax),dn1nmdv(Nnmp,Nnmp),D31
   !Others
   INTEGER ia,il
   REAL*8 efield,cmul,nustar,rhostar,dn1dv(nax,nax),dD11(1,1)
@@ -540,12 +556,14 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
         WRITE(1000+myrank,'(" RHOSTAR/EPS^1/2",1pe13.5)') rhostar/SQRT(eps)
         WRITE(1000+myrank,'(" RHOSTAR        ",1pe13.5)') rhostar
         WRITE(1000+myrank,'(" NUSTAR         ",1pe13.5)') nustar
+        WRITE(1000+myrank,'(" NUSTAR(1/nu)   ",1pe13.5)') rad_R*cmul_1nu/aiota
+                
      END IF
   END IF
   !Determine regime in which species ib is:
   IF(regb.EQ.-1) THEN !use DKES
      IF(.NOT.DKES_READ) RETURN
-     CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),.FALSE.) 
+     CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.FALSE.) 
      !Correction of DKES with the effect of the tangential magnetic drift
      IF(TANG_VM.AND.cmul.LT.cmul_1nu) THEN
         CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
@@ -562,7 +580,7 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
   ELSE IF(regb.EQ.0) THEN      !depends on collisionality
      IF(cmul.GT.cmul_1NU) THEN
         IF(DKES_READ) THEN
-           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),.FALSE.)
+           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.FALSE.)
         ELSE
            IF(cmul.GT.cmul_PS) THEN
               CALL CALC_PS(iv,Epsi,D11(1,1))    
@@ -573,7 +591,7 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
         END IF
      ELSE
         IF(FAST_AMB) THEN
-           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),.TRUE.) 
+           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.TRUE.) 
         ELSE
            CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
                 & D11,nalphab,zeta,theta,dn1dv,dn1nmdv)
@@ -661,7 +679,7 @@ END SUBROUTINE PRECALC_TRIG
 
 
 SUBROUTINE INTEGRATE_V(jt,ib,Ab,regp,Tb,iv,D11,dn1nmdv,L1rhs,L2rhs,Grhs,Qrhs,&
-     & n1nmrhs,Mbbnmrhs,trMnmrhs)
+     & n1nmrhs,Mbbnmrhs,trMnmrhs,D31,L31,L32)
 
 !----------------------------------------------------------------------------------------------- 
 !At instant j and for species ib of  mass Ab and temperature Tb in regime regp
@@ -674,11 +692,12 @@ SUBROUTINE INTEGRATE_V(jt,ib,Ab,regp,Tb,iv,D11,dn1nmdv,L1rhs,L2rhs,Grhs,Qrhs,&
   !Input
   LOGICAL regp
   INTEGER jt,ib,iv
-  REAL*8 Ab,Tb,D11(Nnmp,Nnmp),dn1nmdv(Nnmp,Nnmp)
+  REAL*8 Ab,Tb,D11(Nnmp,Nnmp),dn1nmdv(Nnmp,Nnmp),D31
   !Output
   REAL*8 L1rhs(Nnmp,Nnmp),L2rhs(Nnmp,Nnmp),Grhs(Nnmp,Nnmp),Qrhs(Nnmp,Nnmp)
   REAL*8 n1nmrhs(Nnmp,Nnmp)
   REAL*8 Mbbnmrhs(Nnmp,Nnmp),trMnmrhs(Nnmp,Nnmp)
+  REAL*8 L31,L32
   !Others
   REAL*8 v2,x2,wD11(Nnmp,Nnmp),wn1nmS(Nnmp,Nnmp)
   !Time
@@ -709,6 +728,9 @@ SUBROUTINE INTEGRATE_V(jt,ib,Ab,regp,Tb,iv,D11,dn1nmdv,L1rhs,L2rhs,Grhs,Qrhs,&
      END IF    
   END IF
 
+  L31=L31+weight(iv)*D31
+  L32=L32+weight(iv)*D31*x2
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INTEGRATE_V

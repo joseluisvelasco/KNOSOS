@@ -67,7 +67,6 @@ SUBROUTINE CALC_BANANA(jv,Epsi,D11)
   Sov=0
   DO iz=1,1
      DO it=1,nal
-        print *,'iota',iota
         CALL EXTREME_POINT(zeta(iz),theta(it),0,z1,t1,B1,dummy,vd,flag)
         IF(flag.EQ.1) THEN  !Depending on flag, the extreme found was a maximum or a minimum
            zb=z1           !If mimimum, go backwards
@@ -173,25 +172,26 @@ SUBROUTINE CALC_B0
   USE GLOBAL
   IMPLICIT NONE
   !Others
-  INTEGER, PARAMETER :: npar=2
+  INTEGER, PARAMETER :: npar=3
   INTEGER, PARAMETER :: npt=64
   INTEGER, PARAMETER :: nsurf=npt/2
   LOGICAL shift_twopi
   INTEGER iz,iz0,it,ieta,iturn,ibranch,imat,ipar,n,m,np1,mp1,fint
-  INTEGER izmin(npt)
+  INTEGER izmin(npt),hel_N,hel_M
   REAL*8 Bmax,epsilon,iotat,dist,distb
-  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt)
+  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt)
   REAL*8 val_eta(nsurf),zeta(npt),theta(npt),temp(npt),zetat(npt,npt),zetal(nsurf,npt),zeta0(npt,npt)
   !Matrix
   INTEGER ierr,lwork,rank
   INTEGER, ALLOCATABLE :: iwork(:)
   REAL*8, ALLOCATABLE :: rwork(:),work(:)
-  REAL*8 rcond,s_svd(npar),rhs(nsurf*npt),mat(nsurf*npt,npar)
+  REAL*8 rcond,s_svd(npar),rhs(nsurf*npt),mat(nsurf*npt,npar),parB(npar)
   COMPLEX*16 B0mn(npt,npt)
 
   borbic0=0!borbic
   borbis0=0!borbis
-
+  dborbic0dpsi=0
+  dborbis0dpsi=0
   !Determine helicity of B_0
   Bmax=0
   DO m=0,mpolbd
@@ -210,17 +210,31 @@ SUBROUTINE CALC_B0
   !Look for a QS omnigenous
   IF(QS_B0.OR.helN.EQ.0) THEN
      borbic0(0,0)=borbic(0,0)
+     dborbic0dpsi(0,0)=dborbicdpsi(0,0)                
+     IF(.NOT.QS_B0_1HEL) borbis0(0,0)=borbis(0,0)
      DO fint=1,MIN(ntorbd,mpolbd)
-        IF(QS_B0_1HEL.AND.fint.GT.1) EXIT
-        n=helN*fint/nzperiod
+!        IF(QS_B0_1HEL.AND.fint.GT.1) EXIT
+        n=helN*fint!/nzperiod
         m=helM*fint
         IF(m.LT.0) THEN
            m=-m
            n=-n
         END IF
         IF(m.GT.mpolbd.OR.ABS(n).GT.ntorbd) CYCLE
-        borbic0(n,m)=borbic(n,m)
+        IF(QS_B0_1HEL.AND.fint.GT.1) THEN
+           borbic(n,m)=0
+           borbis(n,m)=0
+        ELSE
+           borbic0(n,m)=borbic(n,m)
+           dborbic0dpsi(n,m)=dborbicdpsi(n,m)
+           IF(.NOT.QS_B0_1HEL) THEN
+              borbis0(n,m)=borbis(n,m)
+              dborbis0dpsi(n,m)=dborbisdpsi(n,m)
+           END IF
+        END IF
      END DO
+     dborbicdpsi=dborbic0dpsi
+     dborbisdpsi=dborbis0dpsi
      RETURN
   END IF
   
@@ -246,8 +260,10 @@ SUBROUTINE CALC_B0
      DO iz=1,npt
         zetat(iz,it)=temp(iz)
         CALL SUM_BORBI(zeta(iz),theta(it),Bzt(iz,it))
+        
      END DO
   END DO
+
   DO it=1,npt
      DO iz=1,npt
         iz0=MINLOC(zetat(iz:npt,it),1)+iz-1
@@ -281,16 +297,41 @@ SUBROUTINE CALC_B0
      shift_twopi=.TRUE.
      zetat=MOD(zetat+PI,TWOPI)
   END IF
-!  DO iz=1,npt
-!     DO it=1,npt
-!        WRITE(6,'(4(1pe13.5),3(I3))') zetat(iz,it),theta(it),Bzt(iz,it),zeta(iz),iz
-!     END DO
-!  END DO
+
+  Bg=0
+  DO iz=1,npt
+     DO it=1,npt
+        Bg(iz)=Bg(iz)+Bzt(iz,it)
+     END DO     
+  END DO
+  Bg=Bg/npt
+
+  lwork=-1
+  ierr=0
+  rcond=-1
+  ALLOCATE(rwork(1000),iwork(1000),work(1000))
+  DO iturn=1,3
+     DO iz=1,npt
+        IF(iturn.LE.2) rhs(iz)=Bg(iz)-borbic(0,0)
+        DO ipar=1,npar
+           mat(iz,ipar)=COS(ipar*zetat(iz,1))
+        END DO
+     END DO
+     IF(iturn.LE.2) THEN
+        IF(iturn.EQ.2) lwork=MIN(1000,INT(work(1)))
+        CALL DGELSD(npt,npar,1,mat(1:npt,:),npt,rhs(1:npt),npt,&
+             & s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)
+     END IF
+  END DO
+  parB=rhs(1:npar)
   
   !Find target contour lines
   DO ieta=1,nsurf
      val_eta(ieta)=ieta*PI/nsurf
-     val_B(ieta)=Bmin_av*(1.0+epsilon*(1.0+COS(val_eta(ieta))))
+     val_B(ieta)=borbic(0,0)
+     DO ipar=1,npar
+        val_B(ieta)=val_B(ieta)+parB(ipar)*COS(ipar*val_eta(ieta))
+     END DO
      DO it=1,npt
         IF(ieta.EQ.nsurf.OR.val_B(ieta).LT.Bmin_th(it)) THEN
            zetal(ieta,it)=zetat(izmin(it),it)
@@ -318,6 +359,7 @@ SUBROUTINE CALC_B0
   lwork=-1
   ierr=0
   rcond=-1
+  DEALLOCATE(rwork,iwork,work)
   ALLOCATE(rwork(1000),iwork(1000),work(1000))
   DO iturn=1,3
      DO ieta=1,nsurf
@@ -339,7 +381,10 @@ SUBROUTINE CALC_B0
         DO ieta=1,nsurf
            DO ibranch=1,-1,-2
               val_eta(ieta)=-ibranch*(PI-ieta*PI/nsurf)+PI
-              val_B(ieta)=Bmin_av*(1+epsilon*(1+COS(val_eta(ieta))))
+              val_B(ieta)=borbic(0,0)
+              DO ipar=1,npar
+                 val_B(ieta)=val_B(ieta)+parB(ipar)*COS(ipar*val_eta(ieta))
+              END DO
               IF(ibranch.EQ.1) THEN
                  iz=ieta+1
               ELSE
@@ -431,15 +476,16 @@ SUBROUTINE CALC_B0
   DO n=-ntorbd,ntorbd
      DO m=0,mpolbd 
         IF(ABS(borbic0(n,m)).LT.3E-5) CYCLE
-        dist=dist+(borbic(n,m)*borbic(n,m)-borbic0(n,m)*borbic0(n,m))
+        dist=dist+(borbic(n,m)-borbic0(n,m))*(borbic(n,m)-borbic0(n,m))
         IF(ABS(borbic(n,m)-borbic0(n,m)).GT.distB) THEN
            distB=ABS(borbic(n,m)-borbic0(n,m))
-           helN=n
-           helM=m
+           hel_N=n
+           hel_M=m
         END IF
      END DO
   END DO
   dist=SQRT(dist)/borbic(0,0)
+!  dist=SQRT(dist)/ABS(borbic(helN,helM))
     
 END SUBROUTINE CALC_B0
 
