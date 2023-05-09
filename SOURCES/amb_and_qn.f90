@@ -47,33 +47,50 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
   IF(SOLVE_AMB) THEN
 
      IF(SCAN_ER) THEN
-        WRITE(1000+myrank,*) 'Scanning Er'
+        WRITE(iout,*) 'Scanning Er'
      ELSE
-        WRITE(1000+myrank,*) 'Calculating Er'
+        WRITE(iout,*) 'Calculating Er'
      END IF
      Epsiacc=1E3*ERACC/psip
      !Find changes of sign of the radial neoclasical current (nroot, may be more than 1)
      IF(ERMAX-ERMIN.GT.-1E-3) THEN !between Epsimin and Epsimax
         Epsimin=1E3*ERMIN/psip         
         Epsimax=1E3*ERMAX/psip
-     ELSE 
+     ELSE
         !1.5 times ion root solution with ions in the 1/nu regime
-        Epsimin= 1.5*(3.5*dTbdpsi(2)+Tb(2)*dnbdpsi(2)/nb(2))/ZB(2) 
+        Epsimin= 1.5*(3.5*dTbdpsi(2)+Tb(2)*dnbdpsi(2)/nb(2))/ZB(2)
         IF(Epsimin.GT.-1E+4/psip) Epsimin=-1E+4/psip
         !1.5 times electron root solution with electrons in the 1/nu regime
         Epsimax=-1.5*(3.5*dTbdpsi(1)+Tb(1)*dnbdpsi(1)/nb(1))
-        IF(Epsimax.LT.5E+3/psip) Epsimax=+5E+3/psip 
+        IF(Epsimax.LT.+1E+4/psip) Epsimax=+1E+4/psip
+        IF(Epsimax.GT.+2E+4/psip) Epsimax=+2E+4/psip
+
+        Epsi=Epsimin
+        dEpsi=(Epsimax-Epsimin)/(NER-1)
+        DO iEpsi=2,NER
+           Epsi=Epsi+dEpsi
+           IF(Epsi.GT.0) THEN
+              IF(Epsi.LT.dEpsi/2) THEN
+                 Epsimin=Epsimin-Epsi
+                 Epsimax=Epsimax-Epsi
+              ELSE
+                 Epsimin=Epsimin+(dEpsi-Epsi)
+                 Epsimax=Epsimax+(dEpsi-Epsi)
+              END IF
+              EXIT
+           END IF
+        END DO
      END IF
 
      Epsi=Epsimin
-     WRITE(1000+myrank,'(" Calculating for Er=",1pe13.5,", kV/m")') Epsi*psip/1E3
+     WRITE(iout,'(" Calculating for Er=",1pe13.5,", kV/m")') Epsi*psip/1E3
      CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
           & Gb,Qb,L1b,L2b,ephi1oTsize)
      Jr(1)=SUM(ZB(1:NBB)*nb(1:NBB)*Gb(1:NBB))
      dEpsi=(Epsimax-Epsimin)/(NER-1)
      nroot=0
      DO iEpsi=2,NER
-        WRITE(1000+myrank,'(" Calculating for Er=",1pe13.5,", kV/m")') Epsi*psip/1E3
+        WRITE(iout,'(" Calculating for Er=",1pe13.5,", kV/m")') Epsi*psip/1E3
         Jr_old=Jr(iEpsi-1)
         Epsi=Epsi+dEpsi
         CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
@@ -124,7 +141,7 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
         DO iEpsi=1,NER
            dEpsi=dEpsi*.5 
            Epsi=Ebx+dEpsi           
-           WRITE(1000+myrank,'(" Calculating for Er=",1pe13.5,", V/m")') Epsi*psip
+           WRITE(iout,'(" Calculating for Er=",1pe13.5,", V/m")') Epsi*psip
            CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
                 & Gb,Qb,L1b,L2b,ephi1oTsize)
            Jr(NER+1)=SUM(ZB(1:NBB)*nb(1:NBB)*Gb(1:NBB))
@@ -140,28 +157,60 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
         WRITE(600+myrank,'(1000(1pe13.5))') s,Epsi*psip,&
              & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip,&
              & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
-             & zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota,spol,psip
+             & zb(ib),ib=1,MAX(2,NBB)),ephi1oTsize,iota,spol,psip
+        
 
-        IF(TASK3D) WRITE(5600+myrank,'(1000(1pe13.5))') SQRT(s),&
+        IF(TASK3D) THEN
+           WRITE(5600+myrank,'(1000(1pe13.5))') SQRT(s),&
              & nb(1)*1E19,nb(2)*1E19,ZERO,Tb(1),Tb(2),ZERO,&
              & Epsi*psip/1E3,nb(1)*1E19*Gb(1)/psip,&
              & 1.602*nb(1)*Tb(1)*Qb(1)/psip,1.602*nb(2)*Tb(2)*Qb(2)/psip,&
              & Qb(1)/psip/psip/dTbdpsi(1)*Tb(1),Qb(2)/psip/psip/dTbdpsi(2)*Tb(2)
+        ELSE IF(PREDICTIVE.AND.nroot.EQ.1) THEN
+           WRITE(5600+myrank,'(1000(1pe13.5))') SQRT(s),Epsi*psip,& 
+                & 1.602*nb(2)*Tb(2)*Qb(2)/psip,1.602*nb(1)*Tb(1)*Qb(1)/psip,&
+                & (1.602*nb(ib)*Tb(ib)*Qb(ib)/psip,ib=3,nbb),&
+                & nb(2)*Gb(2)/psip,nb(1)*Gb(1)/psip,&
+                & (nb(ib)*Gb(ib)/psip,ib=3,nbb)
+        END IF
      END DO
 
      !Find most stable root
+     WRITE(iout,*) 'AMB',nroot,Epsi1(1)*psip/1E3,Epsi1(2)*psip/1E3
      IF(nroot.GT.1) THEN
-        DO iEpsi=1,NER
-           Epsi=Epsimin+(iEpsi-1)*dEpsi
-           IF(Epsi.GT.Epsi1(1).AND.Epsi.LT.Epsi2(3)) q=q+Jr(iEpsi)
-        END DO
-        IF(q.GE.0) THEN
+        IF(ER_ROOT.EQ.-1) THEN
            Epsi=Epsi1(1)
            CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
                 & Gb,Qb,L1b,L2b,ephi1oTsize)   
+        ELSE IF(ER_ROOT.EQ.1) THEN
+           Epsi=Epsi1(2)
+        ELSE IF(Epsi1(1)*psip/1E3.GT.1.AND.Epsi1(2)*psip/1E3.GT.10.) THEN
+           Epsi=Epsi1(1)
+           CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
+                & Gb,Qb,L1b,L2b,ephi1oTsize)
         ELSE
-           Epsi=Epsi1(3)
+           q=0
+           dEpsi=(Epsimax-Epsimin)/(NER-1)
+           DO iEpsi=1,NER
+              Epsi=Epsimin+(iEpsi-1)*dEpsi
+              IF(Epsi.LT.Epsi1(1)) CYCLE
+              IF(ABS(Epsi).LT.SMALL.AND.(.NOT.TANG_VM)) CYCLE
+              IF(Epsi.GT.Epsi2(2)) EXIT
+              q=q+Jr(iEpsi)
+              WRITE(iout,*) 'amb',Epsi,q
+           END DO
+           IF(q.GE.0) THEN
+              Epsi=Epsi1(1)
+              CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
+                   & Gb,Qb,L1b,L2b,ephi1oTsize)   
+           ELSE
+              Epsi=Epsi1(2)
+              CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
+                   & Gb,Qb,L1b,L2b,ephi1oTsize)
+           END IF
         END IF
+        IF(PREDICTIVE) WRITE(5600+myrank,'(1000(1pe13.5))') SQRT(s),Epsi*psip,&
+                & 1.602*nb(2)*Tb(2)*Qb(2)/psip,1.602*nb(1)*Tb(1)*Qb(1)/psip
      ELSE IF(nroot.EQ.0) THEN
         Gb=0
         Qb=0
@@ -176,14 +225,14 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
   !Use pre-calculated Epsi
   ELSE
 
-     WRITE(1000+myrank,'(" Calculating for Er=",1pe13.5,", kV/m")') Epsi*psip/1E3
+     WRITE(iout,'(" Calculating for Er=",1pe13.5,", kV/m")') Epsi*psip/1E3
 
      CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
           & Gb,Qb,L1b,L2b,ephi1oTsize)
      WRITE(600+myrank,'(1000(1pe13.5))') s,Epsi*psip,&
           & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip, &
           & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
-          & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota,spol,psip,(rad_R*Epsi/vth(1)/-iota),(rad_R*Epsi/vth(2)/-iota),rad_R
+          & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota,spol,psip,(-rad_R*Epsi/vth(1)/iota),(-rad_R*Epsi/vth(2)/iota),rad_R
 !          & PI*vth(1)*vth(1)*vth(1)*m_e*m_e*Ab(1)*Ab(1)/(16.*aiota*rad_R*borbic(0,0)*borbic(0,0)*Zb(1)*Zb(1))
 
      
@@ -310,39 +359,39 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 
   phi1c=0
 
+
   DO jt=MOD(jt0,10),jt0
      
-     IF(jt.EQ.0.AND.(.NOT.DKES_READ.OR..NOT.(REGB(1).EQ.-1.AND.REGB(2).EQ.-1))) CYCLE
+!     IF(jt.EQ.0.AND.(.NOT.DKES_READ.OR..NOT.(REGB(1).EQ.-1.AND.REGB(2).EQ.-1))) CYCLE
 !     IF(jt.GT.0.AND.SUM(regb(1:nbb)).EQ.0) CYCLE
      IF((MOD(jt0,10).NE.MOD(jt,10)).AND.jt.NE.0) CYCLE
 
-     IF(jt.EQ.00) WRITE(1000+myrank,&
-          & '(" Using DKES transport coefficients")')
-     IF(jt.EQ.01) WRITE(1000+myrank,&
+     IF(jt.EQ.00) WRITE(iout,&
+          & '(" Using DKES transport coefficients if available")')
+     IF(jt.EQ.01) WRITE(iout,&
           & '(" Without tangential magnetic drift, not solving quasineutrality")')
-     IF(jt.EQ.02) WRITE(1000+myrank,&
+     IF(jt.EQ.02) WRITE(iout,&
           & '(" With tangential magnetic drift, not solving quasineutrality")') 
-     IF(jt.EQ.11) WRITE(1000+myrank,&
+     IF(jt.EQ.11) WRITE(iout,&
           & '(" Without tangential magnetic drift, solving quasineutrality")')
-     IF(jt.EQ.12) WRITE(1000+myrank,&
+     IF(jt.EQ.12) WRITE(iout,&
           &'(" With tangential magnetic drift, solving quasineutrality")') 
-     IF(jt.EQ.21) WRITE(1000+myrank,&
+     IF(jt.EQ.21) WRITE(iout,&
           & '(" Without tangential magnetic drift, solving quasineutrality, all kinetic")')
-     IF(jt.EQ.22) WRITE(1000+myrank,&
+     IF(jt.EQ.22) WRITE(iout,&
           & '(" With tangential magnetic drift, solving quasineutrality, all kinetic")') 
      
      !Scan in species
      DO kb=1,NBB
         ib=jb(kb)
-        IF(ib.EQ.1) WRITE(1000+myrank,'(" Electrons")')
-        IF(ib.EQ.2) WRITE(1000+myrank,'(" Bulk ions, Z=",f3.0,", A=",f6.3)') ZB(ib),AB(ib)
-        IF(ib.GT.2) WRITE(1000+myrank,'(" Impurities #",I2,", Z=",f4.0,", A=",f8.4)') ib,ZB(ib),AB(ib)
-
+        IF(ib.EQ.1) WRITE(iout,'(" Electrons")')
+        IF(ib.EQ.2) WRITE(iout,'(" Bulk ions, Z=",f3.0,", A=",f6.3)') ZB(ib),AB(ib)
+        IF(ib.GT.2) WRITE(iout,'(" Impurities #",I2,", Z=",f4.0,", A=",f8.4)') ib,ZB(ib),AB(ib)
         !Calculate (v,species)-dependent constants
         CALL DKE_CONSTANTS(ib,NBB,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,.TRUE.)      
         D11=0 !default: adiabatic
 
-        IF(jt.LT.10.AND.REGB(ib).LT.10.AND.ib.LE.NBULK) THEN
+        IF(jt.LT.10.AND.REGB(ib).LT.10) THEN!.AND.ib.LE.NBULK) THEN
            x2=v*v/vth(ib)/vth(ib)
            !Scan in v for the calculation of dQ/dv, dGamma/dv, etc
            DO kv=1,nv
@@ -367,11 +416,11 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 
               !Check convergence
               dL2dv=D11(1,1)*x2(iv)*weight(iv)
-              IF(DEBUG) WRITE(4400+myrank,'(2I4,30(1pe13.5))') ib,iv,s,Epsi*psip,L2rhs(ib,1,1),dL2dv
+              IF(DEBUG) WRITE(4400+myrank,'(2I4,30(1pe13.5))') ib,iv,s,Epsi*psip,x2(iv),L2rhs(ib,1,1),dL2dv
               !Check convergence
               IF(regb(ib).GT.-2.AND.iv.GT.iv0.AND.jv(2).GT.jv(1).AND.PREC_INTV.GT.0) THEN
                   IF (dL2dV.LT.PREC_DQDV*L2rhs(ib,1,1)) THEN
-                     WRITE(1000+myrank,'(" Integral in of species #",I1,"&
+                     WRITE(iout,'(" Integral in of species #",I1,"&
                           & , converged for iv=",I2,", v/v_th=",f7.4)') ib,iv,SQRT(x2(iv))
                      EXIT
                   ELSE IF(iv.EQ.nv) THEN
@@ -379,7 +428,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                   END IF
                END IF
             END DO
-            WRITE(1000+myrank,'(" L2/L1 for species #",I1," is ",f4.1,&
+            WRITE(iout,'(" L2/L1 for species #",I1," is ",f4.1,&
                  & " (should be 3 for plateau, 5 for 1/nu, 2.75 for sqrt(nu) and 2.5 for sb-p)")') &
                  & ib,L2rhs(ib,1,1)/L1rhs(ib,1,1)
            !Sums over species
@@ -492,7 +541,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
       !Plots results
       CALL PLOT_FLUX(jt,jt0,nbb,s,Epsi,Gb,Qb,L1b,L2b,Zb,nb,dnbdpsi,Tb,dTbdpsi,ephi1oTsize,&
            & Grhs(:,1,1),Qrhs(:,1,1),L1rhs(:,1,1),L2rhs(:,1,1),Gphi,Qphi,L1phi,L2phi)
-
+      
    END DO
    DEALLOCATE(Grhs,Qrhs,L1rhs,L2rhs,Gphi,Qphi,L1phi,L2phi)
    DEALLOCATE(n1nmrhs,Mbbnmrhs,trMnmrhs)
@@ -546,38 +595,24 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
   nustar =rad_R*nu(iv)/v(iv)/aiota
   rhostar=v(iv)*Ab*m_e/Zb/borbic(0,0)/rad_R
   IF(iv.EQ.iv0.OR.DEBUG) THEN
-     WRITE(1000+myrank,'(" NU  ",1pe13.5)') nu(iv)
+     WRITE(iout,'(" NU  ",1pe13.5)') nu(iv)
      IF(CALC_DB) THEN
-        WRITE(1000+myrank,'(" EFIELD",1pe13.5)') efield
-        WRITE(1000+myrank,'(" CMUL  ",1pe13.5)') cmul
+        WRITE(iout,'(" EFIELD",1pe13.5)') efield
+        WRITE(iout,'(" CMUL  ",1pe13.5)') cmul
      ELSE
-        WRITE(1000+myrank,'(" EPS^3/2        ",1pe13.5)') eps32
-        WRITE(1000+myrank,'(" RHOSTAR/EPS    ",1pe13.5)') rhostar/eps
-        WRITE(1000+myrank,'(" RHOSTAR/EPS^1/2",1pe13.5)') rhostar/SQRT(eps)
-        WRITE(1000+myrank,'(" RHOSTAR        ",1pe13.5)') rhostar
-        WRITE(1000+myrank,'(" NUSTAR         ",1pe13.5)') nustar
-        WRITE(1000+myrank,'(" NUSTAR(1/nu)   ",1pe13.5)') rad_R*cmul_1nu/aiota
+        WRITE(iout,'(" EPS^3/2        ",1pe13.5)') eps32
+        WRITE(iout,'(" RHOSTAR/EPS    ",1pe13.5)') rhostar/eps
+        WRITE(iout,'(" RHOSTAR/EPS^1/2",1pe13.5)') rhostar/SQRT(eps)
+        WRITE(iout,'(" RHOSTAR        ",1pe13.5)') rhostar
+        WRITE(iout,'(" NUSTAR         ",1pe13.5)') nustar
+        WRITE(iout,'(" NUSTAR(1/nu)   ",1pe13.5)') rad_R*cmul_1nu/aiota
                 
      END IF
   END IF
+  IF(.NOT.DKES_READ.AND.ABS(efield).GT.0.06*eps) Epsi=Epsi*0.06*eps/ABS(efield)
+
   !Determine regime in which species ib is:
-  IF(regb.EQ.-1) THEN !use DKES
-     IF(.NOT.DKES_READ) RETURN
-     CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.FALSE.) 
-     !Correction of DKES with the effect of the tangential magnetic drift
-     IF(TANG_VM.AND.cmul.LT.cmul_1nu) THEN
-        CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
-             & dD11,nalphab,zeta,theta,dn1dv,dn1nmdv)
-        D11(1,1)=D11(1,1)+dD11(1,1)
-        TANG_VM=.FALSE.  
-        INC_EXB=.TRUE.
-        CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
-             & dD11,nalphab,zeta,theta,dn1dv,dn1nmdv)
-        D11(1,1)=D11(1,1)-dD11(1,1)
-        TANG_VM=.TRUE.
-        INC_EXB=.FALSE.
-     END IF
-  ELSE IF(regb.EQ.0) THEN      !depends on collisionality
+  IF(regb.LE.0) THEN  !depends on collisionality
      IF(cmul.GT.cmul_1NU) THEN
         IF(DKES_READ) THEN
            CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.FALSE.)
@@ -590,11 +625,30 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
            END IF
         END IF
      ELSE
-        IF(FAST_AMB) THEN
-           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.TRUE.) 
-        ELSE
-           CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
-                & D11,nalphab,zeta,theta,dn1dv,dn1nmdv)
+        IF(regb.EQ.-1.AND.DKES_READ) THEN
+           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.FALSE.)
+           !Correction of DKES with the effect of the tangential magnetic drift
+           IF(TANG_VM) THEN
+              CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
+                   & dD11,nalphab,zeta,theta,dn1dv,dn1nmdv)
+!              D11(1,1)=D11(1,1)*dD11(1,1)
+              D11(1,1)=D11(1,1)+dD11(1,1)
+              TANG_VM=.FALSE.  
+              INC_EXB=.TRUE.
+              CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
+                   & dD11,nalphab,zeta,theta,dn1dv,dn1nmdv)
+!              D11(1,1)=D11(1,1)/dD11(1,1)
+              D11(1,1)=D11(1,1)-dD11(1,1)
+              TANG_VM=.TRUE.
+              INC_EXB=.FALSE.
+           END IF
+        ELSE IF(regb.EQ.0.OR..NOT.DKES_READ) THEN
+           IF(FAST_AMB) THEN
+              CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.TRUE.) 
+           ELSE
+              CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
+                   & D11,nalphab,zeta,theta,dn1dv,dn1nmdv)
+           END IF
         END IF
      END IF !regime set from input
   ELSE IF(regb.EQ.1) THEN
@@ -606,6 +660,8 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
      CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
           & D11,nalphab,zeta,theta,dn1dv,dn1nmdv)
   END IF
+
+   IF(.NOT.DKES_READ.AND.ABS(efield).GT.0.06*eps) Epsi=efield*v(iv)/psip
 
   IF(DEBUG.AND.(iv.EQ.iv0.OR.TRIVIAL_QN).AND.regp) THEN
      DO ia=1,nalphab
@@ -967,9 +1023,12 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
 !  INTEGER, PARAMETER :: npow=10
   INTEGER, PARAMETER :: npow=4
   INTEGER, PARAMETER :: npoints=10
-  INTEGER ia,il,nm,index,iarray,iparray
+  INTEGER ia,il,nm,index
   REAL*8 n1(nalphab,nalphab,nbb),dphi1dz,dphi1dt,ver,pfact,fact
-  REAL*8 dz,zeta2(nalphab),dt,theta2(nalphab),phi1DR,absnablarDR,dvarphi1dsDR,xDR,yDR,zDR
+#ifdef MPIandPETSc
+  INTEGER iarray,iparray
+  REAL*8 dz,dt,zeta2(nalphab),theta2(nalphab),phi1DR,absnablarDR,dvarphi1dsDR,xDR,yDR,zDR
+#endif
 ! Plateau test
 !  REAL*8 phi1plateau(nalphab,nalphab),factphi
   !Time
@@ -1107,7 +1166,7 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
                  END IF                 
                  varphi1fit=varphi1fit+phi1coeff(ipow)*mats(js,ipow)
               END DO
-!              WRITE(1000+myrank,'(I4,8(1pe13.5),I4)') jt,vars(is0+js-1),varphi1(is0+js-1),varphi1fit
+!              WRITE(iout,'(I4,8(1pe13.5),I4)') jt,vars(is0+js-1),varphi1(is0+js-1),varphi1fit
            END DO
            mats(1,1)=1
            varphi1fit=0
@@ -1122,11 +1181,11 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
 
            IF(COMPARE_MODELS) WRITE(4600+myrank,'(I4,8(1pe13.5),3(1pe13.5))') jt,zeta(il),theta(ia),phi1(il,ia),&
                 & varphi1fit,Ti,dvarphi1dsfit(il,ia),Epsi*psip,Epsi*psip*absnablar(il,ia),&
-                & (Epsi*absnablar(il,ia)-dvarphi1dsfit(il,ia)/torflux)*psip,&!array(il,ia)
+                & (Epsi*absnablar(il,ia)-dvarphi1dsfit(il,ia)/atorflux)*psip,&!array(il,ia)
                 & posx(il,ia),posy(il,ia),posz(il,ia)
            IF(jt.EQ.jt0) WRITE(4500+myrank,'(10(1pe13.5),3(1pe13.5))') s,zeta(il),theta(ia),phi1(il,ia),&
                 & varphi1fit,Ti,dvarphi1dsfit(il,ia),Epsi*psip,Epsi*psip*absnablar(il,ia),&
-                & (Epsi-dvarphi1dsfit(il,ia)/torflux)*absnablar(il,ia)*psip,&!array(il,ia),&
+                & (Epsi-dvarphi1dsfit(il,ia)/atorflux)*absnablar(il,ia)*psip,&!array(il,ia),&
                 & posx(il,ia),posy(il,ia),posz(il,ia)
         END DO
      END DO
@@ -1142,7 +1201,7 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
            IF(jt.EQ.jt0) WRITE(4500+myrank,'(10(1pe13.5),3(1pe13.5))') &  
                 & s,zetaDR(iarray,iparray),thetaDR(iarray,iparray),phi1DR,&
                 & iarray*Ti/Ti,Ti,dvarphi1dsDR,Epsi*psip,Epsi*psip*absnablarDR,&
-                & (Epsi-dvarphi1dsDR/torflux)*absnablarDR*psip,&
+                & (Epsi-dvarphi1dsDR/atorflux)*absnablarDR*psip,&
                 & xDR,yDR,zDR
         END DO
      END DO
@@ -1180,7 +1239,7 @@ SUBROUTINE READ_PHI1(nalphab,phi1c)
   filename="ph1_2D.in"
   OPEN(unit=999+myrank,file=filename,action='read',iostat=iostat)
   IF(iostat.NE.0) RETURN
-  WRITE(1000+myrank,*) 'File ',filename,' read'
+  WRITE(iout,*) 'File ',filename,' read'
   READ(999+myrank,*) fact
   DO il=1,nalphab
      DO ia=1,nalphab
@@ -1265,7 +1324,7 @@ SUBROUTINE READ_BULKSPECIES(nalphab,filename,Q,fact)
   name=filename//"_2d.in"
   OPEN(unit=1,file=name,action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
-     WRITE(1000+myrank,*) 'File ',name,' read'
+     WRITE(iout,*) 'File ',name,' read'
      name=filename//"_2d.read"
      OPEN(unit=100+myrank,file=name,form='formatted',action='write',iostat=iostat)
      READ(1,*) serr
@@ -1282,7 +1341,7 @@ SUBROUTINE READ_BULKSPECIES(nalphab,filename,Q,fact)
      Qr=0
      IF(nz.LT.nalphab.OR.nt.LT.nalphab) THEN
         IF(nz.LT.0) THEN
-           WRITE(1000+myrank,*) 'varphi_1 set to zero'
+           WRITE(iout,*) 'varphi_1 set to zero'
            RETURN
         ELSE
            serr="Error in varphi_1 file"
@@ -1386,15 +1445,9 @@ SUBROUTINE PLOT_FLUX(jt,jt0,nbb,s,Epsi,Gb,Qb,L1b,L2b,Zb,nb,dnbdpsi,Tb,dTbdpsi,ep
        & Zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,psip*sgnB*iota*Zb(ib),&
        & PI*vth(ib)*vth(ib)*vth(ib)*m_e*m_e/(16.*aiota*rad_R*borbic(0,0)*borbic(0,0)*Zb(ib)*Zb(ib))
   IF(TASK3D) THEN
-     IF(GEN_FLAG(2)) THEN
-        WRITE(5300+myrank,'(I4,1000(1pe13.5))') jt,SQRT(s),Epsi*psip/1E3,& 
-             & nb(1)*1E19*Gb(1)/psip,nb(2)*1E19*Gb(2)/psip,ZERO,nb(2)*1E19*Gb(2)/psip+ZERO,&
-             & 1.602*nb(1)*Tb(1)*Qb(1)/psip,1.602*nb(2)*Tb(2)*Qb(2)/psip,ZERO,1.602*nb(2)*Tb(2)*Qb(2)/psip
-     ELSE
-        WRITE(5300+myrank,'(1000(1pe13.5))') SQRT(s),Epsi*psip/1E3,& 
-             & nb(1)*1E19*Gb(1)/psip,nb(2)*1E19*Gb(2)/psip,ZERO,nb(2)*1E19*Gb(2)/psip+ZERO,&
-             & 1.602*nb(1)*Tb(1)*Qb(1)/psip,1.602*nb(2)*Tb(2)*Qb(2)/psip,ZERO,1.602*nb(2)*Tb(2)*Qb(2)/psip
-     END IF
+     WRITE(5300+myrank,'(1000(1pe13.5))') SQRT(s),Epsi*psip/1E3,& 
+          & nb(1)*1E19*Gb(1)/psip,nb(2)*1E19*Gb(2)/psip,ZERO,nb(2)*1E19*Gb(2)/psip+ZERO,&
+          & 1.602*nb(1)*Tb(1)*Qb(1)/psip,1.602*nb(2)*Tb(2)*Qb(2)/psip,ZERO,1.602*nb(2)*Tb(2)*Qb(2)/psip
   END IF
   IF(jt.EQ.jt0.AND.SOLVE_QN) THEN
      nm=1

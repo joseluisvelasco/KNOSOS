@@ -12,6 +12,7 @@ SUBROUTINE CALC_PS(jv,Epsi,D11)
 !----------------------------------------------------------------------------------------------- 
   
   USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
   !Input
   INTEGER jv
@@ -24,7 +25,7 @@ SUBROUTINE CALC_PS(jv,Epsi,D11)
   REAL*8 omn(-ntorbd:ntorbd,-mpolbd:mpolbd) ,umn(-ntorbd:ntorbd,-mpolbd:mpolbd)
   REAL*8 umn2,fact,G11dkes,cmul
 
-  WRITE(1000+myrank,*) 'Calculating PS'
+  WRITE(iout,*) 'Calculating PS'
 
   nu=nu/2. !Different definition than standard
   !Change Fourier representation
@@ -62,7 +63,7 @@ SUBROUTINE CALC_PS(jv,Epsi,D11)
   IF(FACT_CON.GT.0.AND.cmul_PS.GT.0.AND.cmul.LT.cmul_PS*FACT_CON) D11=D11+D11pla/fdkes(jv)
 
   G11dkes=(2*v(jv)/vdconst(jv)/vdconst(jv))/(psip*psip)*D11
-  WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5),&
+  IF(.NOT.KNOSOS_STELLOPT) WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5),&
        & "  NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
        & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),G11dkes,G11dkes
   IF(DEBUG) THEN
