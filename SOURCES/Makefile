@@ -1,4 +1,4 @@
-##################################################################################
+#################################################################################
 ############################# KNOSOS Makefile ####################################
 ##################################################################################
 
@@ -7,7 +7,11 @@
 
 HOSTNAME := $(shell uname -n|cut -f1 -d.)
 NODENAME := $(shell uname -n|rev|cut -f2 -dl|rev)
+SHOSTNAME := $(shell uname -n|cut -f1 -du)
 
+ifeq ($(SHOSTNAME), r000)
+CASE=marconi
+endif
 ifeq ($(HOSTNAME), xula01)
 CASE=xula
 endif
@@ -44,6 +48,9 @@ endif
 ifeq ($(HOSTNAME), task3d-l)
 CASE=task3d-l
 endif
+ifeq ($(HOSTNAME), ncd-ge0)
+CASE=ncd-ge0
+endif
 ifeq ($(HOSTNAME), egcalc-vpn)
 CASE=egcalc-vpn
 endif
@@ -54,6 +61,21 @@ ifeq ($(HOSTNAME), draco02)
 CASE=draco
 endif
 
+
+###### if running at marconi #####################################
+
+ifeq ($(CASE), marconi)
+COMPILER =mpiifort
+#MPI_DIR  =
+#PETSC_DIR=
+#FFT_DIR  =
+#MKL_DIR  =
+#COMP_LIB =
+NETCDF_DIR=${NETCDFF_HOME}
+FFLAGS   =-fpp -DIPPorNIFS -DMPIandPETSc -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0
+IFLAGS   =-I${NETCDF_DIR}/include/ -I${NETCDF_INCLUDE} -I$(PETSC_HOME)/include -I${LAPACK_HOME}/include -I${MKL_HOME}/include -I${PETSC_DIR}/lib/petsc/conf/variables -I${PETSC_DIR}/lib/petsc/conf/rules -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -qopenmp -I${PETSC_DIR}/include
+LFLAGS   = -L${NETCDF_DIR}/lib/ -lnetcdff -L${NETCDF_HOME}/lib/ -lnetcdf -L$(PETSC_HOME)/lib -lpetsc -L${LAPACK_HOME}/lib -llapack -L${MKL_HOME}/lib/intel64 -lmkl_intel_lp64 
+endif
 
 ###### if running at draco #####################################
 
@@ -83,6 +105,21 @@ IFLAGS   =-I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc
 LFLAGS   =-mkl -lpetsc -L${PETSC_DIR}/lib 
 endif
 
+###### if running at mimizuku #####################################
+ifeq ($(CASE), ncd-ge0)
+COMPILER =mpif90
+#MPI_DIR  =
+PETSC_DIR=/usr/local/petsc
+#FFT_DIR  =
+#MKL_DIR  =
+#COMP_LIB =
+NETCDF=/usr/local/netcdf4
+HDF5=/usr/local/hdf5
+FFLAGS   =-fpp -DMPIandPETSc -DIPPorNIFS -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0
+IFLAGS   =-I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -I$(NETCDF)/include 
+LFLAGS   =-mkl=sequential -lpetsc -L${PETSC_DIR}/lib -L$(NETCDF)/lib -lnetcdff -lnetcdf -L$(HDF5)/lib -lhdf5 -lhdf5_hl
+endif
+
 ###### if running at egcalc-vpn #####################################
 
 ifeq ($(CASE), egcalc-vpn)
@@ -107,9 +144,11 @@ COMPILER =mpif90
 #FFT_DIR  =
 #MKL_DIR  =
 #COMP_LIB =
+NETCDF_DIR=/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-17.0.8/netcdf-fortran-4.4.4-4me7upiib2q3vpkd2qzvtuaxpruy7ndo
+#NECDF_DIR=${NETCDF}
 FFLAGS   =-fpp -DIPPorNIFS -DMPIandPETSc -O3 -xHost -shared-intel -warn all -mcmodel large --with-debugging=0 --with-scalar-type=real --with-precision=double
-IFLAGS   =-I${PETSC_DIR}/lib/petsc/conf/variables -I${PETSC_DIR}/lib/petsc/conf/rules -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -qopenmp -I${PETSC_DIR}/include
-LFLAGS   =-L${PETSC_DIR}/lib -lpetsc -L/${MKL_HOME}/lib/intel64 -mkl -Wl,-rpath,${MKL_HOME}/lib/intel64,-rpath,${PETSC_DIR}/lib
+IFLAGS   =-I${PETSC_DIR}/lib/petsc/conf/variables -I${PETSC_DIR}/lib/petsc/conf/rules -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -qopenmp -I$(NETCDF_DIR)/include 
+LFLAGS   =-L${PETSC_DIR}/lib -lpetsc -L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -L/${MKL_HOME}/lib/intel64 -mkl -Wl,-rpath,${MKL_HOME}/lib/intel64,-rpath,${PETSC_DIR}/lib
 endif
 
 
@@ -121,12 +160,12 @@ MPI_DIR  =/opt/ofed_1.3.1/mpi/intel/openmpi-1.2.6/lib64/
 PETSC_DIR=/home/localsoft/petsc-3.7.4/real
 FFT_DIR  =/home/localsoft/intel-12/composerxe-2011.3.174/mkl/include/fft_w
 MKL_DIR  =/home/roldan/gcc/520euler/lib64/
-NETCDF_DIR=/soft/netcdf-4.0.1-intel/include
-NETCDF_DIR2=/home/localsoft/netcdf-4.0.1-intel/lib
+NETCDF=/soft/netcdf-4.0.1-intel/include
+NETCDF2=/home/localsoft/netcdf-4.0.1-intel/lib
 #COMP_LIB =
 FFLAGS   =-cpp -DMPIandPETSc=.TRUE. -O3 -shared-intel -warn all -mcmodel large --with-debugging=0 
-IFLAGS   =-I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -I${FFT_DIR} -I${NETCDF_DIR} 
-LFLAGS   =-mkl -L${MKL_DIR} -lpetsc -L${PETSC_DIR}/lib -L${MPI_DIR} -lnetcdf -L${NETCDF_DIR2} 
+IFLAGS   =-I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc -I${FFT_DIR} -I${NETCDF} 
+LFLAGS   =-mkl -L${MKL_DIR} -lpetsc -L${PETSC_DIR}/lib -L${MPI_DIR} -lnetcdf -L${NETCDF2} 
 endif
 
 ###### if running at dirac computer at CIEMAT #####################################
@@ -160,7 +199,7 @@ endif
 ###### if running at Velasco's eMAC, Macbook or xUbuntu at CIEMAT ################
 
 ifeq ($(CASE), desktop)
-COMPILER =gfortran
+COMPILER =gfortran -fbounds-check
 #MPI_DIR  =
 #PETSC_DIR=
 #FFT_DIR  =
@@ -176,12 +215,14 @@ endif
 knosos.x: \
 	global.o knosos_stellopt.o \
 	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o database.o  \
-	errors.o input.o knosos.o lagrange.o low_collisionality.o  mpi_and_end.o \
+	errors.o fast_ion_confinement.o input.o knosos.o lagrange.o low_collisionality.o \
+	low_collisionality_new.o mpi_and_end.o \
 	plasmas.o plateau.o pfirsch_schlueter.o times.o trace_impurities.o transport.o
 
 	${COMPILER} -o knosos.x global.o knosos_stellopt.o \
 	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o database.o \
-	errors.o input.o knosos.o lagrange.o low_collisionality.o mpi_and_end.o \
+	errors.o fast_ion_confinement.o input.o knosos.o lagrange.o low_collisionality.o \
+	low_collisionality_new.o mpi_and_end.o \
 	plasmas.o plateau.o pfirsch_schlueter.o times.o trace_impurities.o transport.o \
 	${COMP_LIB} ${LFLAGS} ${IFLAGS} ${FFLAGS} 
 
@@ -223,6 +264,12 @@ lagrange.o: lagrange.f90
 
 low_collisionality.o: low_collisionality.f90
 	${COMPILER} ${FFLAGS} ${IFLAGS} -c low_collisionality.f90
+
+low_collisionality_new.o: low_collisionality_new.f90
+	${COMPILER} ${FFLAGS} ${IFLAGS} -c low_collisionality_new.f90
+
+fast_ion_confinement.o: fast_ion_confinement.f90
+	${COMPILER} ${FFLAGS} ${IFLAGS} -c fast_ion_confinement.f90
 
 mpi_and_end.o: mpi_and_end.f90
 	${COMPILER} ${FFLAGS} -c mpi_and_end.f90
