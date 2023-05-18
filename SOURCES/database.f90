@@ -93,7 +93,8 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
      D11tab(1,1,1)=D11(1,1)
      CALCULATED_INT=.FALSE.
      D11nu=D11tab(1,1,1)*cmul0
-     cmul_1NU=ABS(D11nu/D11pla)*0.1  !CMUL such that plateau and 1/nu transport are equal 
+     cmul_1NU=ABS(D11nu/D11pla)  !CMUL such that plateau and 1/nu transport are equal
+     IF(DKES_READ) cmul_1NU=cmul_1NU*0.1
 !     cmul_1NU=ABS(aiota/rad_R*eps32)!Use formula, because between plateau and 1/nu there
      D11pla=D11pla*fdkes(1)           !might exist banana regime
 
@@ -283,6 +284,10 @@ SUBROUTINE CALC_DATABASE(s,is,ns)
 
   IF(NEOTRANSP) efieldt=efieldt/(aiota*eps)
 
+!  IF(PREDICTIVE) CALL SMOOTH_DATABASE()
+
+
+  
   IF(ONLY_DB) RETURN
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
@@ -511,6 +516,54 @@ SUBROUTINE INTERP_DATABASE(it,jv,Epsi,D11,D31,knososdb)
   
 END SUBROUTINE INTERP_DATABASE
 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#ifdef MPIandPETSc
+
+SUBROUTINE SMOOTH_DATABASE()
+!----------------------------------------------------------------------------------------------- 
+!Takes the D11 coefficient at many flux-surface and smoothes-out noise
+!-----------------------------------------------------------------------------------------------
+
+  USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD
+  IMPLICIT NONE
+  !Others
+  INTEGER, PARAMETER :: npoint=5
+  INTEGER is,is0,js,ns,icmul,iefield,ivmag
+  REAL*8 logD11av
+  REAL*8, ALLOCATABLE :: logD11(:)
+
+  is=myrank+1
+  ns=numprocs
+  ALLOCATE(logD11(ns))
+
+  !  vars=0
+!  vars(is)=s
+
+  logD11=0
+  DO iefield=1,nefieldt
+     DO icmul=1,ncmult
+        DO ivmag=1,nvmagt           
+           logD11(is)=lD11tab(icmul,iefield,ivmag)
+           CALL REAL_ALLREDUCE(logD11,ns)
+           is0=is-npoint/2-1
+           IF(is0.LT.0) is0=0
+           IF(is0.GT.ns-npoint) is0=ns-npoint
+           logD11av=0
+           DO js=1,npoint
+              logD11av=logD11av+logD11(is0+js)     
+           END DO
+           lD11tab(icmul,iefield,ivmag)=logD11av/npoint
+        END DO
+     END DO
+  END DO
+  
+END SUBROUTINE SMOOTH_DATABASE
+
+#endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

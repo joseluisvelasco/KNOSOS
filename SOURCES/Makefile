@@ -60,7 +60,9 @@ endif
 ifeq ($(HOSTNAME), draco02)
 CASE=draco
 endif
-
+ifeq ($(NERSC_HOST), perlmutter)
+CASE=perlmutter
+endif
 
 ###### if running at marconi #####################################
 
@@ -210,6 +212,27 @@ FFLAGS   =-cpp --warn-all
 LFLAGS   =-llapack -lblas
 endif
 
+ifeq ($(CASE), perlmutter)
+# for perlmutter, need to load the following modules and environment variables:
+#module load PrgEnv-gnu
+#module load cray-hdf5-parallel
+#module load cray-netcdf-hdf5parallel
+#module load e4s
+#module load craype-x86-milan
+#module load cray-fftw
+#spack env activate -V gcc
+#spack load petsc
+#export PETSC_DIR=$(spack location -i petsc)
+#export LD_LIBRARY_PATH=$PETSC_DIR/lib:$LD_LIBRARY_PATH
+#spack load intel-mkl
+#export MKL_DIR=$(spack location -i intel-mkl)/mkl
+
+COMPILER =ftn
+FFLAGS   = -g -cpp -DIPPorNIFS -DMPIandPETSc -O3 --warn-all -fallow-argument-mismatch -ffree-line-length-none -fno-backslash -fdefault-real-8 -fdefault-double-8 -mcmodel=large  # -fbounds-check -fall-intrinsics 
+IFLAGS   =-I${NETCDF_DIR}/include/ -I${PETSC_DIR}/include -I${PETSC_DIR}/include/petsc 
+LFLAGS   = -L${NETCDF_DIR}/lib/ -lnetcdff -lnetcdf -L$(PETSC_DIR)/lib -lpetsc
+endif
+
 ###### Targets, pre-requisites and commands ######################################
 
 knosos.x: \
@@ -293,4 +316,4 @@ transport.o: transport.f90
 	${COMPILER} ${FFLAGS} -c transport.f90
 
 clean:
-	rm knosos.x *genmod* *.o global.mod knosos_stellopt.mod
+	rm knosos.x *.o *mod*

@@ -414,8 +414,9 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,fracb)
      END DO
      s(1)=s(1)*3
   ELSE IF(PREDICTIVE) THEN
-     REGB(1)=-1
-     REGB(2)=-1
+     TANG_VM=.FALSE.
+     REGB(1)=0
+     REGB(2)=0
  ! ELSE IF(PENTA) THEN
  !    ns=7
  !    DO is=1,ns
@@ -491,7 +492,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,fracb)
      TRIVIAL_QN=.TRUE.
   ELSE IF(PREDICTIVE) THEN
      SOLVE_QN=.FALSE.
-     TANG_VM=.TRUE.
+     TANG_VM=.FALSE.
      NER=81
 !     ER_ROOT  = 1
   ELSE IF(NEOTRANSP.OR.PENTA.OR.KNOSOS_STELLOPT) THEN

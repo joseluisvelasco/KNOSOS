@@ -209,8 +209,11 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
                    & Gb,Qb,L1b,L2b,ephi1oTsize)
            END IF
         END IF
-        IF(PREDICTIVE) WRITE(5600+myrank,'(1000(1pe13.5))') SQRT(s),Epsi*psip,&
-                & 1.602*nb(2)*Tb(2)*Qb(2)/psip,1.602*nb(1)*Tb(1)*Qb(1)/psip
+        IF(PREDICTIVE) WRITE(5600+myrank,'(1000(1pe13.5))') SQRT(s),Epsi*psip,& 
+                & 1.602*nb(2)*Tb(2)*Qb(2)/psip,1.602*nb(1)*Tb(1)*Qb(1)/psip,&
+                & (1.602*nb(ib)*Tb(ib)*Qb(ib)/psip,ib=3,nbb),&
+                & nb(2)*Gb(2)/psip,nb(1)*Gb(1)/psip,&
+                & (nb(ib)*Gb(ib)/psip,ib=3,nbb)
      ELSE IF(nroot.EQ.0) THEN
         Gb=0
         Qb=0
