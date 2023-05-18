@@ -1,0 +1,6 @@
+/bin/bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/bin/sh: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/mnt/lustre/home/u6156/.profile: line 2: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/mnt/lustre/home/u6156/.profile: line 2: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/mnt/lustre/home/u6156/.profile: line 143: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+/mnt/lustre/home/u6156/.profile: line 143: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
