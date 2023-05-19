@@ -154,8 +154,8 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,fracb)
   FRICTION=  .TRUE. 
   FACT_CON=  -3      
   !Equations to be solved
-  DIRDB  ="./"          
-  DIRS="./"
+  DIRDB  ="NULL/"          
+  DIRS="NULL/"
   SDKES=-1
   CALC_DB=.FALSE.
   NO_PLATEAU=.FALSE.
@@ -350,7 +350,7 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,fracb)
   ns=1
   s(1)=1
   s(2:nsx)=0
-  DIRS=' '
+  DIRS="NULL/"
   SMIN=0
   SMAX=1
   !Default values: low collisionality hydrogen + adiabatic electrons, no impurities
