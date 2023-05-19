@@ -333,7 +333,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   LOGICAL boozmndata_read
   !Others
   CHARACTER*100 serr
-  CHARACTER*38 version
+  CHARACTER*100 version
   INTEGER nsval,jsize,is0,imn
   REAL*8 aspect_b,rmax_b,rmin_b,betaxis_b
   !netcdf by Satake
