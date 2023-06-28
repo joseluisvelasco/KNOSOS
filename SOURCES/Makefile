@@ -53,6 +53,9 @@ endif
 ifeq ($(HOSTNAME), draco02)
 CASE=draco
 endif
+ifeq ($(HOSTNAME), lazersons-air)
+CASE=macports
+endif
 
 
 ###### if running at draco #####################################
@@ -169,6 +172,20 @@ COMP_LIB =LIBS/libfftw3_${EXT}.a
 FFLAGS   =-cpp --warn-all 
 #IFLAGS   =
 LFLAGS   =-llapack -lblas
+endif
+
+###### if running at Lazerons MacBook-Air, MacPorts ################
+
+ifeq ($(CASE), macports)
+COMPILER =mpifort
+#MPI_DIR  =
+#PETSC_DIR=
+#FFT_DIR  =
+#MKL_DIR  =
+COMP_LIB = 
+FFLAGS   = -cpp -O2 -g -fexternal-blas -fbacktrace -fcheck=all -fallow-argument-mismatch
+IFLAGS   = -I/opt/local/include
+LFLAGS   = -L/opt/local/lib -lopenblas -lfftw3 -L$(PETSC_DIR)/lib -lpetsc
 endif
 
 ###### Targets, pre-requisites and commands ######################################
