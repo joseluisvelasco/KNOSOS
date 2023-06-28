@@ -4,5 +4,6 @@ SOURCES/*.mod
 MANUAL/*.aux
 MANUAL/*.log
 MANUAL/*.toc
+MANUAL/*.out
 libknosos.a
 knosos.x
