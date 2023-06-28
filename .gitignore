@@ -1,0 +1,8 @@
+.DS_store
+SOURCES/*.o
+SOURCES/*.mod
+MANUAL/*.aux
+MANUAL/*.log
+MANUAL/*.toc
+libknosos.a
+knosos.x
