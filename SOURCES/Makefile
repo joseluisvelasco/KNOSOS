@@ -217,15 +217,38 @@ endif
 
 ###### if running at Lazerons MacBook-Air, MacPorts ################
 ifeq ($(CASE), macports)
-COMPILER =mpifort
+COMPILER =mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none
 #MPI_DIR  =
-#PETSC_DIR=
+PETSC_DIR = /opt/local/lib/petsc
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
 #FFT_DIR  =
 #MKL_DIR  =
 COMP_LIB = 
 FFLAGS   = -cpp -O2 -g -fexternal-blas -fbacktrace -fcheck=all -fallow-argument-mismatch
-IFLAGS   = -I/opt/local/include
-LFLAGS   = -L/opt/local/lib -lopenblas -lfftw3 -L$(PETSC_DIR)/lib -lpetsc
+IFLAGS   = -I/opt/local/include $(shell nf-config --fflags) -I${PETSC_DIR}/include
+LFLAGS   = -L/opt/local/lib -lopenblas -lfftw3 $(PETSC_LIB) -lpetsc $(shell nf-config --flibs)
+endif
+
+###### if running at MPCDF Cobra ################
+ifeq ($(CASE), mpcdf_cobra)
+COMPILER =mpiifort
+#MPI_DIR  =
+#PETSC_DIR = /opt/local/lib/petsc
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
+#FFT_DIR  =
+#MKL_DIR  =
+COMP_LIB = 
+FFLAGS   = -cpp -O2 -fp-model strict -ip -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high -g -traceback
+IFLAGS   = -I$(MKL_HOME)/include $(shell nc-config --fflags) -I${PETSC_DIR}/include -I$(FFTW_HOME)/include
+LFLAGS   = Wl,-rpath,$(MKL_HOME)/lib/intel64 \
+            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
+            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread \
+            -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
+            -Wl,-rpath,$(FFTW_HOME)/lib \
+             $(PETSC_LIB) -lpetsc $(shell nc-config --flibs)
 endif
 
 ###### if running on perlmutter ################
@@ -252,19 +275,26 @@ endif
 
 ###### Targets, pre-requisites and commands ######################################
 
-knosos.x: \
+.PHONY : all clean
+
+all: knosos.x
+
+knosos.x: libknosos.a knosos.o
+
+	${COMPILER} -o $@ libknosos.a knosos.o ${COMP_LIB} ${LFLAGS} ${IFLAGS} ${FFLAGS} 
+
+libknosos.a: \
 	global.o knosos_stellopt.o \
 	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o database.o  \
-	errors.o fast_ion_confinement.o input.o knosos.o lagrange.o low_collisionality.o \
+	errors.o fast_ion_confinement.o input.o lagrange.o low_collisionality.o \
 	low_collisionality_new.o mpi_and_end.o \
 	plasmas.o plateau.o pfirsch_schlueter.o times.o trace_impurities.o transport.o
 
-	${COMPILER} -o knosos.x global.o knosos_stellopt.o \
+	ar -cruv $@ global.o knosos_stellopt.o \
 	amb_and_qn.o ana_ntv.o banana.o coefficients.o configuration.o database.o \
-	errors.o fast_ion_confinement.o input.o knosos.o lagrange.o low_collisionality.o \
+	errors.o fast_ion_confinement.o input.o lagrange.o low_collisionality.o \
 	low_collisionality_new.o mpi_and_end.o \
-	plasmas.o plateau.o pfirsch_schlueter.o times.o trace_impurities.o transport.o \
-	${COMP_LIB} ${LFLAGS} ${IFLAGS} ${FFLAGS} 
+	plasmas.o plateau.o pfirsch_schlueter.o times.o trace_impurities.o transport.o
 
 global.o: global.f90
 	${COMPILER} ${FFLAGS} -c global.f90
@@ -332,5 +362,6 @@ trace_impurities.o: trace_impurities.f90
 transport.o: transport.f90
 	${COMPILER} ${FFLAGS} -c transport.f90
 
-clean:
-	rm knosos.x *.o *mod*
+# Since the sometimes-included PETSc makefile uses a double-colon to define "clean", we must do the same here:
+clean:: 
+	- rm -f knosos.x *.o *.mod libknosos.a
