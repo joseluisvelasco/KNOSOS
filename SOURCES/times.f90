@@ -26,8 +26,9 @@ SUBROUTINE CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   ttotal=ttotal+(tfinish-tstart)
   ntotal=ntotal+1
   IF(ntotal.EQ.1) t0=ttotal
-  WRITE(1000+myrank,'("Time in routine ",a,". Total: ",f10.3," Average: ",f10.3,". Iterations: ",I6)') &
-          & routine,ttotal,(ttotal-t0)/(ntotal-1),ntotal
+  IF(.NOT.FAST_IONS) WRITE(iout,'("Time in routine ",a,". Total: ",f10.3," Average: ",f10.3,". Iterations: ",I6)') &
+       & routine,ttotal,(ttotal-t0)/(ntotal-1),ntotal
+  CALL FLUSH(iout)
 
 END SUBROUTINE CALCULATE_TIME
 

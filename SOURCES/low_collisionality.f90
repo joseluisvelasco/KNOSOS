@@ -1,4 +1,3 @@
-
 !Calculate neoclassical transport at low collisionalities
 !Include 1/nu,sqrtnu and superbanana-plateau; do not need splitting B=B_0+delta*B_1
 
@@ -16,7 +15,8 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
 !-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
-  IMPLICIT NONE
+  USE KNOSOS_STELLOPT_MOD
+  IMPLICIT NONE  
 !  Input
   INTEGER jv
   REAL*8 Epsi,phi1c(Nnmp),Mbbnm(Nnmp),trMnm(Nnmp)
@@ -25,7 +25,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
   REAL*8 D11(Nnmp,Nnmp),zeta(nax),theta(nax),dn1dv(nax,nax),dn1nm(Nnmp,Nnmp)
   !Others
   CHARACTER*100 serr
-  INTEGER ial,ilambda
+  INTEGER ial,ila
   INTEGER, SAVE :: nal,nlambda
   REAL*8 D11r(100,100)
 
@@ -39,9 +39,12 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
         CONVERGED=.TRUE.
      END IF
      !Write monoenergetic transport coefficients using DKES normalization
-     CALL CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
-          & D11,nalphab,zeta,theta,dn1dv,dn1nm)
-     WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5)," &
+     nalphab=-1
+     DO WHILE(nalphab.LT.0) 
+        CALL CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
+             & D11,nalphab,zeta,theta,dn1dv,dn1nm)
+     END DO
+     IF(.NOT.KNOSOS_STELLOPT) WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5)," &
           & NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
           & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),fdkes(jv)*D11(1,1),fdkes(jv)*D11(1,1)
   ELSE
@@ -51,23 +54,23 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
      ial=1
      nal=32
      DO WHILE (nal.LE.nax)
-        ilambda=1
+        ila=1
         nlambda=32
         DO WHILE (nlambda.LE.nlambdax)
            CALL CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
-                & D11r(ial,ilambda),nalphab,zeta,theta,dn1dv,dn1nm)
-           IF(ilambda.GT.1.AND.ABS(D11r(ial,ilambda)/D11r(ial,ilambda-1)-1.0).LT.PREC_DQDV) THEN
+                & D11r(ial,ila),nalphab,zeta,theta,dn1dv,dn1nm)
+           IF(ila.GT.1.AND.ABS(D11r(ial,ila)/D11r(ial,ila-1)-1.0).LT.PREC_DQDV) THEN
               EXIT
            END IF
-           ilambda=ilambda+1
+           ila=ila+1
            nlambda=nlambda*2  
         END DO
-        D11r(ial,ilambda+1:100)=D11r(ial,ilambda)
+        D11r(ial,ila+1:100)=D11r(ial,ila)
         IF(ial.GT.1.AND.nlambda.LE.nlambdax.AND.&
-             & ABS(D11r(ial,ilambda)/D11r(ial-1,100)-1.0).LT.PREC_DQDV) THEN
-           WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5),&
+             & ABS(D11r(ial,ila)/D11r(ial-1,100)-1.0).LT.PREC_DQDV) THEN
+           IF(.NOT.KNOSOS_STELLOPT) WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5),&
                 & " NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
-                & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),fdkes(jv)*D11r(ial,ilambda),fdkes(jv)*D11r(ial,ilambda)
+                & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),fdkes(jv)*D11r(ial,ila),fdkes(jv)*D11r(ial,ila)
            EXIT
         END IF
         ial=ial+1
@@ -84,8 +87,8 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
         IF(.NOT.ONLY_DB) CALL END_ALL(serr,.FALSE.)
      ELSE
         CONVERGED=.TRUE.
-        D11=D11r(ial,ilambda)
-        WRITE(1000+myrank,'(" DKE converged with nal=",I6," and nlambda=",I6)') nal,nlambda
+        D11=D11r(ial,ila)
+        WRITE(iout,'(" DKE converged with nal=",I6," and nlambda=",I6)') nal,nlambda
         CALL CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
              D11,nalphab,zeta,theta,dn1dv,dn1nm)
      END IF
@@ -110,6 +113,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 !-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD
 #ifdef IPPorNIFS
   USE petscsys
   USE petscksp
@@ -127,6 +131,11 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   !Others
   INTEGER, SAVE :: nalpha,nalphab_save,npoint
   INTEGER, SAVE, ALLOCATABLE :: nbif(:),i_p_ap1(:),i_p_am1(:),i_p_ap2(:),i_p_am2(:)
+  INTEGER, SAVE, ALLOCATABLE :: i_p_ap1I(:),i_p_ap1II(:),i_p_am1I(:),  i_p_am1II(:)
+  INTEGER, SAVE, ALLOCATABLE :: i_p_ap2I(:),i_p_ap2II(:),i_p_ap2III(:),i_p_ap2IV(:)  
+  INTEGER, SAVE, ALLOCATABLE :: i_p_am2I(:),i_p_am2II(:),i_p_am2III(:),i_p_am2IV(:)
+  REAL*8, SAVE, ALLOCATABLE :: wp1I(:),wp1II(:),wp2I(:),wp2II(:),wp2III(:),wp2IV(:)
+  REAL*8, SAVE, ALLOCATABLE :: wm1I(:),wm1II(:),wm2I(:),wm2II(:),wm2III(:),wm2IV(:)
   REAL*8, SAVE :: offset,theta_save(nax)
   REAL*8, SAVE, ALLOCATABLE :: lambda(:),dalpha_am1(:),dalpha_ap1(:),dalpha_am2(:),dalpha_ap2(:)
   REAL*8, SAVE, ALLOCATABLE :: dlambda_lm1(:),dlambda_lp1(:)
@@ -136,27 +145,32 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   REAL*8, ALLOCATABLE :: z1(:),t1(:),B1(:),hBpp1(:),vd1(:,:)
   REAL*8, ALLOCATABLE :: zb(:),tb(:),Bb(:),hBppb(:),vdb(:,:) 
   REAL*8, ALLOCATABLE :: z2(:),t2(:),B2(:),hBpp2(:),vd2(:,:) 
-  REAL*8, ALLOCATABLE :: alphap_w(:),Bt(:),Btt(:),temp1(:),temp2(:,:)
+  REAL*8, ALLOCATABLE :: alphap_w(:),Bt(:),Btt(:),temp(:),temp2(:,:)
   !Angular and lambda grid
-  INTEGER, ALLOCATABLE :: i_w(:),i_a(:),itemp(:)
-  INTEGER, SAVE, ALLOCATABLE :: i_l(:),i_p(:,:,:)
-  REAL*8, SAVE, ALLOCATABLE :: thetap(:,:),zetap(:),zetax(:,:),B_al(:,:),vds_al(:,:,:)
+  INTEGER, ALLOCATABLE :: i_w(:),itemp(:)
+  INTEGER, SAVE, ALLOCATABLE :: i_l(:),i_p(:,:,:),j_al(:,:)
+  REAL*8, SAVE, ALLOCATABLE :: zetap(:),thetap(:,:),zetax(:,:),thetax(:,:),B_al(:,:),vds_al(:,:,:)
   REAL*8, ALLOCATABLE :: one_o_lambda(:),alphap(:),lambdab_w(:),lambdac_w(:)
-  REAL*8 dlambdap,dalphap
+  REAL*8 dlambdap,dalphap(nturn+1)
+  REAL*8, SAVE :: lambdac
   !Lambda neighbours
-  INTEGER, PARAMETER :: nbifx=5  !maximum number of bifurcations allowed
+  INTEGER, PARAMETER :: nbifx=200  !maximum number of bifurcations allowed
   INTEGER, SAVE, ALLOCATABLE :: i_p_lm1(:),i_p_lp1(:,:)
+  INTEGER ibif,imax,jpoint
+  REAL*8 dz,dzmax
   !Alpha neighbours
   REAL*8, ALLOCATABLE, SAVE :: zlw(:),zrw(:)
   REAL*8, ALLOCATABLE       :: tlw(:),trw(:)
-  INTEGER ipoint,ila
+  INTEGER ipoint,ila,jla,il,ia
 !!$  !Second adiabatic invariant
 !!$  LOGICAL, ALLOCATABLE :: readpoint(:)
 !!$  INTEGER ja,ia,il
 !!$  REAL*8, ALLOCATABLE :: Jnorm(:,:)
   !Drift-kinetic equation
   INTEGER, SAVE, ALLOCATABLE :: nnz(:)
-  REAL*8, SAVE, ALLOCATABLE :: BI1(:),BI2(:),BI3(:),BI4(:),BI5(:),BI6(:),BI7(:,:),gint(:,:)
+  REAL*8, SAVE, ALLOCATABLE :: BI3f(:),BI3b(:)
+  REAL*8, SAVE, ALLOCATABLE :: BI1(:),BI2(:),BI3(:),BI4(:),BI5(:),BI6(:),BI7(:),BI8(:,:)
+  REAL*8, SAVE, ALLOCATABLE :: factnu(:),gint(:,:)
   REAL*8 omega,cmul
 #ifdef MPIandPETSc
   !Petsc
@@ -173,13 +187,16 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   PetscInt, SAVE :: innz(0:npointx-1)
   KSP, SAVE :: ksp
   Mat, SAVE :: matCOL,matVEAf,matVEAb,matVMAf,matVMAb
-  INTEGER jpoint
+  Mat, SAVE :: matDIFb,matDIFf
+  Mat matA
+  PetscScalar factor
   PetscScalar mat_entry
 #else
   REAL*8, SAVE, ALLOCATABLE :: COL(:,:),VEAf(:,:),VEAb(:,:),VMAf(:,:),VMAb(:,:)
   REAL*8, ALLOCATABLE :: mat(:,:)
 #endif
   REAL*8, ALLOCATABLE :: rowCOL(:),rowVEAf(:),rowVEAb(:),rowVMAf(:),rowVMAb(:)
+  REAL*8, ALLOCATABLE :: rowDIFb(:),rowDIFf(:)
   !Time
   CHARACTER*30, PARAMETER :: routine="CALC_LOW_COLLISIONALITY"
   INTEGER, SAVE :: ntotal=0
@@ -192,15 +209,12 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 !  REAL*8,  SAVE :: t02=0
 !  REAL*8 tstart2
 
-
   Mbbnm=Mbbnm !To be removed
   trMnm=trMnm
 
   CALL CPU_TIME(tstart)
 
-  WRITE(1000+myrank,*) 'Calculating low collisionality regimes'
-
-  !Set output to zero
+  WRITE(iout,*) 'Calculating low collisionality regimes'
 
   IF(CALCULATED_INT) GOTO 123
 
@@ -208,7 +222,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 
   IF(PHI1_READ) bnmc0=bnmc0+2*borbic(0,0)*phi1c/vdconst(jv) 
 
- !Find and characterize wells
+  !Find and characterize wells
   ALLOCATE(connected(nwx,nwx),bottom(nwx),&
        & z1(nwx),t1(nwx),B1(nwx),hBpp1(nwx),vd1(nqv,nwx),&
        & zb(nwx),tb(nwx),Bb(nwx),hBppb(nwx),vdb(nqv,nwx),&
@@ -218,105 +232,167 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   CALL CHARACTERIZE_WELLS(nal,na,nalpha,nw,z1,t1,B1,hBpp1,vd1, &
        & zb,tb,Bb,hBppb,vdb, &
        & z2,t2,B2,hBpp2,vd2, &
-       & Bt,Btt,alphap_w,dalphap,bottom,connected,offset)
+       & Bt,Btt,alphap_w,dalphap(1),bottom,connected,offset)
+
   !Resize arrays (nwx->nw)
-  ALLOCATE(temp1(nw),temp2(nqv,nw),ltemp(nw))
-  temp1=z1(1:nw);DEALLOCATE(z1);ALLOCATE(z1(nw));z1=temp1
-  temp1=zb(1:nw);DEALLOCATE(zb);ALLOCATE(zb(nw));zb=temp1
-  temp1=z2(1:nw);DEALLOCATE(z2);ALLOCATE(z2(nw));z2=temp1
-  temp1=t1(1:nw);DEALLOCATE(t1);ALLOCATE(t1(nw));t1=temp1
-  temp1=tb(1:nw);DEALLOCATE(tb);ALLOCATE(tb(nw));tb=temp1
-  temp1=t2(1:nw);DEALLOCATE(t2);ALLOCATE(t2(nw));t2=temp1
-  temp1=B1(1:nw);DEALLOCATE(B1);ALLOCATE(B1(nw));B1=temp1
-  temp1=Bb(1:nw);DEALLOCATE(Bb);ALLOCATE(Bb(nw));Bb=temp1
-  temp1=B2(1:nw);DEALLOCATE(B2);ALLOCATE(B2(nw));B2=temp1
-  temp1=hBpp1(1:nw);DEALLOCATE(hBpp1);ALLOCATE(hBpp1(nw));hBpp1=temp1
-  temp1=hBppb(1:nw);DEALLOCATE(hBppb);ALLOCATE(hBppb(nw));hBppb=temp1
-  temp1=hBpp2(1:nw);DEALLOCATE(hBpp2);ALLOCATE(hBpp2(nw));hBpp2=temp1
-  temp1=alphap_w(1:nw);DEALLOCATE(alphap_w);ALLOCATE(alphap_w(nw));alphap_w=temp1
-  temp1=lambdab_w(1:nw);DEALLOCATE(lambdab_w);ALLOCATE(lambdab_w(nw));lambdab_w=temp1
-  temp1=lambdac_w(1:nw);DEALLOCATE(lambdac_w);ALLOCATE(lambdac_w(nw));lambdac_w=temp1
-  temp1= Bt(1:nw);DEALLOCATE(Bt) ;ALLOCATE(Bt(nw)) ;Bt=temp1
-  temp1=Btt(1:nw);DEALLOCATE(Btt);ALLOCATE(Btt(nw));Btt=temp1
+  ALLOCATE(temp(nw),temp2(nqv,nw),ltemp(nw))
+  temp=z1(1:nw);DEALLOCATE(z1);ALLOCATE(z1(nw));z1=temp
+  temp=zb(1:nw);DEALLOCATE(zb);ALLOCATE(zb(nw));zb=temp
+  temp=z2(1:nw);DEALLOCATE(z2);ALLOCATE(z2(nw));z2=temp
+  temp=t1(1:nw);DEALLOCATE(t1);ALLOCATE(t1(nw));t1=temp
+  temp=tb(1:nw);DEALLOCATE(tb);ALLOCATE(tb(nw));tb=temp
+  temp=t2(1:nw);DEALLOCATE(t2);ALLOCATE(t2(nw));t2=temp
+  temp=B1(1:nw);DEALLOCATE(B1);ALLOCATE(B1(nw));B1=temp
+  temp=Bb(1:nw);DEALLOCATE(Bb);ALLOCATE(Bb(nw));Bb=temp
+  temp=B2(1:nw);DEALLOCATE(B2);ALLOCATE(B2(nw));B2=temp
+  temp=hBpp1(1:nw);DEALLOCATE(hBpp1);ALLOCATE(hBpp1(nw));hBpp1=temp
+  temp=hBppb(1:nw);DEALLOCATE(hBppb);ALLOCATE(hBppb(nw));hBppb=temp
+  temp=hBpp2(1:nw);DEALLOCATE(hBpp2);ALLOCATE(hBpp2(nw));hBpp2=temp
+  temp=alphap_w(1:nw);DEALLOCATE(alphap_w);ALLOCATE(alphap_w(nw));alphap_w=temp
+  temp=lambdab_w(1:nw);DEALLOCATE(lambdab_w);ALLOCATE(lambdab_w(nw));lambdab_w=temp
+  temp=lambdac_w(1:nw);DEALLOCATE(lambdac_w);ALLOCATE(lambdac_w(nw));lambdac_w=temp
+  temp= Bt(1:nw);DEALLOCATE(Bt) ;ALLOCATE(Bt(nw)) ;Bt=temp
+  temp=Btt(1:nw);DEALLOCATE(Btt);ALLOCATE(Btt(nw));Btt=temp
   ltemp=bottom(1:nw);DEALLOCATE(bottom);ALLOCATE(bottom(nw));bottom=ltemp
   temp2=vd1(1:nqv,1:nw);DEALLOCATE(vd1);ALLOCATE(vd1(nqv,nw));vd1=temp2
   temp2=vdb(1:nqv,1:nw);DEALLOCATE(vdb);ALLOCATE(vdb(nqv,nw));vdb=temp2
   temp2=vd2(1:nqv,1:nw);DEALLOCATE(vd2);ALLOCATE(vd2(nqv,nw));vd2=temp2
-  DEALLOCATE(temp1,temp2,ltemp)  
+  DEALLOCATE(temp,temp2,ltemp)  
   ALLOCATE(ltemp2(nw,nw))
   ltemp2=connected(1:nw,1:nw);DEALLOCATE(connected);ALLOCATE(connected(nw,nw));connected=ltemp2
   DEALLOCATE(ltemp2)
   !Create grid in alpha, then (zeta,theta)
   !Determine number of modes
   nalphab=1
-  DO WHILE(nalphab.LT.nalpha)
+  DO WHILE(nalphab.LT.nalpha*1.2)
      nalphab=nalphab*2
   END DO
   nalphab=nalphab/2
   nalphab_save=nalphab
-  IF(ALLOCATED(zetap)) DEALLOCATE(zetap,thetap,zetax,B_al,vds_al)
-  ALLOCATE(zetax(nalpha,nalphab),alphap(nalpha),&
+  IF(ALLOCATED(zetap)) DEALLOCATE(zetap,thetap,zetax,thetax,B_al,vds_al,j_al)
+  ALLOCATE(zetax(nalpha,nalphab),thetax(nalpha,nalphab),alphap(nalpha),&
          & zetap(nalphab),thetap(nalpha,nalphab),&
-         & B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab))
-  CALL CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,thetap,zetap,zetax,B_al,vds_al)
+         & B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab),j_al(nalpha,nalphab))
+  CALL CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
+       & zetap,thetap,zetax,thetax,B_al,vds_al,j_al)
   zeta(1:nalphab) =zetap  !square grid
   theta(1:nalphab)=zetap*nzperiod 
   theta_save=theta
 
-  IF(ALLOCATED(lambda)) DEALLOCATE(lambda,i_p)
-  ALLOCATE(lambda(nlambda),one_o_lambda(nlambda),i_p(nlambda,nalpha,nalphab))
+  CALL EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
+       & alphap_w,z1,zb,z2,Bb,Bt,zetax,thetax)
 
   !Set global grid in lambda
-  CALL CREATE_LAMBDA_GRID(nlambda,nw,Bb,Btt,&
-       & lambdab_w,lambdac_w,dlambdap,lambda,one_o_lambda)  !CHECK: Btt instead of Bt?
-
+  IF(ALLOCATED(lambda)) DEALLOCATE(lambda,i_p)
+  ALLOCATE(lambda(nlambdax),one_o_lambda(nlambdax))
+  CALL CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
+       & lambdab_w,lambdac_w,lambdac,dlambdap,lambda,one_o_lambda)
+  !Resize arrays (nlambdax->nlambda)
+  ALLOCATE(temp(nlambda))
+  temp=lambda(1:nlambda);      DEALLOCATE(lambda);      ALLOCATE(lambda(nlambda));      lambda=temp
+  temp=one_o_lambda(1:nlambda);DEALLOCATE(one_o_lambda);ALLOCATE(one_o_lambda(nlambda));one_o_lambda=temp
+  DEALLOCATE(temp)
+  ALLOCATE(i_p(nlambda,nalpha,nalphab))
+  IF(LJMAP.GT.0) THEN
+     jla=1
+     DO ila=2,nlambda
+        IF(ABS(lambda(ila)-LJMAP).LT.ABS(lambda(jla)-LJMAP)) jla=ila
+     END DO
+     lambda(jla)=LJMAP
+  END IF
+  
   !For each point in the (zeta,theta) grid, determine well and absolute point
   !For each absolute point, determine alpha, lambda and well number
   IF(ALLOCATED(i_l)) DEALLOCATE(i_l)
-  ALLOCATE(i_l(npointx),i_a(npointx),i_w(npointx))
-  CALL LABEL_GRIDPOINTS(na,nalpha,nalphab,nlambda,nw,bottom,connected,&
-       & alphap_w,z1,zb,z2,Bb,Bt,lambda,&
-       & thetap,zetap,zetax,B_al,npoint,i_a,i_l,i_w,i_p)
+  ALLOCATE(i_l(npointx),i_w(npointx))
+  CALL LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
+       & alphap_w,z1,z2,Bb,Bt,lambda,&
+       & zetap,zetax,thetax,B_al,npoint,i_l,i_w,i_p)
   ALLOCATE(itemp(npoint))
   itemp=i_l(1:npoint);DEALLOCATE(i_l);ALLOCATE(i_l(npoint));i_l=itemp
-  itemp=i_a(1:npoint);DEALLOCATE(i_a);ALLOCATE(i_a(npoint));i_a=itemp
   itemp=i_w(1:npoint);DEALLOCATE(i_w);ALLOCATE(i_w(npoint));i_w=itemp
   DEALLOCATE(itemp)
 
   IF(ALLOCATED(BI1)) THEN
      DEALLOCATE(nbif,i_p_ap1,i_p_am1,i_p_ap2,i_p_am2,i_p_lp1,i_p_lm1,&
           & dalpha_am1,dalpha_ap1,dalpha_am2,dalpha_ap2,dlambda_lm1,dlambda_lp1,&
-          & BI1,BI2,BI3,BI4,BI5,BI6,BI7,zlw,zrw,nnz)
-#ifdef MPIandPETSc
-     CALL MatDestroy(matCOL,ierr)
-     CALL MatDestroy(matVEAf,ierr)
-     CALL MatDestroy(matVEAb,ierr)
-     IF(TANG_VM) THEN
-        CALL MatDestroy(matVMAf,ierr)
-        CALL MatDestroy(matVMAb,ierr)
-     END IF
-#endif
+          & BI1,BI2,BI3,BI3f,BI3b,BI4,BI5,BI6,BI7,BI8,factnu,zlw,zrw,nnz,&          
+          & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
+          & i_p_am1I,i_p_am1II,i_p_am2I,i_p_am2II,i_p_am2III,i_p_am2IV,&
+          & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV)
+!!$#ifdef MPIandPETSc
+!!$     CALL MatDestroy(matCOL,ierr)
+!!$     CALL MatDestroy(matVEAf,ierr)
+!!$     CALL MatDestroy(matVEAb,ierr)
+!!$     IF(CALC_DIFF) THEN
+!!$        CALL MatDestroy(matDIFf,ierr)
+!!$        CALL MatDestroy(matDIFb,ierr)
+!!$     END IF
+!!$     IF(TANG_VM) THEN
+!!$        CALL MatDestroy(matVMAf,ierr)
+!!$        CALL MatDestroy(matVMAb,ierr)
+!!$     END IF
+!!$#endif
   END IF
   ALLOCATE(nbif(npoint),i_p_ap1(npoint),i_p_am1(npoint),i_p_ap2(npoint),i_p_am2(npoint))
   ALLOCATE(i_p_lm1(npoint),i_p_lp1(nbifx,npoint))
   ALLOCATE(dalpha_am1(npoint),dalpha_ap1(npoint),dalpha_am2(npoint),dalpha_ap2(npoint))
   ALLOCATE(dlambda_lm1(npoint),dlambda_lp1(npoint))
-  ALLOCATE(BI1(npoint),BI2(npoint),BI3(npoint))
-  ALLOCATE(BI4(npoint),BI5(npoint),BI6(npoint),BI7(npoint,Nnmp))
+  ALLOCATE(BI1(npoint),BI2(npoint),BI3(npoint),BI3b(npoint),BI3f(npoint),factnu(npoint))
+  ALLOCATE(BI4(npoint),BI5(npoint),BI6(npoint),BI7(npoint),BI8(npoint,Nnmp))
   ALLOCATE(zlw(npoint),zrw(npoint),tlw(npoint),trw(npoint)) 
   ALLOCATE(nnz(npoint))
+  ALLOCATE(i_p_ap1I(npoint),i_p_ap1II(npoint),i_p_am1I(npoint),i_p_am1II(npoint))
+  ALLOCATE(i_p_ap2I(npoint),i_p_ap2II(npoint),i_p_ap2III(npoint),i_p_ap2IV(npoint))
+  ALLOCATE(i_p_am2I(npoint),i_p_am2II(npoint),i_p_am2III(npoint),i_p_am2IV(npoint))
+  ALLOCATE(wm1I(npoint),wm1II(npoint),wm2I(npoint),wm2II(npoint),wm2III(npoint),wm2IV(npoint))
+  ALLOCATE(wp1I(npoint),wp1II(npoint),wp2I(npoint),wp2II(npoint),wp2III(npoint),wp2IV(npoint))
 
+  !Order alphas in interval [0,2*pi]
+  CALL SORT_ALPHA(nalpha,nalphab,alphap,zetax,thetax,thetap,B_al,vds_al,j_al,nlambda,i_p)
+  DO WHILE(MAXVAL(thetap(:,1))-MINVAL(thetap(:,1)).GT.TWOPI)
+     DO ia=1,nalpha
+        IF(ABS(thetap(ia,1)-thetap(1,1)).GT.TWOPI) THEN
+           thetap(ia,:)=thetap(ia,:)-SIOTA*TWOPI
+           alphap(ia)  =alphap(ia)  -SIOTA*TWOPI
+        END IF
+     END DO
+     CALL SORT_ALPHA(nalpha,nalphab,alphap,zetax,thetax,thetap,B_al,vds_al,j_al,nlambda,i_p)
+  END DO
+  IF(DEBUG) THEN
+     DO ia=1,nalpha
+        DO il=1,nalphab
+           WRITE(3000+myrank,'(6(1pe13.5),2I5,1pe23.15)') zetap(il),thetap(ia,il),&
+                &  zetax(ia,il),thetax(ia,il),alphap(ia),B_al(ia,il),ia,il
+        END DO
+     END DO
+     CALL FLUSH(3000+myrank)
+  END IF
+
+
+!!$  DO ipoint=1,nalpha*nalphab
+!!$     DO ia=1,nalpha
+!!$        DO il=1,nalphab
+!!$           IF(j_al(ia,il).EQ.ipoint) THEN
+!!$              WRITE(iout,'(2(1pe13.5),1I10)') zetax(ia,il),thetax(ia,il),ipoint
+!!$              EXIT
+!!$           END IF
+!!$        END DO
+!!$     END DO
+!!$  END DO
+!!$  stop
+  
   !Find neighbours in lambda
   CALL FIND_LAMBDA_NEIGHBOURS(npoint,nalpha,nalphab,nlambda,nw,nbifx,i_p,&
        & bottom,i_w,i_p_lm1,nbif,i_p_lp1)
-  !Correct delta lambda at the bottom
+ !Correct delta lambda at the bottom
   dlambda_lm1=dlambdap 
-  dlambda_lp1=dlambdap 
-  DO ipoint=1,npoint-1
-     IF(i_p_lp1(1,ipoint).EQ.npoint) THEN 
-        dlambda_lp1(ipoint)=lambdab_w(i_w(ipoint))-lambda(i_l(ipoint)) 
-     ELSE IF(i_p_lm1(ipoint).EQ.npoint) THEN                        
-        dlambda_lm1(ipoint)=lambda(i_l(ipoint))-MINVAL(lambdac_w) 
+  dlambda_lp1=dlambdap
+  DO ipoint=2,npoint
+     IF(i_p_lp1(1,ipoint).EQ.0) THEN
+        dlambda_lp1(ipoint)=lambdab_w(i_w(ipoint))-lambda(i_l(ipoint))
+     ELSE IF(i_p_lm1(ipoint).EQ.1) THEN                        
+        dlambda_lm1(ipoint)=lambda(i_l(ipoint))-lambdac
      END IF
   END DO
 
@@ -326,80 +402,98 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
                  &  zb,tb,Bb,hBppb,vdb,&
                  &  z2,t2,B2,hBpp2,vd2,&
                  &  nlambda,lambda,zlw,tlw,zrw,trw,& 
-                 &  BI1,BI2,BI3,BI4,BI5,BI6,Nnmp,BI7)
+                 &  BI1,BI2,BI3,BI4,BI5,BI6,BI7,Nnmp,BI8)
 
-!!$  ALLOCATE(Jnorm(nlambda,nalpha))
-!!$  ALLOCATE(readpoint(npoint)) 
-!!$  Jnorm=0
-!!$  DO ila=1,nlambda
-!!$     DO ia=1,na
-!!$        readpoint=.FALSE.
-!!$        DO ja=ia,nalpha,na
-!!$           DO il=1,nalphab
-!!$  
-!!$              ipoint=i_p(ila,ja,il)
-!!$              IF(readpoint(ipoint)) CYCLE
-!!$              Jnorm(ila,ia)=Jnorm(ila,ia)+BI6(ipoint)
-!!$              readpoint(ipoint)=.TRUE.
-!!$           END DO
-!!$        END DO
-!!$        print *,'J',lambda(ila),ia,Jnorm(ila,ia)
-!!$     END DO
-!!$  END DO
-!!$  stop
+  !Put longest well first
+  DO ipoint=2,npoint
+     imax=0
+     dzmax=0
+     DO ibif=1,nbif(ipoint)
+        jpoint=i_p_lp1(ibif,ipoint)
+        dz=zrw(jpoint)-zlw(jpoint)
+        IF(dz.GT.dzmax) THEN
+           imax=ibif
+           dzmax=dz
+        END IF
+     END DO
+     IF(imax.GT.1) THEN
+        jpoint=i_p_lp1(1,ipoint)
+        i_p_lp1(1,ipoint)=i_p_lp1(imax,ipoint)
+        i_p_lp1(imax,ipoint)=jpoint
+     END IF
+  END DO
 
   !Find neighbours in alpha
-  CALL FIND_ALPHA_NEIGHBOURS(npoint,i_w,i_a,i_l,i_p_lm1,zlw,tlw,zrw,trw,nw,&
-  & z1,zb,z2,tb,Bb,Bt,alphap_w,bottom,connected,&
-  & nlambda,one_o_lambda,na,nalpha,alphap,dalphap,offset, &
-  & i_p_am1,i_p_ap1,dalpha_am1,dalpha_ap1,&
-  & i_p_am2,i_p_ap2,dalpha_am2,dalpha_ap2)
-
+  CALL FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,zlw,zrw,&
+       & nw,connected,BI6,nlambda,nalpha,nalphab,alphap,&
+       & i_p_am1,i_p_ap1,dalpha_am1,dalpha_ap1,&
+       & i_p_am2,i_p_ap2,dalpha_am2,dalpha_ap2,&
+       & i_p_am1I,i_p_am1II,i_p_am2I,i_p_am2II,i_p_am2III,i_p_am2IV,&
+       & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
+       & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV,lambda,&
+       & BI7,BI3,BI3b,BI3f,dlambda_lm1,dlambda_lp1)
+  
   DEALLOCATE(connected,bottom,z1,t1,B1,hBpp1,vd1,zb,tb,Bb,hBppb,vdb,&
        &    z2,t2,B2,hBpp2,vd2,alphap_w,Bt,Btt,lambdab_w,lambdac_w) 
 
   !Find non-zero elements of the DKE matrix and initialize
   IF(ALLOCATED(gint)) DEALLOCATE(gint)
-  ALLOCATE(rowCOL(npoint),rowVEAf(npoint),rowVEAb(npoint),rowVMAf(npoint),rowVMAb(npoint),gint(npoint,Nnmp))
+  ALLOCATE(rowCOL(npoint),rowVEAf(npoint),rowVEAb(npoint),rowVMAf(npoint),rowVMAb(npoint),&
+       & gint(npoint,Nnmp))
+  ALLOCATE(rowDIFb(npoint),rowDIFf(npoint))
 #ifdef MPIandPETSc
   DO ipoint=1,npoint
      nnz(ipoint)=1
-     IF(ipoint.NE.npoint.AND.i_l(ipoint).NE.0) THEN
+     IF(ipoint.NE.1.AND.(i_p_lm1(ipoint).NE.1.OR.i_p_lp1(1,ipoint).NE.0)) THEN
         CALL FILL_DKE_ROW(ipoint,npoint,&
              & dalpha_am1(ipoint),dalpha_ap1(ipoint),dalpha_am2(ipoint),dalpha_ap2(ipoint),&
              & i_p_am1(ipoint),i_p_ap1(ipoint),i_p_am2(ipoint),i_p_ap2(ipoint),&
-             & i_l,lambda(ila),dlambda_lm1,dlambda_lp1,i_p_lm1,nbif,nbifx,i_p_lp1,&
-             & BI1(ipoint),BI2,BI4(ipoint),BI5(ipoint),&
-             & rowCOL,rowVEAf,rowVEAb,rowVMAf,rowVMAb,nnz(ipoint),.TRUE.)
+             & i_p_am1I(ipoint),i_p_am1II(ipoint),&
+             & i_p_am2I(ipoint),i_p_am2II(ipoint),i_p_am2III(ipoint),i_p_am2IV(ipoint),&
+             & i_p_ap1I(ipoint),i_p_ap1II(ipoint),&
+             & i_p_ap2I(ipoint),i_p_ap2II(ipoint),i_p_ap2III(ipoint),i_p_ap2IV(ipoint),&
+             & wm1I(ipoint),wm1II(ipoint),wm2I(ipoint),wm2II(ipoint),wm2III(ipoint),wm2IV(ipoint),&
+             & wp1I(ipoint),wp1II(ipoint),wp2I(ipoint),wp2II(ipoint),wp2III(ipoint),wp2IV(ipoint),&
+             & lambda(i_l(ipoint)),dlambda_lm1,dlambda_lp1,i_p_lm1,nbif,nbifx,i_p_lp1,&
+             & BI1(ipoint),BI2,BI4(ipoint),BI5(ipoint),BI3(ipoint)/BI7(ipoint),&
+             & rowCOL,rowVEAf,rowVEAb,rowVMAf,rowVMAb,nnz(ipoint),.TRUE.,&
+             & rowDIFf,rowDIFb)
      END IF
      innz(ipoint-1)=nnz(ipoint)
   END DO
-  innz(npoint-1)=1
-  CALL INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb)
+  innz(0)=1
+  CALL INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb,matDIFf,matDIFb)
 #else
   IF(ALLOCATED(COL)) DEALLOCATE(COL,VEAf,VEAb,VMAf,VMAb)
-  ALLOCATE(COL(npoint,npoint),VEAf(npoint,npoint),VEAb(npoint,npoint),VMAf(npoint,npoint),VMAb(npoint,npoint))
+  ALLOCATE(COL(npoint,npoint),&
+       & VEAf(npoint,npoint),VEAb(npoint,npoint),VMAf(npoint,npoint),VMAb(npoint,npoint))
 #endif
 
-  !For each point number, fill one row of the matrix with quantities that depend on the configuration only
+  !For each point number, fill one row of the matrix with quantities
+  !that depend on the configuration only
   DO ipoint=1,npoint
      rowCOL=0
      rowVEAf=0
      rowVEAb=0
      rowVMAf=0
      rowVMAb=0
-     ila =i_l(ipoint)
-     IF(ipoint.EQ.npoint.OR.ila.EQ.0) THEN
-        rowCOL(ipoint)=1./dlambdap/dlambdap
+     IF(ipoint.EQ.1.OR.(i_p_lm1(ipoint).EQ.1.AND.i_p_lp1(1,ipoint).EQ.0)) THEN
+        rowCOL(ipoint)=1.
      ELSE
         CALL FILL_DKE_ROW(ipoint,npoint,&
              & dalpha_am1(ipoint),dalpha_ap1(ipoint),dalpha_am2(ipoint),dalpha_ap2(ipoint),&
              & i_p_am1(ipoint),i_p_ap1(ipoint),i_p_am2(ipoint),i_p_ap2(ipoint),&
-             & i_l,lambda(ila),dlambda_lm1,dlambda_lp1,i_p_lm1,nbif,nbifx,i_p_lp1,&
-             & BI1(ipoint),BI2,BI4(ipoint),BI5(ipoint),&
-             & rowCOL,rowVEAf,rowVEAb,rowVMAf,rowVMAb,nnz(ipoint),.FALSE.)
+             & i_p_am1I(ipoint),i_p_am1II(ipoint),&
+             & i_p_am2I(ipoint),i_p_am2II(ipoint),i_p_am2III(ipoint),i_p_am2IV(ipoint),&
+             & i_p_ap1I(ipoint),i_p_ap1II(ipoint),&
+             & i_p_ap2I(ipoint),i_p_ap2II(ipoint),i_p_ap2III(ipoint),i_p_ap2IV(ipoint),&
+             & wm1I(ipoint),wm1II(ipoint),wm2I(ipoint),wm2II(ipoint),wm2III(ipoint),wm2IV(ipoint),&
+             & wp1I(ipoint),wp1II(ipoint),wp2I(ipoint),wp2II(ipoint),wp2III(ipoint),wp2IV(ipoint),&
+             & lambda(i_l(ipoint)),dlambda_lm1,dlambda_lp1,i_p_lm1,nbif,nbifx,i_p_lp1,&
+             & BI1(ipoint),BI2,BI4(ipoint),BI5(ipoint),BI3(ipoint)/BI7(ipoint),&
+             & rowCOL,rowVEAf,rowVEAb,rowVMAf,rowVMAb,nnz(ipoint),.FALSE.,&
+             & rowDIFf,rowDIFb)
      END IF
-
 #ifdef MPIandPETSc 
      ipointm1=ipoint-1    
      DO jpoint=1,npoint
@@ -415,10 +509,18 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
         IF(ABS(rowVEAf(jpoint)).GT.ZERO) THEN
            mat_entry=rowVEAf(jpoint)
            CALL MatSetValues(matVEAf,oneps,ipointm1,oneps,jpointm1,mat_entry,INSERT_VALUES,ierr)
+           IF(CALC_DIFF) THEN
+              mat_entry=rowDIFf(jpoint)
+              CALL MatSetValues(matDIFf,oneps,ipointm1,oneps,jpointm1,mat_entry,INSERT_VALUES,ierr)
+           END IF
         END IF
         IF(ABS(rowVEAb(jpoint)).GT.ZERO) THEN
            mat_entry=rowVEAb(jpoint)
            CALL MatSetValues(matVEAb,oneps,ipointm1,oneps,jpointm1,mat_entry,INSERT_VALUES,ierr)
+           IF(CALC_DIFF) THEN
+              mat_entry=rowDIFb(jpoint)
+              CALL MatSetValues(matDIFb,oneps,ipointm1,oneps,jpointm1,mat_entry,INSERT_VALUES,ierr)
+           END IF
         END IF
         IF(TANG_VM.AND.ABS(rowVMAf(jpoint)).GT.ZERO) THEN
            mat_entry=rowVMAf(jpoint)
@@ -440,6 +542,8 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 #endif
 
   END DO
+  IF(DEBUG) CALL FLUSH(3200+myrank)
+
 #ifdef MPIandPETSc 
   
   CALL MatAssemblyBegin(matCOL,MAT_FINAL_ASSEMBLY,ierr)
@@ -448,6 +552,12 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   CALL MatAssemblyEnd(  matVEAf,MAT_FINAL_ASSEMBLY,ierr)
   CALL MatAssemblyBegin(matVEAb,MAT_FINAL_ASSEMBLY,ierr)
   CALL MatAssemblyEnd(  matVEAb,MAT_FINAL_ASSEMBLY,ierr)
+  IF(CALC_DIFF) THEN
+     CALL MatAssemblyBegin(matDIFf,MAT_FINAL_ASSEMBLY,ierr)
+     CALL MatAssemblyEnd(  matDIFf,MAT_FINAL_ASSEMBLY,ierr)
+     CALL MatAssemblyBegin(matDIFb,MAT_FINAL_ASSEMBLY,ierr)
+     CALL MatAssemblyEnd(  matDIFb,MAT_FINAL_ASSEMBLY,ierr)
+  END IF
   IF(TANG_VM) THEN
      CALL MatAssemblyBegin(matVMAf,MAT_FINAL_ASSEMBLY,ierr)
      CALL MatAssemblyEnd(  matVMAf,MAT_FINAL_ASSEMBLY,ierr)
@@ -457,42 +567,132 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   
 #endif
 
-!  CALL CALCULATE_TIME(routine2,ntotal2,t02,tstart2,ttotal2)
+  IF(DEBUG) THEN
+     DO ipoint=1,npoint
+        WRITE(3300+myrank,'(2I6,3(1pe13.5))') &
+             & ipoint,i_l(ipoint),BI3(ipoint),BI3b(ipoint),BI3f(ipoint)
+     END DO
+     CALL FLUSH(3300+myrank)
+  END IF
+
+  !Set source to zero for isolated particles, if they exist
+  DO ipoint=2,npoint
+     IF(i_p_lm1(ipoint).EQ.1.AND.i_p_lp1(1,ipoint).EQ.0)  THEN
+        BI3(ipoint)=0
+        BI3f(ipoint)=0
+        BI3b(ipoint)=0
+        BI8(ipoint,:)=0
+        WRITE(iout,"(A7,I5,A9,I3,A9)") "Orbit ",ipoint, " at i_la=",i_l(ipoint)," isolated"
+     END IF
+  END DO
 
 123 nalphab=nalphab_save 
   theta=theta_save
-  IF(DEBUG) THEN
-     DO ipoint=1,npoint
-        WRITE(3300+myrank,'(I6,1(1pe13.5),2I6)') ipoint,BI3(ipoint)*vdconst(jv)/nu(jv),nal,nlambda
-     END DO
-  END IF
 
+  !Set source to zero for passing particles
+  BI3(1)=0
+  BI8(1,:)=0
+  IF(RE_SOURCE) THEN
+     IF(sgnB*Epsi.LT.0) THEN
+        BI3=BI3b
+     ELSE
+        BI3=BI3f
+     END IF
+  END IF
   !Use linear combinations of precalculated matrices to fill actual matrix for given values
   !the collisionality, radial electric field, etc
 #ifdef MPIandPETSc 
   CALL FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
+
+  IF(CALC_DG) THEN
+     CALL MatDuplicate(matCOL,MAT_DO_NOT_COPY_VALUES,matA,ierr)
+!     factor=0
+!     CALL MatAXPY(matA,factor,matCOL,SUBSET_NONZERO_PATTERN,IERR)
+     IF (CALC_COL.OR.FLUX_NU) THEN
+        factor=1.0
+        CALL MatAXPY(matA,factor,matCOL,SUBSET_NONZERO_PATTERN,IERR)
+     ELSE IF(CALC_DIFF) THEN
+        factor=sgnB*Epsi/nu(jv)
+        IF(sgnB*Epsi.LT.0) THEN
+           CALL MatAXPY(matA,factor,matDIFb,SUBSET_NONZERO_PATTERN,IERR)
+        ELSE IF(sgnB*Epsi.GT.0) THEN
+           CALL MatAXPY(matA,factor,matDIFf,SUBSET_NONZERO_PATTERN,IERR)
+        END IF
+     ELSE
+        IF(CALC_DA) THEN
+           factor=1.0
+        ELSE IF(CALC_RHS) THEN
+           factor=sgnB*Epsi/nu(jv)
+           IF(sgnB*Epsi.LT.0) THEN
+              CALL MatAXPY(matA,factor,matVEAb,SUBSET_NONZERO_PATTERN,IERR)
+           ELSE IF(sgnB*Epsi.GT.0) THEN
+              CALL MatAXPY(matA,factor,matVEAf,SUBSET_NONZERO_PATTERN,IERR)
+           END IF
+        END IF
+     END IF
+  END IF
 #else
   ALLOCATE(mat(npoint,npoint))
   CALL FILL_MATRIX(npoint,COL,jv,Epsi,VEAf,VEAb,VMAf,VMAb,mat)
 #endif
+  factnu=1
+  IF(FLUX_NU) THEN
+     DO ipoint=2,npoint
+        factnu(ipoint)=-lambda(i_l(ipoint))*avB*nu(jv)/(-2*Epsi*BI3(ipoint))
+     END DO
+  END IF
+  !stop
 !Invert linear system
 #ifdef MPIandPETSc
-  CALL INVERT_MATRIX_PETSC(nalphab,jv,npoint,BI3,BI7,phi1c,ksp,gint)
+  CALL INVERT_MATRIX_PETSC(nalphab,jv,npoint,matA,BI3,BI8,factnu,phi1c,ksp,gint)
 #else
-  CALL INVERT_MATRIX(nalphab,jv,npoint,BI3,BI7,phi1c,mat,gint)
+  IF(CALC_DG) STOP
+  CALL INVERT_MATRIX(nalphab,jv,npoint,BI3,BI8,phi1c,mat,gint)
   DEALLOCATE(mat)
 #endif  
+
+  IF(DEBUG.AND..NOT.KNOSOS_STELLOPT) THEN
+     DO ila=1,nlambda
+        DO ia=1,nalpha
+           DO il=1,nalphab
+           ipoint=i_p(ila,ia,il)
+           IF(zetap(il).GT.5.6451E-01.OR.zetap(il).LT.5.6449E-01) CYCLE
+           IF(thetap(ia,il).LT.-1.357E+00.OR.thetap(ia,il).GT.-1.355E+00) CYCLE
+            IF(ipoint.EQ.0) CYCLE
+           IF(.NOT.CALC_DG) THEN
+              WRITE(iout,'("size ",3(I5),10(1pe23.15))') ipoint,ia,ila,nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,&
+                   & lambda(ila)-lambdac,gint(ipoint,1),(lambda(ila)-lambdac)*avB*0.5*vdconst(jv)/Epsi,zetap(il),&
+                   & thetap(ia,il),gint(i_p_lm1(ipoint),1),gint(i_p_lp1(1,ipoint),1)
+
+           ELSE IF(CALC_DA) THEN
+              WRITE(iout,'("size ",3(I5),10(1pe13.5))') ipoint,ia,ila,nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,&
+                   & lambda(ila)-lambdac,gint(ipoint,1)*nu(jv)/vdconst(jv)/BI5(ipoint),BI3(ipoint),BI6(ipoint)
+           ELSE
+              WRITE(iout,'("size ",3(I5),10(1pe13.5))') ipoint,ia,ila,nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,&
+                   & lambda(ila)-lambdac,gint(ipoint,1)*nu(jv)/vdconst(jv),BI3(ipoint),BI6(ipoint)
+           END IF
+           END DO
+        END DO
+     END DO
+  END IF
+!!$  
 
   IF(PHI1_READ.AND.IMP1NU) THEN
      gint(:,2)=gint(:,1)*ftrace1nu(jv)*EXP(-mmuoT(jv)/lambda(i_l(:)))*mmuoT(jv)/lambda(i_l(:))
      gint(:,1)=gint(:,1)*ftrace1nu(jv)*EXP(-mmuoT(jv)/lambda(i_l(:)))
-     WRITE(1000+myrank,*) 'Using mu and lambda'
+     WRITE(iout,*) 'Using mu and lambda'
   END IF
 
   !Calculate dn_1dv and D_{11} integrating it the velocity space and taking the flux-surface-average
-  CALL INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,gint, &
-       & zetap,thetap,theta(1:nalphab),B_al,vds_al,D11,dn1dv(1:nalphab,1:nalphab),dn1nm)
 
+  IF(INT_G_NEW) THEN        
+     CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gint(:,1),.FALSE., &
+          & thetap,B_al,vds_al(1,:,:),D11(1,1))
+  ELSE
+     CALL INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,gint,.FALSE., &
+          & zetap,thetap,theta(1:nalphab),B_al,vds_al,D11,dn1dv(1:nalphab,1:nalphab),dn1nm)
+  END IF
+     
   IF(.NOT.PHI1_READ.OR..NOT.IMP1NU) THEN
      D11(1,:)=D11(1,:)*vdconst(jv)
      IF(PHI1_READ) D11     =D11     *weight(jv)
@@ -509,14 +709,18 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
        & .AND.cmul.GT.cmul_1NU/FACT_CON.AND.omega.LT.1E-2) D11=D11+D11pla/fdkes(jv)
   
   !Write monoenergetic transport coefficients using DKES normalization
-  IF(DEBUG.OR.ONLY_DB) THEN
+  IF(DEBUG) THEN!.OR.(ONLY_DB.AND..NOT.KNOSOS_STELLOPT)) THEN
      CALL FLUSH(10000+myrank)
      IF(cmul_1NU.GT.0) THEN
-        WRITE(10000+myrank,'("4 ",6(1pe13.5),3I5,1pe13.5,I5)') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
-             & fdkes(jv)*D11(1,1),weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv),nal,nlambda,nalphab,D11pla
+        WRITE(10000+myrank,'("4 ",6(1pe13.5),3I5,1pe13.5,I5)') &
+             & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
+             & fdkes(jv)*D11(1,1),weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv),&
+             & nal,nlambda,nalphab,D11pla
      ELSE
-        WRITE(10000+myrank,'("0 ",6(1pe13.5),3I5,1pe13.5,I5)') nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
-             & fdkes(jv)*D11(1,1),weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv),nal,nlambda,nalphab,D11pla
+        WRITE(10000+myrank,'("0 ",6(1pe13.5),3I5,1pe13.5,I5)') &
+             & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),&
+             & fdkes(jv)*D11(1,1),weight(jv)/fdkes(jv),weight(jv)/fdkes(jv)*v(jv)*v(jv),&
+             & nal,nlambda,nalphab,D11pla
      END IF
      CALL FLUSH(10000+myrank)
   END IF
@@ -561,8 +765,9 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
   REAL*8 Bt(nwx),Btt(nwx),alphap_w(nwx),dalphap,offset
   !Others
   CHARACTER*100 serr
-  INTEGER iw,jw,kw,lw,nwperiods,iturn,flag,fath(nwx),nfound,nfoundt,nw0,nw1,nw2,nwmax
-  REAL*8 maxBt,maxBb
+  INTEGER namin,namax,iw,jw,kw,lw,nwperiods,iturn,flag,fath(nwx),nfound,nfoundt,nw0,nw1,nw2,nwmax,nalphas,mturn
+  REAL*8 maxBt,maxBb,da,dat
+  REAL*8, PARAMETER :: diota=1E-3
   !Time
   CHARACTER*30, PARAMETER :: routine="CHARACTERIZE_WELLS"
   INTEGER, SAVE :: ntotal=0
@@ -571,15 +776,42 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
   REAL*8 tstart
 
   CALL CPU_TIME(tstart)
-
-  na=3  !Follow na field lines along several periods and collapses them into one period;
-        !need na>=3 when using i+/-1 and i+/-2 for the derivatives at i;
-  nalpha=INT(nzperiod*na/aiota+1)
-  IF(nalpha.GT.nal) THEN
-     serr="increase nal"
-!     CALL END_ALL(serr,.FALSE.)
-  END IF 
+  
+  IF(ONE_ALPHA) THEN
+     namax=INT(nal*1.5)
+     DO na=1,namax
+        dat=aiota*na-INT(aiota*na)
+        IF(dat.GT.0.5) dat=1.0-dat
+        IF(dat.LT.diota) THEN
+!           namax=na
+           EXIT
+        END IF
+     END DO
+     da=1E3
+     namin=1
+     IF(namax.GT.nal) namin=nal
+     DO na=namin,namax        
+        dat=MOD(TWOPI*na*aiota/nzperiod,TWOPI)
+        IF(dat.GT.PI) dat=TWOPI-dat
+        IF(dat.LT.da) THEN
+           da=dat
+           nalphas=na
+        END IF
+     END DO
+     mturn=INT(nalphas*aiota/nzperiod+1)
+     na=1
+  ELSE
+     nal=nal/NTURN
+     na=3  !Follow na field lines along several periods and collapses them into one period;
+     !need na>=3 when using i+/-1 and i+/-2 for the derivatives at i;
+     IF(nalpha.GT.nal) THEN
+        serr="increase nal"
+        !     CALL END_ALL(serr,.FALSE.)
+     END IF
+     mturn=NTURN
+  END IF
   nalpha=0
+
   !Initialize variables
   connected=.FALSE.
   matched  =.FALSE.
@@ -592,13 +824,25 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
   fath=0
   alphap_w=-1000.0 
   !Maximum possible number of wells determined by size of arrays
-  DO WHILE((nalpha.LT.nal.AND.(nwmax.LE.nwx.OR.(SATAKE.AND.nwmax.LE.nwx))).OR.iturn.NE.0)
+  !  DO WHILE((nalpha/NTURN.LT.nal.AND.(nwmax.LE.nwx.OR.(NTV.AND.nwmax.LE.nwx))).OR.iturn.NE.0)
+  DO WHILE((nalpha/NTURN.LT.nal.AND.nwmax.LE.nwx).OR.iturn.NE.0)
      iturn=iturn+1
      !Find wells along the field lines
      IF(iturn.EQ.1) THEN        
         nw0=nw2+1
         !Characterize wells with extreme values
-        CALL FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1, &
+        IF(na.GT.1) THEN
+           offset=-iota*PI/nzperiod
+        ELSE
+           dat=MOD(TWOPI*nalphas*aiota/nzperiod,TWOPI)
+           IF(dat.LT.PI) THEN
+              offset=-siota*dat/2.
+           ELSE
+              dat=TWOPI-dat
+              offset=siota*dat/2.
+           END IF
+        END IF
+        CALL FIND_WELLS(na,mturn,nw0,z1,t1,B1,hBpp1,vd1, &
              &                 zb,tb,Bb,hBppb,vdb, &
              &                 z2,t2,B2,hBpp2,vd2, &
              &           nfound,alphap_w,offset)
@@ -618,7 +862,7 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
         nw1=kw 
         !Try to match well iw...
         DO iw=nw0,nw2 
-           IF(SATAKE) CYCLE
+!           IF(NTV) CYCLE
            IF(matched(iw)) CYCLE 
            !...with well jw
            DO jw=nw0,nw2
@@ -660,7 +904,8 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
      nw=nw2
      
      !If there were matches, continue matching for the same alphas
-     IF(.NOT.SATAKE.AND.nw2.GE.nw1) THEN
+!     IF(.NOT.NTV.AND.nw2.GE.nw1) THEN
+     IF(nw2.GE.nw1) THEN
 
         IF(DEBUG) THEN
            maxBt=-1E3
@@ -673,7 +918,7 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
         END IF
      !If there were no matches, turn to new alphas
      ELSE
-        WRITE(1000+myrank,'(" Calculating a total of",I6," regions found following",I6," lines")') nw,na
+        WRITE(iout,'(" Calculating a total of",I6," regions found following",I6," lines")') nw,na
 
         IF(DEBUG) THEN
            WRITE(2900+myrank,'(" Calculating a total of",I6," regions out of a maximum of",I6)') &
@@ -691,33 +936,22 @@ SUBROUTINE CHARACTERIZE_WELLS(nal,na,nalpha,nw,&
         END IF
         !Double the number of alphas and start over
         iturn=0  
-!        IF(SATAKE) THEN
+!        IF(NTV) THEN
 !           dalphap=siota*TWOPI/na
 !           nalpha=na
 !        ELSE
         dalphap=iota*TWOPI/nzperiod/na  !dalphap has sign
-        nalpha=INT(TWOPI/ABS(dalphap)+1)
-!        END IF
-        na=na*2  
+        na=na*2
+        IF(na.EQ.2) THEN
+           nalpha=nalphas
+           EXIT
+        ELSE
+           nalpha=INT(TWOPI/ABS(dalphap)+1)*NTURN
+        END IF
      ENDIF
-
   END DO
-
-!!$  DO lw=1,10
-!!$     DO iw=1,nw
-!!$        DO jw=1,nw
-!!$           DO kw=1,nw              
-!!$              IF(connected(kw,jw).AND.connected(jw,iw)) connected(kw,iw)=.TRUE.
-!!$           END DO
-!!$        END DO
-!!$     END DO
-!!$  END DO
-
   na=na/2
-
-!  !If centered alpha derivatives, force to have odd number field lines
-!  !so that periodicity couples odd and even nodes
-!  IF(CENTERED_ALPHA.AND.MOD(nalpha,2).EQ.0) nalpha=nalpha-1 
+  IF(EXTRA_ALPHA) nalpha=na*INT(nzperiod/aiota+1)*NTURN
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -729,7 +963,7 @@ END SUBROUTINE CHARACTERIZE_WELLS
 
 
 SUBROUTINE CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
-     & thetap,zetap,zetax,B_al,vds_al)
+     & zetap,thetap,zetax,thetax,B_al,vds_al,j_al)
 
 !-----------------------------------------------------------------------------------------------
 !From na independent field lines, create:
@@ -742,13 +976,15 @@ SUBROUTINE CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
   IMPLICIT NONE
   !Input
   INTEGER na,nalpha,nalphab
-  REAL*8 alphap(nalpha),dalphap,offset
+  REAL*8 alphap(nalpha),dalphap(nturn+1),offset
   !Output
-  REAL*8 thetap(nalpha,nalphab),zetap(nalphab),zetax(nalpha,nalphab)
+  INTEGER j_al(nalpha,nalphab)
+  REAL*8 zetap(nalphab),thetap(nalpha,nalphab),zetax(nalpha,nalphab),thetax(nalpha,nalphab)
   REAL*8 B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab)
   !Others
-  INTEGER ia,il
+  INTEGER ja,ia,il,iturn
   REAL*8 dzeta,dummy
+!  REAL*8 zetal(nalphab*nalpha),thetal(nalphab*nalpha)
 !  INTEGER imin,np1,jp1,intnumn(nax),nmj
 !  REAL*8 offsetb,doff,zetat(nalpha),thetat(nalphab),temp(nalphab,nalphab)
   !Time
@@ -760,10 +996,10 @@ SUBROUTINE CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
 
   CALL CPU_TIME(tstart)
 
-  WRITE(1000+myrank,'(" Angular grid has size ",I4," in alpha and ",I4," in l. &
+  WRITE(iout,'(" Angular grid has size ",I4," in alpha and ",I4," in l. &
        & Maximum helicity in B is ",I4)') nalpha,nalphab,INT(MAX(MAXVAL(np),MAXVAL(mp)))
-  
-!  IF(SATAKE) THEN
+
+!  IF(NTV) THEN
 !     offtheta=0
 !     offzeta  =PI/nzperiod
 !     dzeta=TWOPI/nalphab
@@ -782,28 +1018,60 @@ SUBROUTINE CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
 !        END DO
 !     END DO
 
-!  ELSE
+  !  ELSE
+
   dzeta=TWOPI/nzperiod/nalphab
+
   DO il=1,nalphab
      zetap(il)=(il-1)*dzeta
-     IF(NTV) zetap(il)=zetap(il)+PI/nzperiod                
+
 !     IF(NTV) zetap(il)=zetap(il)+PI/nzperiod
-     DO ia=1,nalpha !note that dalphap can be negative, if iota is, but...
-        thetap(ia,il)=offset+ia*dalphap+(il-1)*iota*dzeta
-!        IF(NTV) thetap(ia,il)=thetap(ia,il)+PI 
-        zetax(ia,il) =zetap(il)+INT((ia-1)/na)*TWOPI/nzperiod
-        IF(NTV) thetap(ia,il)=thetap(ia,il)+iota*PI/nzperiod
-        CALL FILL_BNODE(zetap(il),thetap(ia,il),dummy,B_al(ia,il),vds_al(:,ia,il),.FALSE.)
-        IF(USE_B0) CALL FILL_BNODE(zetap(il),thetap(ia,il),dummy,dummy,vds_al(:,ia,il),.TRUE.)
-        IF(DEBUG) WRITE(3000+myrank,'(5(1pe13.5),2I5)') zetap(il),thetap(ia,il),&
-             &  zetax(ia,il),thetap(ia,il),B_al(ia,il),ia,il
+  END DO
+
+!!$  DO il=1,nalphab
+!!$!     IF(NTV) zetap(il)=zetap(il)+PI/nzperiod
+!!$     DO ia=1,nalpha !note that dalphap can be negative, if iota is, but...
+!!$        thetap(ia,il)=offset+ia*dalphap+(il-1)*iota*dzeta
+!!$!        IF(NTV) thetap(ia,il)=thetap(ia,il)+PI 
+!!$        zetax(ia,il) =zetap(il)+INT((ia-1)/na)*TWOPI/nzperiod
+!!$        IF(NTV) thetap(ia,il)=thetap(ia,il)+iota*PI/nzperiod
+!!$        CALL FILL_BNODE(zetap(il),thetap(ia,il),dummy,B_al(ia,il),vds_al(:,ia,il),.FALSE.)
+!!$        IF(USE_B0) CALL FILL_BNODE(zetap(il),thetap(ia,il),dummy,dummy,vds_al(:,ia,il),.TRUE.)
+!!$        IF(DEBUG) WRITE(3000+myrank,'(5(1pe13.5),2I5)') zetap(il),thetap(ia,il),&
+!!$             &  zetax(ia,il),thetap(ia,il),B_al(ia,il),ia,il
+!!$     END DO
+!!$  END DO
+!!$!  END IF
+
+  DO iturn=1,NTURN
+     DO ia=1,nalpha/NTURN !note that dalphap can be negative, if iota is, but...
+        ja=ia+(iturn-1)*nalpha/NTURN
+        DO il=1,nalphab
+           IF(na.EQ.1) THEN
+              thetax(ja,il)=offset+(ja-1)*dalphap(1)+(il-1)*iota*dzeta
+           ELSE
+              thetax(ja,il)=offset+ja*dalphap(1)+(il-1)*iota*dzeta
+           END IF
+           thetap(ja,il)=thetax(ja,il)-SIOTA*TWOPI*(iturn-1)
+!           IF(NTV) thetax(ja,il)=thetap(ja,il)+iota*PI/nzperiod
+           zetax(ja,il) =zetap(il)+INT((ja-1)/na)*TWOPI/nzperiod
+           j_al(ja,il)=(ja-1)*nalphab+il
+!           zetal(jl(ja,il))=zetax(ja,il)
+!           thetal(jl(ja,il))=thetax(ja,il)
+           CALL FILL_BNODE(zetap(il),thetap(ja,il),dummy,B_al(ja,il),vds_al(:,ja,il),.FALSE.)
+           IF(USE_B0) CALL FILL_BNODE(zetap(il),thetap(ja,il),dummy,dummy,vds_al(:,ja,il),.TRUE.)
+        END DO
      END DO
   END DO
-!  END IF
 
   DO ia=1,nalpha
      alphap(ia)=thetap(ia,1)-iota*zetap(1)  !...alpha has the correct sign
   END DO
+
+!  IF(NTURN.EQ.2) THEN
+!     dalphap(2)=thetap(nalpha/NTURN+1,1)-thetap(1,1)
+!     dalphap(3)=thetap(2,1)-thetap(nalpha/NTURN+1,1)
+!  END IF
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -814,8 +1082,102 @@ END SUBROUTINE CREATE_ANGULAR_GRID
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+SUBROUTINE EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
+     & alphap_w,z1,zb,z2,Bb,Bt,zetax,thetax)
+
+!-----------------------------------------------------------------------------------------------
+
+!----------------------------------------------------------------------------------------------- 
+
+  USE GLOBAL  
+  IMPLICIT NONE
+  !Input
+  LOGICAL bottom(nw),connected(nw,nw)
+  INTEGER na,nalpha,nalphab,nw
+  REAL*8 alphap_w(nw),z1(nw),zb(nw),z2(nw),Bb(nw),Bt(nw)
+  REAL*8 zetax(nalpha,nalphab),thetax(nalpha,nalphab)
+  !Others
+  LOGICAL left(nalpha),right(nalpha)
+  INTEGER ja,ia,iw,jw
+  REAL*8 alpp,tempr(nalpha),templ(nalpha)
+  !Time
+  CHARACTER*30, PARAMETER :: routine="EXCLUDE_WELLS"
+  INTEGER, SAVE :: ntotal=0
+  REAL*8,  SAVE :: ttotal=0
+  REAL*8,  SAVE :: t0=0
+  REAL*8 tstart
+
+  CALL CPU_TIME(tstart)
+
+  left=.FALSE.
+  right=.FALSE.
+  templ=thetax(:,1)
+  tempr=thetax(:,nalphab)
+  DO ia=1,na
+     IF(siota.GT.0) THEN
+        ja=MINLOC(templ,1)
+        templ(ja)=1E10
+        left(ja)=.TRUE.
+        ja=MAXLOC(tempr,1)
+        tempr(ja)=-1E10
+        right(ja)=.TRUE.
+     ELSE
+        ja=MAXLOC(templ,1)
+        templ(ja)=-1E10
+        left(ja)=.TRUE.
+        ja=MINLOC(tempr,1)
+        tempr(ja)=+1E10
+        right(ja)=.TRUE.
+     END IF
+  END DO
+     
+  !Ignore wells that are outside region of interest
+  DO iw=1,nw
+     IF(.NOT.bottom(iw)) CYCLE
+     DO ia=1,nalpha
+        IF(.NOT.left(ia)) CYCLE
+        alpp=(thetax(ia,1)-iota*zetax(ia,1))
+        IF((ABS(alphap_w(iw)-alpp).LT.PREC_EXTR).AND.&
+         & (z2(iw).LT.zetax(ia,1).OR.(zb(iw).LT.zetax(ia,1).AND.z2(iw)-z1(iw).GT.PI/nzperiod))) THEN
+           Bb(iw)=1E10
+           Bt(iw)=1E-9
+           DO jw=iw+1,nw 
+              IF(connected(jw,iw)) THEN
+                 Bb(jw)=1E10
+                 Bt(jw)=1E-9
+              END IF
+           END DO
+        END IF
+     END DO
+     DO ia=1,nalpha
+        IF(.NOT.right(ia)) CYCLE
+        alpp=(thetax(ia,nalphab)-iota*zetax(ia,nalphab))
+!        IF(ABS(alphap_w(iw)-alpp).LT.PREC_EXTR.AND.z1(iw).GT.zetax(ia,nalphab)) THEN
+        IF((ABS(alphap_w(iw)-alpp).LT.PREC_EXTR).AND.&
+             & (z1(iw).GT.zetax(ia,nalphab).OR.&
+             & (zb(iw).GT.zetax(ia,nalphab).AND.z2(iw)-z1(iw).GT.PI/nzperiod))) THEN
+           Bb(iw)=1E10
+           Bt(iw)=1E-9
+           DO jw=iw+1,nw 
+              IF(connected(jw,iw)) THEN
+                 Bb(jw)=1E10
+                 Bt(jw)=1E-9
+              END IF
+           END DO
+        END IF
+     END DO
+  END DO
+
+  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+  
+END SUBROUTINE EXCLUDE_WELLS
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
-     & lambdab_w,lambdac_w,dlambdap,lambda,one_o_lambda)
+     & lambdab_w,lambdac_w,lambdac,dlambdap,lambda,one_o_lambda)
 
 !-----------------------------------------------------------------------------------------------
 !Create a lambda and one_lambda grids with nlambda elements and dlambdap spacing
@@ -829,46 +1191,93 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
   INTEGER nlambda,nw
   REAL*8 Bb(nw),Bt(nw)
   !Output
-  REAL*8 lambdab_w(nw),lambdac_w(nw),dlambdap,lambda(nlambda),one_o_lambda(nlambda)
+  REAL*8 lambdab_w(nw),lambdac_w(nw),lambdac,dlambdap,lambda(nlambdax),one_o_lambda(nlambdax)
+!  REAL*8 lambdab_w(nw),lambdac_w(nw),lambdac,dlambdap,lambda(nlambda),one_o_lambda(nlambda)
   !Others
+  CHARACTER*100 serr
   LOGICAL passing
-  INTEGER ila,iw
-  REAL*8 lambdac,lambdab
+  INTEGER iw,ila!,jla
+  REAL*8 lambdab,B1,B2,dummy,vdummy(Nnmp),dlambda(nlambdax),fact
+  REAL*8 glambdac,glambdab
   !Time
   CHARACTER*30, PARAMETER :: routine="CREATE_LAMBDA_GRID"
   INTEGER, SAVE :: ntotal=0
   REAL*8,  SAVE :: ttotal=0
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
-
+#ifdef MPIandPETSc
+  INCLUDE "mpif.h"
+  INTEGER ierr
+!  REAL*8 la(2,1)
+#endif
+  
   CALL CPU_TIME(tstart)
-
+  
+  !Create uniform grid
   lambdab_w=1./Bb
   lambdab=MAXVAL(lambdab_w)
   lambdac_w=1./Bt
   lambdac=MINVAL(lambdac_w)
+  glambdac=lambdac+PREC_EXTR
+  glambdab=lambdab
 
-
-!  lambdac=1./2.795
-  dlambdap=(lambdab-lambdac)/(nlambda+1)
-  
-  DO ila=1,nlambda
-     lambda(ila)=lambdac+ila*dlambdap
+  IF(GLOBALFI) THEN
+#ifdef MPIandPETSc
+!!$     la(2,1)=myrank
+!!$     la(1,1)=lambdac
+!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MINLOC,MPI_COMM_WORLD,ierr)
+!!$     glambdac=la(1,1)
+!!$     la(1,1)=lambdab
+!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MAXLOC,MPI_COMM_WORLD,ierr)
+!!$     glambdab=la(1,1)
+     CALL MPI_BCAST(glambdac,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)
+     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)     
+#endif
+     dlambdap=(glambdab-glambdac)/nlambda
+     lambda(1)=glambdac+INT((lambdac-glambdac)/dlambdap)*dlambdap
+     IF(lambda(1).LT.lambdac) lambda(1)=lambda(1)+dlambdap
+     nlambda=(lambdab-lambdac+ALMOST_ZERO)/dlambdap
+  ELSE
+     lambda(1)=glambdac
+     dlambdap=(lambdab-lambdac)/nlambda
+  END IF
+  DO ila=2,nlambda
+     lambda(ila)=lambda(1)+(ila-1)*dlambdap
   END DO
-  one_o_lambda=1./lambda
 
+  !Change to grid that is thinner closer to lambda
+  IF(ILAGRID.AND..NOT.GLOBALFI) THEN
+     lambda(1) =lambdac  
+     dlambda(1)=PREC_B*lambdac*lambdac
+     DO ila=2,nlambda
+        lambda(ila)=lambda(ila-1)+dlambda(ila-1)
+        dlambda(ila)=MIN(lambda(ila)-lambdac,dlambdap)
+     END DO
+     fact=(lambda(nlambda)-lambdac)/(lambdab-lambdac-dlambdap)
+     lambda=lambdac+(lambda-lambdac)/fact
+  END IF
+  one_o_lambda=1./lambda
   DO ila=1,nlambda
      passing=.TRUE.
      DO iw=1,nw
-        IF(lambda(ila).GT.1/Bt(iw)) passing=.FALSE.
+        IF(lambda(ila).GE.1/Bt(iw)) passing=.FALSE.
      END DO
      IF(passing) THEN
-        WRITE(1000+myrank,*) 'Passing trajectories at ila=',ila
+        serr="Passing trajectories"
+        CALL END_ALL(serr,.FALSE.)
+!        WRITE(iout,*) 'Passing trajectories at ila=',ila
      END IF
   END DO
 
-  WRITE(1000+myrank,'(" Velocity grid has size ",I4," in lambda")') nlambda
+  CALL CALCB(ZERO       ,ZERO,0,.FALSE.,B1,&
+       & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
+  CALL CALCB(ZERO,PI,0,.FALSE.,B2,&
+       & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
+  lambdac=1./MAX(B1,B2)
 
+  WRITE(iout,'(" Velocity grid has size ",I4," in lambda")') nlambda
+  WRITE(iout,'(" (lambda_c=",1pe23.16,", lambda_b=",1pe13.6,") ")') lambdac,lambdab
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   
 END SUBROUTINE CREATE_LAMBDA_GRID
@@ -878,13 +1287,13 @@ END SUBROUTINE CREATE_LAMBDA_GRID
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE LABEL_GRIDPOINTS(na,nalpha,nalphab,nlambda,nw,bottom,connected,&
-     & alphap_w,z1,zb,z2,Bb,Bt,lambda,thetap,zetap,zetax,B_al,npoint,i_a,i_l,i_w,i_p)
+SUBROUTINE LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
+     & alphap_w,z1,z2,Bb,Bt,lambda,zetap,zetax,thetax,B_al,npoint,i_l,i_w,i_p)
 
 !-----------------------------------------------------------------------------------------------
 !For a nalpha x nlambda grid, and nw wells characterized by the matrix of connections 
 !connected, alphap_w, z1, z2, Bt Bb, determine number of points npoint, alpha, lambda and well
-!of each of them, i_a, i_l and i_w, and determine point number. i_p for each point of the extended
+!of each of them, i_l and i_w, and determine point number. i_p for each point of the extended
 !grid for each value of lambda
 !----------------------------------------------------------------------------------------------- 
 
@@ -892,17 +1301,17 @@ SUBROUTINE LABEL_GRIDPOINTS(na,nalpha,nalphab,nlambda,nw,bottom,connected,&
   IMPLICIT NONE
   !Input
   LOGICAL bottom(nw),connected(nw,nw)
-  INTEGER na,nalpha,nalphab,nlambda,nw
-  REAL*8 alphap_w(nw),z1(nw),zb(nw),z2(nw),Bb(nw),Bt(nw),lambda(nlambda)
+  INTEGER nalpha,nalphab,nlambda,nw
+  REAL*8 alphap_w(nw),z1(nw),z2(nw),Bb(nw),Bt(nw),lambda(nlambda)
   REAL*8 zetap(nalphab),zetax(nalpha,nalphab)
-  REAL*8 thetap(nalpha,nalphab),B_al(nalpha,nalphab)
+  REAL*8 thetax(nalpha,nalphab),B_al(nalpha,nalphab)
   !Output
-  INTEGER npoint,i_a(npointx),i_l(npointx),i_w(npointx),i_p(nlambda,nalpha,nalphab)
+  INTEGER npoint,i_l(npointx),i_w(npointx),i_p(nlambda,nalpha,nalphab)
   !Others
   CHARACTER*100 serr
-  INTEGER ja,ia,il,ila,iw,jw,assigned(nw),iwell(nalpha,nalphab,nlambda)
-  REAL*8 one_o_lambda(nlambda),alpp,lambdab_w(nw),lambdac_w(nw),d1,d2,dist,distt
-  REAL*8 MODANG
+  LOGICAL passing(nw)
+  INTEGER ja,ia,il,jl,ila,iw,jw,assigned(nw),iwell(nalpha,nalphab,nlambda)
+  REAL*8 one_o_lambda(nlambda),alpp,d1,d2,dist,distt
   !Time
   CHARACTER*30, PARAMETER :: routine="LABEL_GRIDPOINTS"
   INTEGER, SAVE :: ntotal=0
@@ -912,49 +1321,14 @@ SUBROUTINE LABEL_GRIDPOINTS(na,nalpha,nalphab,nlambda,nw,bottom,connected,&
 
   CALL CPU_TIME(tstart)
 
-  !Ignore wells that are outside region of interest
-  DO iw=1,nw
-     IF(.NOT.bottom(iw)) CYCLE
-     DO ia=1,na
-        alpp=(thetap(ia,1)-iota*zetax(ia,1))
-        IF(ABS(alphap_w(iw)-alpp).LT.PREC_EXTR.AND.zb(iw).LT.zetax(ia,1)) THEN
-           Bb(iw)=1E10
-           Bt(iw)=-1
-           DO jw=iw+1,nw 
-              IF(connected(jw,iw)) THEN
-                 Bb(jw)=1E10
-                 Bt(jw)=-1
-              END IF
-           END DO
-        END IF
-     END DO
-     DO ia=nalpha-na+1,nalpha
-        alpp=(thetap(ia,nalphab)-iota*zetax(ia,nalphab))
-        IF(ABS(alphap_w(iw)-alpp).LT.PREC_EXTR.AND.zb(iw).GT.zetax(ia,nalphab)) THEN
-           Bb(iw)=1E10
-           Bt(iw)=-1
-           DO jw=iw+1,nw 
-              IF(connected(jw,iw)) THEN
-                 Bb(jw)=1E10
-                 Bt(jw)=-1
-              END IF
-           END DO
-        END IF
-     END DO
-  END DO
-
-  !Size of global grid
-  one_o_lambda=1/lambda
-  lambdab_w=1/Bb
-  lambdac_w=1/Bt
-
   !For each point in the (zeta,theta) extended grid, determine point
-
+  
   !Start by determine well label for each point
+  one_o_lambda=1/lambda
   iwell=0
   DO ia=1,nalpha
      DO il=1,nalphab
-        alpp=(thetap(ia,il)-iota*zetax(ia,il))
+        alpp=(thetax(ia,il)-iota*zetax(ia,il))
         DO iw=1,nw
            IF(bottom(iw).AND.ABS(alphap_w(iw)-alpp)&
                 & .LT.PREC_EXTR.AND.zetax(ia,il).GT.z1(iw).AND.zetax(ia,il).LE.z2(iw)) EXIT
@@ -963,50 +1337,74 @@ SUBROUTINE LABEL_GRIDPOINTS(na,nalpha,nalphab,nlambda,nw,bottom,connected,&
            IF(iw.EQ.jw.OR.connected(jw,iw)) THEN
               DO ila=1,nlambda
                  IF(MAX(bb(jw),B_al(ia,il)).LT.one_o_lambda(ila)&
-                      & .AND.one_o_lambda(ila).LT.bt(jw)) iwell(ia,il,ila)=jw
+                      & .AND.one_o_lambda(ila).LE.bt(jw)) iwell(ia,il,ila)=jw
               END DO
-
            END IF
         END DO
      END DO
   END DO
 
+  !Trapped trajectories closest to 1/Bmax (also longest) are considered passing
   npoint=0
-  i_p=0
-  i_l=0
-  i_a=0
-  i_w=0
-
-  DO ila=1,nlambda  !CHECK leave out exactly "lambda_c"?
-     assigned=0
+  DO WHILE(npoint.LE.1)
+     passing=.FALSE.
+     i_p=0
      DO ia=1,nalpha
         DO il=1,nalphab
-           iw=iwell(ia,il,ila) !CHECK mimimum lambda-size of region?
+           iw=iwell(ia,il,1)
            IF(iw.EQ.0) CYCLE
-           IF(assigned(iw).GT.0) THEN
-              i_p(ila,ia,il)=assigned(iw)
-           ELSE
-              npoint=npoint+1
-              i_p(ila,ia,il)=npoint
-              i_a(npoint)   =ia
-              i_l(npoint)   =ila
-              i_w(npoint)   =iw
-              assigned(iw)=npoint
-           END IF
+           IF(npoint.EQ.0) passing(iw)=.TRUE.
+           i_p(1,ia,il)=1
+        END DO
+     END DO
+     i_p(1,:,:)=1
+     i_l(1)=1
+     dist=0
+     DO iw=1,nw
+        IF(passing(iw).AND.(z2(iw)-z1(iw).GT.dist)) THEN
+           dist=z2(iw)-z1(iw)
+           i_w(1)=iw
+        END IF
+     END DO
+     i_l(2:npointx)=0
+     i_w(2:npointx)=0
+     i_p(2:nlambda,:,:)=0
+     npoint=1
+     DO ila=2,nlambda
+        assigned=0
+        DO ia=1,nalpha
+           DO il=1,nalphab
+              iw=iwell(ia,il,ila)
+              IF(iw.EQ.0) CYCLE
+              IF(passing(iw)) THEN
+                 i_p(ila,ia,il)=1
+                 CYCLE
+              END IF
+              IF(assigned(iw).GT.0) THEN
+                 i_p(ila,ia,il)=assigned(iw)
+              ELSE
+                 npoint=npoint+1
+                 i_p(ila,ia,il)=npoint
+                 i_l(npoint)   =ila
+                 i_w(npoint)   =iw
+                 assigned(iw)=npoint
+              END IF
+           END DO
         END DO
      END DO
   END DO
-  npoint=npoint+1    !ipoint=npoint is g=0
+  
   IF(npoint.GT.npointx) THEN
      serr="npoint>npointx"
      CALL END_ALL(serr,.FALSE.)
   END IF
-  
+
   !Contour conditions: for the points ignored in the first loop of the routine,
   !use periodicity to find equivalent points that have been labelled 
   DO ia=1,nalpha
      DO il=1,nalphab
-        alpp=(thetap(ia,il)-iota*zetax(ia,il))
+        alpp=(thetax(ia,il)-iota*zetax(ia,il))
+        !alpha=~0,=~0 
         DO iw=1,nw
            IF(bottom(iw).AND.ABS(alphap_w(iw)-alpp).LT.PREC_EXTR.AND.&
                 & ((zetax(ia,il).GT.z1(iw)))) EXIT
@@ -1014,22 +1412,24 @@ SUBROUTINE LABEL_GRIDPOINTS(na,nalpha,nalphab,nlambda,nw,bottom,connected,&
         IF(iw.EQ.nw+1) THEN           
            dist=1E5
            DO ja=1,nalpha
-              IF(ja.LT.nalpha-na-1) CYCLE
-              d1=MODANG( zetap(il)       -zetap(nalphab),TWOPI/nzperiod)
-              d2=MODANG(thetap(ia,il)-thetap(ja,nalphab),TWOPI)
-              distt=d1*d1+d2*d2
-              IF(distt.LT.dist) THEN
-                 DO ila=1,nlambda
-                    IF(one_o_lambda(ila).GT.B_al(ia,il)) THEN
-                       dist=distt
-                       i_p(  ila,ia,il)=i_p(  ila,ja,nalphab)
-                       iwell(ia,il,ila)=iwell(ja,nalphab,ila)
-                    END IF
-                 END DO
-              END IF
+              DO jl=1,nalphab
+                 IF(MOD(zetax(ja,jl),TWOPI/nzperiod)-zetap(nalphab-1).LT.ALMOST_ZERO) CYCLE
+                 d1= zetax(ia,il)- zetax(ja,jl)+TWOPI/nzperiod
+                 d2=thetax(ia,il)-thetax(ja,jl)+TWOPI*siota
+                 distt=d1*d1+d2*d2
+                 IF(distt.LT.dist) THEN
+                    DO ila=1,nlambda
+                       IF(one_o_lambda(ila).GT.B_al(ia,il)) THEN
+                          dist=distt
+                          i_p(  ila,ia,il)=i_p(  ila,ja,jl)
+                          iwell(ia,il,ila)=iwell(ja,jl,ila)                          
+                       END IF
+                    END DO
+                 END IF
+              END DO
            END DO
         END IF
-        
+        !alpha=~2pi,zeta=~2pi/nzperiod  
         DO iw=1,nw
            IF(bottom(iw).AND.ABS(alphap_w(iw)-alpp).LT.PREC_EXTR.AND.&
                 & ((zetax(ia,il).LT.z2(iw)))) EXIT
@@ -1037,35 +1437,28 @@ SUBROUTINE LABEL_GRIDPOINTS(na,nalpha,nalphab,nlambda,nw,bottom,connected,&
         IF(iw.EQ.nw+1) THEN           
            dist=1E5
            DO ja=1,nalpha
-              IF(ja.GT.na+1) CYCLE 
-              d1=MODANG( zetap(il) -zetap(1),TWOPI/nzperiod)
-              d2=MODANG(thetap(ia,il)-thetap(ja,1),TWOPI)
-              distt=d1*d1+d2*d2
-              IF(distt.LT.dist) THEN
-                 DO ila=1,nlambda
-                    IF(one_o_lambda(ila).GT.B_al(ia,il)) THEN
-                       dist=distt
-                       i_p(  ila,ia,il)=i_p(  ila,ja,1)
-                       iwell(ia,il,ila)=iwell(ja,1,ila)
-                    END IF
-                 END DO
-              END IF
+              DO jl=1,nalphab
+                 IF(zetap(2)-zetax(ja,jl).LT.ALMOST_ZERO) CYCLE
+                 d1= zetax(ia,il)- zetax(ja,jl)-TWOPI/nzperiod
+                 d2=thetax(ia,il)-thetax(ja,jl)-TWOPI*siota
+                 distt=d1*d1+d2*d2
+                 IF(distt.LT.dist) THEN
+                    DO ila=1,nlambda
+                       IF(one_o_lambda(ila).GT.B_al(ia,il)) THEN
+                          dist=distt
+                          i_p(  ila,ia,il)=i_p(  ila,ja,jl)
+                          iwell(ia,il,ila)=iwell(ja,jl,ila)
+                       END IF
+                    END DO
+                 END IF
+              END DO
            END DO
         END IF
-
+        
      END DO
   END DO
   
-  !i_p=npoint elsewhere, where g(npoint) is going to be 0
-  DO ia=1,nalpha
-     DO il=1,nalphab
-        DO ila=1,nlambda
-           IF(i_p(ila,ia,il).EQ.0) i_p(ila,ia,il)=npoint
-        END DO
-     END DO
-  END DO
-
-  WRITE(1000+myrank,'(" Global grid ",I6," points")') npoint
+  WRITE(iout,'(" Global grid ",I6," points")') npoint
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -1075,6 +1468,62 @@ END SUBROUTINE LABEL_GRIDPOINTS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+SUBROUTINE SORT_ALPHA(nalpha,nalphab,alphap,zetax,thetax,thetap,B_al,vds_al,j_al,nlambda,i_p)
+
+  USE GLOBAL  
+  IMPLICIT NONE
+  !Input
+  INTEGER nalpha,nalphab,nlambda
+  !Input/output
+  INTEGER i_p(nlambda,nalpha,nalphab),j_al(nalpha,nalphab)
+  REAL*8 zetax(nalpha,nalphab),thetax(nalpha,nalphab),thetap(nalpha,nalphab)
+  REAL*8 alphap(nalpha),B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab)
+  !Others
+  INTEGER inm,isave,ialpha,ila,itemp(nalphab)
+  REAL*8 temp(nalphab)
+  
+  DO ialpha=1,nalpha
+     IF(siota.GT.0) THEN
+        isave=MINLOC(alphap(ialpha:nalpha),1)+ialpha-1
+     ELSE
+        isave=MAXLOC(alphap(ialpha:nalpha),1)+ialpha-1
+     END IF
+     temp(1)        =alphap(ialpha)
+     alphap(ialpha) =alphap(isave)
+     alphap(isave)  =temp(1)
+     temp           =zetax(ialpha,:)
+     zetax(ialpha,:)=zetax(isave,:)
+     zetax(isave,:) =temp
+     temp            =thetax(ialpha,:)
+     thetax(ialpha,:)=thetax(isave,:)
+     thetax(isave,:) =temp
+     temp            =thetap(ialpha,:)
+     thetap(ialpha,:)=thetap(isave,:)
+     thetap(isave,:) =temp
+     temp          =B_al(ialpha,:)
+     B_al(ialpha,:)=B_al(isave,:)
+     B_al(isave,:) =temp
+     itemp         =j_al(ialpha,:)
+     j_al(ialpha,:)=j_al(isave,:)
+     j_al(isave,:) =itemp
+     DO inm=1,Nnmp
+        temp                =vds_al(inm,ialpha,:)
+        vds_al(inm,ialpha,:)=vds_al(inm,isave,:)
+        vds_al(inm,isave,:) =temp
+     END DO
+     DO ila=1,nlambda
+        itemp                =i_p(ila,ialpha,:)
+        i_p(ila,ialpha,:)=i_p(ila,isave,:)
+        i_p(ila,isave,:) =itemp
+     END DO
+  END DO
+
+END SUBROUTINE SORT_ALPHA
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
  SUBROUTINE FIND_LAMBDA_NEIGHBOURS(npoint,nalpha,nalphab,nlambda,nw,nbifx,i_p,bottom,i_w,&
         & i_p_lm1,nbif,i_p_lp1)
@@ -1093,6 +1542,7 @@ END SUBROUTINE LABEL_GRIDPOINTS
   !Output
   INTEGER i_p_lm1(npoint),i_p_lp1(nbifx,npoint),nbif(npoint)
   !Others
+  CHARACTER*100 serr
   INTEGER ia,il,ila,ipoint,jpoint
   !Time
   CHARACTER*30, PARAMETER :: routine="FIND_LAMBDA_NEIGHBOURS"
@@ -1104,42 +1554,35 @@ END SUBROUTINE LABEL_GRIDPOINTS
   CALL CPU_TIME(tstart)
 
   !Default values are always npoint
-  i_p_lm1=npoint
+  i_p_lm1(1)=0    
+  i_p_lm1(2:npoint)=1
   !Decreasing lambda: one neighbour, since no bifurcations
   DO ia=1,nalpha
      DO il=1,nalphab
-        DO ila=1,nlambda
+        DO ila=2,nlambda
            ipoint=i_p(ila,ia,il)
-!           IF(ipoint.EQ.npoint) CYCLE           
-!           IF(ila.GT.1) i_p_lm1(ipoint)=MIN(i_p(ila-1,ia,il),i_p_lm1(ipoint))
-           IF(ipoint.NE.npoint.AND.ila.GT.1) i_p_lm1(ipoint)=MIN(i_p(ila-1,ia,il),i_p_lm1(ipoint))
+           IF(ipoint.GT.1) i_p_lm1(ipoint)=MAX(i_p(ila-1,ia,il),i_p_lm1(ipoint))
         END DO 
      END DO
   END DO
+  
   !Increasing lambda: several neighours are possible in a bifurcation
   nbif=0
-  i_p_lp1=npoint
-  DO ipoint=1,npoint-1
-     DO jpoint=1,npoint-1
+  i_p_lp1=0
+  DO ipoint=1,npoint
+     DO jpoint=2,npoint
         IF (i_p_lm1(jpoint).EQ.ipoint) THEN
            nbif(ipoint)=nbif(ipoint)+1
+           IF(nbif(ipoint).GT.nbifx) THEN
+              WRITE(serr,"(A12,I5,A4,I3,A6)") "nbif(ipoint=",ipoint,") = ",nbif(ipoint)," > nbifx"
+              CALL END_ALL(serr,.FALSE.)
+           END IF
            i_p_lp1(nbif(ipoint),ipoint)=jpoint
         END IF
      END DO
-
-     IF(i_p_lp1(1,ipoint).EQ.npoint.AND..NOT.bottom(i_w(ipoint))) THEN
+     IF(i_p_lp1(1,ipoint).EQ.0.AND..NOT.bottom(i_w(ipoint))) THEN
         bottom(i_w(ipoint))=.TRUE.
-!        i_l(ipoint)=0
-!        DO ia=1,nalpha
-!           DO il=1,nalphab
-!              DO ila=1,nlambda
-!                 IF(i_p(ila,ia,il).EQ.ipoint) i_p(ila,ia,il)=npoint
-!              END DO
-!           END DO
-!        END DO
-!        DO jpoint=1,npoint
-!           IF(i_p_lm1(jpoint).EQ.ipoint) i_p_lm1(jpoint)=npoint
-!        END DO        
+
      END IF
   END DO
 
@@ -1152,35 +1595,48 @@ END SUBROUTINE FIND_LAMBDA_NEIGHBOURS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_w,i_a,i_l,i_p_lm1,zlw,tlw,zrw,trw,&
-     & nw,z1,zb,z2,tb,Bb,Bt,alphap_w,bottom,connected,              &
-     & nlambda,one_o_lambda,na,nalpha,alphap,dalphap,offset,        &
+SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,zlw,zrw,&
+     & nw,connected,BI6,nlambda,nalpha,nalphab,alphap,&
      & i_p_am1,i_p_ap1,dalpha_am1,dalpha_ap1,&
-     & i_p_am2,i_p_ap2,dalpha_am2,dalpha_ap2)
+     & i_p_am2,i_p_ap2,dalpha_am2,dalpha_ap2,&
+     & i_p_am1I,i_p_am1II,i_p_am2I,i_p_am2II,i_p_am2III,i_p_am2IV,&
+     & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
+     & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV,lambda,&
+     & BI7,BI3,BI3b,BI3f,dlambda_lm1,dlambda_lp1)
   
 !----------------------------------------------------------------------------------------------- 
-!For each point of npoint, located in nalpha x nlambda (alphap,one_o_lambda) grid (characterized 
-!by dalphap, and offset), i_p_am1, i_p_am2, i_p_ap1, i_p_ap2 are found
-!using that there are nw wells characterized by i_w, i_a, i_l, zlw, tlw, zrw, trw, z1, zb, z2, tb,
-!Bb, Bt, alphap_w, bottom and connected
+!For each point of npoint, located in nalpha x nlambda (alphap,one_o_lambda) grid,
+!i_p_am1, i_p_am2, i_p_ap1, i_p_ap2 are found
+!using that there are nw wells characterized by i_w, i_l, zlw, zrw, connected
 !----------------------------------------------------------------------------------------------- 
 
   USE GLOBAL  
   IMPLICIT NONE
   !Input
-  INTEGER npoint,i_w(npoint),i_a(npoint),i_l(npoint),i_p_lm1(npoint),nw,na,nalpha,nlambda
-  LOGICAL bottom(nw),connected(nw,nw)
-  REAL*8 z1(nw),zb(nw),z2(nw),tb(nw),Bb(nw),Bt(nw),one_o_lambda(nlambda)
-  REAL*8 zlw(npoint),tlw(npoint),zrw(npoint),trw(npoint)
-  REAL*8 alphap_w(nw),alphap(nalpha),dalphap,offset
+  INTEGER i_p(nlambda,nalpha,nalphab),i_w(npoint),i_l(npoint),i_p_lm1(npoint),i_p_lp1(nbifx,npoint)
+  INTEGER nbifx,nbif(npoint),npoint,nw,nalpha,nalphab,nlambda
+  LOGICAL connected(nw,nw)
+  REAL*8 zlw(npoint),zrw(npoint)
+  REAL*8 BI6(npoint),alphap(nalpha),lambda(nlambda),BI7(npoint),BI3(npoint)
+  REAL*8 dlambda_lm1(npoint),dlambda_lp1(npoint)
   !Output
   INTEGER i_p_am1(npoint),i_p_ap1(npoint),i_p_am2(npoint),i_p_ap2(npoint)
   REAL*8 dalpha_am1(npoint),dalpha_ap1(npoint),dalpha_am2(npoint),dalpha_ap2(npoint)
+  INTEGER i_p_am1I(npoint),i_p_am1II(npoint),i_p_ap1I(npoint),i_p_ap1II(npoint)
+  INTEGER i_p_am2I(npoint),i_p_am2II(npoint),i_p_am2III(npoint),i_p_am2IV(npoint)
+  INTEGER i_p_ap2I(npoint),i_p_ap2II(npoint),i_p_ap2III(npoint),i_p_ap2IV(npoint)
+  REAL*8 wm1I(npoint),wm1II(npoint),wm2I(npoint),wm2II(npoint),wm2III(npoint),wm2IV(npoint)
+  REAL*8 wp1I(npoint),wp1II(npoint),wp2I(npoint),wp2II(npoint),wp2III(npoint),wp2IV(npoint)
+  REAL*8 BI3b(npoint),BI3f(npoint)
   !Others
-  INTEGER, PARAMETER :: nrep=30
-  INTEGER ipoint,jpoint,iw,jw,kw,ila,jla,ial,irep,id,ka,i_wp(nlambda),ntot,nvec
-  REAL*8 sign,da,alpp,zp,tp,zx,tx,zrep,trep
-  REAL*8 MODANGHEL
+  INTEGER, PARAMETER :: nrep=5
+  LOGICAL abottom,gotit
+  INTEGER ibif,ipoint,jpoint,ila,jla,ial,jal,il,id,ntot,nvec,ia_min
+  REAL*8 da,dat,dz(-1:1,npoint)
+  INTEGER kpoint,lpoint,opoint
+  INTEGER jwp,iwp,wp(npoint,4),nwp(4),imax(4)
+  REAL*8 Jlambda,Jlambda2,Jnew,Jold,Jmax,Jmax2
+  REAL*8 mdlBI1opsitf(npoint),mdlBI1opsitb(npoint)
   !Time
   CHARACTER*30, PARAMETER :: routine="FIND_ALPHA_NEIGHBOURS"
   INTEGER, SAVE :: ntotal=0
@@ -1190,121 +1646,91 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_w,i_a,i_l,i_p_lm1,zlw,tlw,zrw,trw,&
 
   CALL CPU_TIME(tstart)
 
-  sign=dalphap/ABS(dalphap)
+  !Determine where the alpha grid is thinner
+  ia_min=-100
+  IF(MOD(nalpha,2).EQ.0.AND.CENTERED_ALPHA) THEN
+     da=1E3
+     DO ial=1,nalpha
+        jal=ial+1
+        IF(jal.EQ.nalpha+1) jal=1
+        dat=ABS(alphap(ial)-alphap(jal))
+        IF(dat.GT.PI) dat=TWOPI-dat
+        IF(dat.LT.da) THEN
+           ia_min=ial
+           da=dat
+        END IF
+     END DO
+  END IF
+
+!!$    DO ial=1,nalpha
+!!$     iap1=ial+1
+!!$     IF(iap1.GT.nalpha) iap1=1
+!!$     iam1=ial-1
+!!$     IF(iam1.LT.1) iam1=nalpha
+!!$     DO il=1,nalphab
+!!$        DO ila=1,nlambda
+!!$           ipoint=i_p(ila,ial,il)
+!!$           IF(ipoint.EQ.0) CYCLE
+!!$           dalpha_ap1(ipoint)=thetap(iap1,1)-thetap(ial,1)
+!!$           dalpha_am1(ipoint)=thetap(ial,1)-thetap(iam1,1)
+!!$        END DO
+!!$     END DO
+!!$  END DO
   
   !For each point in the (zeta,theta) grid, determine two neighbours in alpha
-  i_p_ap1=npoint
-  i_p_am1=npoint
-  dalpha_ap1=ABS(iota*TWOPI/nzperiod)/na
-  dalpha_am1=dalpha_ap1
-  DO ipoint=1,npoint-1
-
-     !Determine representative (alpha,l) of a field line labelled by l
-     iw =i_w(ipoint)
-     ila=i_l(ipoint)
-     ial=i_a(ipoint)
-
-     IF(ila.EQ.0) CYCLE
-
-     DO irep=0,nrep
-        IF(i_p_am1(ipoint).NE.npoint.AND.i_p_ap1(ipoint).NE.npoint) CYCLE
-        IF(irep.EQ.0) THEN
-           trep=tb(iw)
-           zrep=zb(iw)
-        ELSE
-           zrep=zlw(ipoint)+(zrw(ipoint)-zlw(ipoint))*(irep-1.)/(nrep-1.)
-           trep=tlw(ipoint)+(trw(ipoint)-tlw(ipoint))*(irep-1.)/(nrep-1.)
-        END IF
-        zrep=MODANGHEL(zrep,offset,TWOPI/nzperiod)
-        alpp=(trep-iota*zrep)
-        IF((alpp-alphap(1).GT.PREC_EXTR.AND.alpp-alphap(nalpha).GT.PREC_EXTR).OR. &
-             &  (alphap(1)-alpp.GT.PREC_EXTR.AND.alphap(nalpha)-alpp.GT.PREC_EXTR)) CYCLE
-        
-        !Loop in direction in alpha (i.e. alpha+dalpha and alpha-dalpha)
-        DO id=-1,1,2
-           IF((id.LT.0.AND.i_p_am1(ipoint).NE.npoint).OR.&
-             &(id.GT.0.AND.i_p_ap1(ipoint).NE.npoint)) CYCLE
-           da=ABS(iota*TWOPI/nzperiod)/na 
-           tp=trep+id*da     /(1.+iota2)   ! the factor is cos(atan(iota))*d_alpha
-           zp=zrep-id*da*iota/(1.+iota2)   ! the factor is sin(atan(iota))*d_alpha
-           zp=MODANGHEL(zp,offset,TWOPI/nzperiod)
-           alpp=tp-iota*zp
-           !Ensure periodicity            
-           IF((alpp-alphap(1).GT.PREC_EXTR.AND.alpp-alphap(nalpha).GT.PREC_EXTR).OR. &
-                & (alphap(1)-alpp.GT.PREC_EXTR.AND.alphap(nalpha)-alpp.GT.PREC_EXTR)) THEN
-              da=TWOPI-da*INT(TWOPI/da)
-              tp=trep+id*da     /(1.+iota2)
-              zp=zrep-id*da*iota/(1.+iota2)
-              zp=MODANGHEL(zp,offset,TWOPI/nzperiod) 
-              IF(    (iota.LT.0.AND.     alpp-alphap(1).GT.PREC_EXTR.AND.id.LT.0).OR.&
-                   & (iota.LT.0.AND.alphap(nalpha)-alpp.GT.PREC_EXTR.AND.id.GT.0).OR.&
-                   & (iota.GT.0.AND.     alpp-alphap(1).LT.PREC_EXTR.AND.id.GT.0).OR.&
-                   & (iota.GT.0.AND.alphap(nalpha)-alpp.LT.PREC_EXTR.AND.id.LT.0)) THEN              
-                 IF(sign.LT.0) THEN
-                    IF(alpp-alphap(1)  .GT.PREC_EXTR)    tp=tp-TWOPI
-                    IF(alphap(nalpha)-alpp.GT.PREC_EXTR) tp=tp+TWOPI
-                 ELSE
-                    IF(alphap(1)-alpp  .GT.PREC_EXTR)    tp=tp+TWOPI
-                    IF(alpp-alphap(nalpha).GT.PREC_EXTR) tp=tp-TWOPI
-                 END IF
+  i_p_ap1=0
+  i_p_am1=0
+  dalpha_ap1=0
+  dalpha_am1=0
+  dz=0
+  DO id=-1,1,2
+     DO ila=1,nlambda
+        DO ial=1,nalpha
+           DO il=1,nalphab
+              ipoint=i_p(ila,ial,il)
+              IF(ipoint.LE.1) CYCLE !JL
+              IF(id*siota.LT.0) THEN
+                 jal=ial-1
+                 IF(jal.EQ.0) jal=nalpha
               ELSE
-                 IF(sign.LT.0) THEN
-                    IF(alpp-alphap(1)  .GT.PREC_EXTR) tp=tp-TWOPI
-                    IF(alphap(nalpha)-alpp.GT.PREC_EXTR) tp=tp+TWOPI
+                 jal=ial+1
+                 IF(ial.EQ.ia_min.OR.ial.EQ.ia_min+1) jal=jal+1
+                 IF(jal.GT.nalpha) jal=jal-nalpha
+              END IF
+              da=ABS(alphap(ial)-alphap(jal))
+              IF(da.GT.PI) da=TWOPI-da
+              IF(id.LT.0) THEN
+                 dalpha_am1(ipoint)=da
+              ELSE
+                 dalpha_ap1(ipoint)=da
+              END IF
+              jpoint=i_p(ila,jal,il)
+              IF(jpoint.EQ.ipoint.OR.jpoint.EQ.0) CYCLE
+              IF(zrw(jpoint)-zlw(jpoint).GT.dz(id,ipoint)) THEN
+                 dz(id,ipoint)=zrw(jpoint)-zlw(jpoint)
+                 IF(id.LT.0) THEN
+                    i_p_am1(ipoint)=jpoint
                  ELSE
-                    IF(alphap(1)-alpp  .GT.PREC_EXTR) tp=tp+TWOPI
-                    IF(alpp-alphap(nalpha).GT.PREC_EXTR) tp=tp-TWOPI
+                    i_p_ap1(ipoint)=jpoint
                  END IF
               END IF
-              zp=MODANGHEL(zp,offset,TWOPI/nzperiod)
-           END IF
-           zp=MODANGHEL(zp,offset,TWOPI/nzperiod)
-           ka=INT(((tp-iota*zp)-alphap(1)+sign*PREC_EXTR)/dalphap)
-           zx=zp+INT(ka/na)*TWOPI/nzperiod
-           tx=tp
-           i_wp=-1
-
-           alpp=(tx-iota*zx)
-           DO kw=1,nw
-              IF(.NOT.bottom(kw).OR.ABS(alphap_w(kw)-alpp).GT.PREC_EXTR &
-                   & .OR.zx.LT.z1(kw).OR.zx.GE.z2(kw)) CYCLE
-              EXIT
            END DO
-           DO jw=kw,nw
-              IF(kw.EQ.jw.OR.connected(jw,kw)) THEN
-                 DO jla=1,nlambda
-                    IF(bb(jw).LT.one_o_lambda(jla).AND.one_o_lambda(jla).LT.bt(jw)) i_wp(jla)=jw
-                 END DO
-              END IF
-           END DO
-           DO jpoint=1,npoint-1
-              IF(i_l(jpoint).EQ.ila.AND.i_w(jpoint).EQ.i_wp(ila)) THEN
-                 EXIT
-              END IF
-           END DO  
-           IF(id.LT.0) THEN
-              dalpha_am1(ipoint)=da
-              i_p_am1(ipoint)=jpoint
-           ELSE
-              dalpha_ap1(ipoint)=da
-              i_p_ap1(ipoint)=jpoint
-           END IF
         END DO
      END DO
   END DO
-  
+
   !Make sure each neighbours are consistent
-  DO ipoint=1,npoint-1
-     IF(i_p_ap1(ipoint).EQ.npoint) THEN
-        DO jpoint=1,npoint-1
+  DO ipoint=2,npoint
+     IF(i_p_ap1(ipoint).EQ.0) THEN
+        DO jpoint=2,npoint
            IF(i_p_am1(jpoint).EQ.ipoint) THEN
               i_p_ap1(ipoint)=jpoint
               dalpha_ap1(ipoint)=dalpha_am1(jpoint)
            END IF
         END DO
      END IF
-     IF(i_p_am1(ipoint).EQ.npoint) THEN
-        DO jpoint=1,npoint-1
+     IF(i_p_am1(ipoint).EQ.0) THEN
+        DO jpoint=2,npoint
            IF(i_p_ap1(jpoint).EQ.ipoint) THEN
               i_p_am1(ipoint)=jpoint
               dalpha_am1(ipoint)=dalpha_ap1(jpoint)
@@ -1313,44 +1739,41 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_w,i_a,i_l,i_p_lm1,zlw,tlw,zrw,trw,&
      END IF
   END DO
 
-
   !When trajectories do not close in alpha, there may be problems, because no neighbour exist
-  !at same value of lambda. Here, two different models are implemented
-  
+  !at same value of lambda. Here, two different models are implemented  
   IF(.NOT.CLOSEST_LAMBDA) THEN !Find largest lambda with closed trajectories in alpha
      jla=0
      DO ila=1,nlambda
         ntot=0
         nvec=0
-        DO ipoint=1,npoint-1
+        DO ipoint=2,npoint
            IF(i_l(ipoint).NE.ila) CYCLE
            ntot=ntot+1
-           IF(i_p_ap1(ipoint).NE.npoint) nvec=nvec+1
+           IF(i_p_ap1(ipoint).NE.0) nvec=nvec+1
         END DO
         IF(nvec.EQ.ntot.AND.ila.GT.jla) jla=ila
      END DO
-  END IF
-
-  DO ipoint=1,npoint-1
-     IF(i_p_ap1(ipoint).EQ.npoint) THEN
-        jpoint=ipoint
+  END IF  
+  DO ipoint=2,npoint
+     IF(i_p_ap1(ipoint).EQ.0) THEN
+        jpoint=ipoint        
         DO jla=i_l(ipoint),1,-1
            jpoint=i_p_lm1(jpoint)
-           IF(jpoint.EQ.npoint) EXIT
-           IF((CLOSEST_LAMBDA.AND.i_p_ap1(jpoint).NE.npoint).OR.&
+           IF(jpoint.EQ.1) EXIT
+           IF((CLOSEST_LAMBDA.AND.i_p_ap1(jpoint).NE.0).OR.&
                 (.NOT.CLOSEST_LAMBDA.AND.i_l(jpoint).EQ.ila)) THEN
               i_p_ap1(ipoint)   =i_p_ap1(jpoint)
               dalpha_ap1(ipoint)=dalpha_ap1(jpoint)
               EXIT
            END IF
         END DO
-     END IF
-     IF(i_p_am1(ipoint).EQ.npoint) THEN
+     END IF          
+     IF(i_p_am1(ipoint).EQ.0) THEN
         jpoint=ipoint
         DO jla=i_l(ipoint),1,-1
            jpoint=i_p_lm1(jpoint)
-           IF(jpoint.EQ.npoint) EXIT
-           IF((CLOSEST_LAMBDA.AND.i_p_am1(jpoint).NE.npoint).OR.&
+           IF(jpoint.EQ.1) EXIT
+           IF((CLOSEST_LAMBDA.AND.i_p_am1(jpoint).NE.0).OR.&
                 (.NOT.CLOSEST_LAMBDA.AND.i_l(jpoint).EQ.ila)) THEN
               i_p_am1(ipoint)   =i_p_am1(jpoint)
               dalpha_am1(ipoint)=dalpha_am1(jpoint)
@@ -1359,25 +1782,522 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_w,i_a,i_l,i_p_lm1,zlw,tlw,zrw,trw,&
         END DO
      END IF
   END DO
-  
-  !Seconds neighbours
-  i_p_ap2=npoint
-  i_p_am2=npoint
-  dalpha_ap2=dalpha_ap1
-  dalpha_am2=dalpha_ap1
-  DO ipoint=1,npoint-1
-     IF(i_l(i_p_ap1(i_p_ap1(ipoint))).EQ.i_l(ipoint).OR..NOT.CLOSEST_LAMBDA1) THEN
-        i_p_ap2(ipoint)=i_p_ap1(i_p_ap1(ipoint))
-        dalpha_ap2(ipoint)=dalpha_ap1(i_p_ap1(ipoint))
+
+  !Trajectories very close to the top
+  DO ipoint=npoint,2,-1
+     IF(nbif(ipoint).EQ.0) CYCLE
+     IF(i_p_am1(ipoint).EQ.0) i_p_am1(ipoint)=i_p_am1(i_p_lp1(1,ipoint))
+     IF(i_p_ap1(ipoint).EQ.0) i_p_ap1(ipoint)=i_p_ap1(i_p_lp1(1,ipoint))
+  END DO
+  !Initial values
+  i_p_ap1I  =i_p_ap1
+  i_p_ap1II =0
+  i_p_ap2I  =0
+  i_p_ap2II =0
+  i_p_ap2III=0
+  i_p_ap2IV =0
+  i_p_am1I  =i_p_am1
+  i_p_am1II =0
+  i_p_am2I  =0
+  i_p_am2II =0
+  i_p_am2III=0
+  i_p_am2IV =0
+  wp1I  =1.0
+  wp1II =0.0
+  wp2I  =0.0
+  wp2II =0.0
+  wp2III=0.0
+  wp2IV =0.0
+  wm1I  =1.0
+  wm1II =0.0
+  wm2I  =0.0
+  wm2II =0.0
+  wm2III=0.0
+  wm2IV =0.0
+
+  IF(MODEL_ALPHAD) GOTO 123
+
+  IF(NEW_DALPHA) THEN
+     DO ipoint=2,npoint
+        DO id=-1,1,2
+           IF(id.EQ.-1) THEN
+              IF(i_p_am1(ipoint).EQ.0) CYCLE
+              IF(i_l(ipoint).NE.i_l(i_p_am1(ipoint))) CYCLE !JLNEW
+              IF(BI3(ipoint)/BI7(ipoint).GT.0) THEN
+                 IF(i_p_lm1(ipoint).EQ.0) CYCLE
+                 jpoint=i_p_lm1(ipoint)
+                 i_p_am1II(ipoint)=jpoint
+                 mdlBI1opsitb(ipoint)=-BI6(jpoint)
+                 mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)+BI6(ipoint)
+!                 DO ibif=1,nbif(jpoint)                    
+!                    mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)+BI6(i_p_lp1(ibif,jpoint))
+!                 END DO
+                 mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)/dlambda_lm1(ipoint)/(-sgnb)
+              ELSE
+                 IF(i_p_lp1(1,ipoint).EQ.0) CYCLE
+                 jpoint=i_p_lp1(1,ipoint)
+                 i_p_am1II(ipoint)=jpoint
+                 mdlBI1opsitb(ipoint)=-BI6(ipoint)
+                 DO ibif=1,1!nbif(ipoint)                    
+                    mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)+BI6(i_p_lp1(ibif,ipoint))
+                 END DO
+                 mdlBI1opsitb(ipoint)=mdlBI1opsitb(ipoint)/dlambda_lp1(ipoint)/(-sgnb)
+              END IF
+              i_p_am1I(ipoint)=i_p_am1(ipoint)
+              wm1I(ipoint)= -1E3
+           ELSE
+              IF(i_p_ap1(ipoint).EQ.0) CYCLE
+              IF(i_l(ipoint).NE.i_l(i_p_ap1(ipoint))) CYCLE
+              IF(BI3(ipoint)/BI7(ipoint).LT.0) THEN
+                 IF(i_p_lm1(ipoint).EQ.0) CYCLE
+                 jpoint=i_p_lm1(ipoint)
+                 i_p_ap1II(ipoint)=jpoint
+                 mdlBI1opsitf(ipoint)=-BI6(jpoint)
+                 mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)+BI6(ipoint)
+!                 DO ibif=1,nbif(jpoint)                    
+!                    mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)+BI6(i_p_lp1(ibif,jpoint))
+!                 END DO
+                 mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)/dlambda_lm1(ipoint)/(-sgnb)
+              ELSE
+                 IF(i_p_lp1(1,ipoint).EQ.0) CYCLE
+                 jpoint=i_p_lp1(1,ipoint)
+                 i_p_ap1II(ipoint)=jpoint
+                 mdlBI1opsitf(ipoint)=-BI6(ipoint)
+                 DO ibif=1,1!nbif(ipoint)                    
+                    mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)+BI6(i_p_lp1(ibif,ipoint))
+                 END DO
+                 mdlBI1opsitf(ipoint)=mdlBI1opsitf(ipoint)/dlambda_lp1(ipoint)/(-sgnb)
+              END IF
+              i_p_ap1I(ipoint)=i_p_ap1(ipoint)
+              wp1I(ipoint)= -1E3
+           END IF
+        END DO
+     END DO
+  END IF
+
+  !Find neighbours at constant J
+  DO ipoint=2,npoint
+     !id=-1, alpha_{i-1}; id=1, alpha_{i+1}     
+     DO id=-1,1,2
+        nwp=0
+        wp=0
+        imax=0
+        Jlambda=0
+        Jlambda2=0
+        Jmax=0
+        Jmax2=0
+        IF(id.LT.0) THEN
+           IF(NEW_DALPHA.AND.wm1I(ipoint).LT.-100) CYCLE
+           jpoint=i_p_am1(ipoint)
+        ELSE
+           IF(NEW_DALPHA.AND.wp1I(ipoint).LT.-100) CYCLE
+           jpoint=i_p_ap1(ipoint)
+        END IF
+        !Sum over W in old alpha, if needed
+        DO kpoint=2,npoint
+           IF(id.LT.0) THEN
+              lpoint=i_p_am1(kpoint)
+           ELSE
+              lpoint=i_p_ap1(kpoint)
+           END IF
+           IF(lpoint.EQ.jpoint) THEN
+              Jlambda=Jlambda+BI6(kpoint)
+              nwp(1)=nwp(1)+1
+              wp(nwp(1),1)=kpoint
+              IF(BI6(kpoint).GT.Jmax) THEN
+                 Jmax=BI6(kpoint)
+                 imax(1)=kpoint
+              END IF
+           END IF
+        END DO
+        !Sum over W in old alpha, lambda+1, if needed
+        DO iwp=1,nwp(1) 
+           kpoint=wp(iwp,1)
+           DO opoint=2,npoint
+              IF((i_w(kpoint).EQ.i_w(opoint).OR.connected(i_w(kpoint),i_w(opoint)))&
+                   & .AND.i_l(opoint).EQ.i_l(kpoint)+1) THEN
+                 Jlambda2=Jlambda2+BI6(opoint)
+                 nwp(2)=nwp(2)+1
+                 wp(nwp(2),2)=opoint
+                 IF(BI6(opoint).GT.Jmax2) THEN
+                    Jmax2=BI6(opoint)
+                    imax(2)=opoint
+                 END IF
+              END IF
+           END DO
+        END DO
+        !Sum over W in new alpha, if needed        
+        DO kpoint=2,npoint
+           IF(id.LT.0) THEN
+              lpoint=i_p_ap1(kpoint)
+           ELSE
+              lpoint=i_p_am1(kpoint)
+           END IF
+           IF(lpoint.EQ.ipoint) THEN
+              nwp(3)=nwp(3)+1
+              wp(nwp(3),3)=kpoint
+           END IF
+        END DO
+        IF(nwp(3).EQ.0) THEN
+           nwp(3)=1
+           IF(id.LT.0) THEN
+              wp(1,3)=i_p_am1(ipoint)
+           ELSE
+              wp(1,3)=i_p_ap1(ipoint)
+           END IF           
+        END IF
+        !Scan in lambda towards lambda_c at new alpha
+        DO ila=1,nlambda
+           CALL FLUSH(iout)
+           IF(i_p_lm1(wp(1,3)).LE.1.OR.wp(1,3).EQ.0) EXIT !JL
+           CALL FLUSH(iout)
+           DO iwp=1,nwp(3)
+              CALL FLUSH(iout)
+              kpoint=wp(iwp,3)
+              gotit=.TRUE.
+              IF(nbif(i_p_lm1(kpoint)).GT.1) THEN !JL
+                 DO ibif=1,nbif(i_p_lm1(kpoint))
+                    gotit=.FALSE.
+                    DO jwp=1,nwp(3)
+                       gotit=gotit.OR.(wp(jwp,3).EQ.i_p_lp1(ibif,i_p_lm1(kpoint)))
+                    END DO
+                    IF(.NOT.gotit) EXIT
+                 END DO
+              END IF
+              IF(.NOT.gotit) EXIT
+           END DO
+           CALL FLUSH(iout)
+           IF(.NOT.gotit) EXIT
+           DO kpoint=2,npoint
+              DO iwp=1,nwp(3)
+                 IF(i_p_lm1(wp(iwp,3)).EQ.kpoint) THEN
+                    nwp(4)=nwp(4)+1
+                    wp(nwp(4),4)=kpoint
+                    EXIT
+                 END IF
+              END DO
+           END DO
+           IF(nwp(3).GT.nwp(4)) wp(nwp(4)+1:nwp(3),3)=1
+           wp(1:nwp(4),3)=wp(1:nwp(4),4)
+           wp(1:nwp(4),4)=1
+           nwp(3)=nwp(4)
+           nwp(4)=0
+           Jnew=0
+           DO iwp=1,nwp(3)
+              Jnew=Jnew+BI6(wp(iwp,3))
+           END DO
+           IF(Jnew.GT.Jlambda) EXIT           
+        END DO
+        !Calculate J in new alpha
+        Jnew=0
+        Jmax=0
+        abottom=.FALSE.
+        DO iwp=1,nwp(3)
+           kpoint=wp(iwp,3)
+           Jnew=Jnew+BI6(kpoint)
+           IF(BI6(kpoint).GT.Jmax) THEN
+              Jmax=BI6(kpoint)
+              imax(3)=kpoint
+           END IF
+           abottom=abottom.OR.(i_p_lp1(1,kpoint).NE.0)
+        END DO
+        !Scan in lambda towards 1/Bmin at new alpha
+        DO ila=1,nlambda
+           Jold=Jnew
+           IF(ila.GT.1) THEN
+              IF(nwp(3).GT.nwp(4)) wp(nwp(4)+1:nwp(3),3)=0
+              wp(1:nwp(4),3)=wp(1:nwp(4),4)
+              wp(1:nwp(4),4)=0
+              nwp(3)=nwp(4)
+              nwp(4)=0
+              imax(3)=imax(4)
+              imax(4)=0
+           END IF
+           Jnew=0
+           Jmax=0
+           IF(.NOT.abottom) THEN
+              Jnew=0
+              nwp(4)=0
+              wp(1,4)=0
+              imax(4)=0
+           ELSE
+              DO iwp=1,nwp(3)
+                 jpoint=wp(iwp,3)
+                 DO ibif=1,nbif(jpoint)
+                    kpoint=i_p_lp1(ibif,jpoint)
+                    Jnew=Jnew+BI6(kpoint)
+                    nwp(4)=nwp(4)+1
+                    wp(nwp(4),4)=kpoint
+                    IF(BI6(kpoint).GT.Jmax) THEN
+                       Jmax=BI6(kpoint)
+                       imax(4)=kpoint
+                    END IF
+                 END DO
+              END DO
+           END IF
+           !Select neighbours and weights
+           IF(id.LT.0) THEN
+              IF(((Jnew.LT.Jlambda.AND.Jlambda.LE.Jold).OR.&
+                   (Jnew.GT.Jlambda.AND.i_p_lp1(1,imax(4)).EQ.0).OR.&
+                   (Jold.LT.Jlambda.AND.ila.EQ.1))) THEN
+                 DO iwp=1,nwp(1)
+                    jpoint=wp(iwp,1)
+                    IF(Jnew.GT.Jlambda.AND.i_p_lp1(1,imax(4)).EQ.0& 
+                         & .AND.wm1I(jpoint).LT.1) CYCLE
+                    IF(Jold.LT.Jlambda.AND.ila.EQ.1 &
+                         & .AND.wm1I(jpoint).LT.1) CYCLE
+                    IF(Jnew.GT.PREC_EXTR) THEN
+                       i_p_am1I(jpoint) =i_p_lm1(imax(4))
+                       i_p_am1II(jpoint)=imax(4)
+                       wm1I(jpoint)=(Jlambda-Jnew)/(Jold-Jnew)
+                    ELSE
+                       i_p_am1I(jpoint) =i_p_lm1(imax(3))
+                       i_p_am1II(jpoint)=imax(3)
+                       wm1I(jpoint)=(Jlambda-Jold)/(Jold-BI6(i_p_lm1(imax(3))))
+                    END IF
+                 END DO
+              END IF
+              IF(nwp(2).NE.0) THEN
+                 IF(Jlambda.GT.Jnew.AND.Jnew.GT.Jlambda2) THEN
+                    DO iwp=1,nwp(4)
+                       jpoint=wp(iwp,4)
+                       i_p_ap1I(jpoint) =i_p_lm1(imax(2))
+                       i_p_ap1II(jpoint) =imax(2)
+                       wp1I(jpoint)=(Jnew-Jlambda2)/(Jlambda-Jlambda2)
+                    END DO
+                 END IF
+                 IF(Jlambda.GT.Jold.AND.Jold.GT.Jlambda2) THEN
+                    DO iwp=1,nwp(3)
+                       jpoint=wp(iwp,3)
+                       i_p_ap1I(jpoint) =i_p_lm1(imax(2))
+                       i_p_ap1II(jpoint) =imax(2)
+                       wp1I(jpoint)=(Jold-Jlambda2)/(Jlambda-Jlambda2)
+                    END DO
+                 END IF
+              END IF
+           ELSE
+              IF(((Jnew.LT.Jlambda.AND.Jlambda.LE.Jold).OR.&
+                   (Jnew.GT.Jlambda.AND.i_p_lp1(1,imax(4)).EQ.0).OR.&
+                   (Jold.LT.Jlambda.AND.ila.EQ.1))) THEN
+                 DO iwp=1,nwp(1)
+                    jpoint=wp(iwp,1)
+                    IF(Jnew.GT.Jlambda.AND.i_p_lp1(1,imax(4)).EQ.0& 
+                         & .AND.wp1I(jpoint).LT.1) CYCLE
+                    IF(Jold.LT.Jlambda.AND.ila.EQ.1 &
+                         & .AND.wp1I(jpoint).LT.1) CYCLE
+                    IF(Jnew.GT.PREC_EXTR) THEN
+                       i_p_ap1I(jpoint) =i_p_lm1(imax(4))
+                       i_p_ap1II(jpoint)=imax(4)
+                       wp1I(jpoint)=(Jlambda-Jnew)/(Jold-Jnew)
+                    ELSE
+                       i_p_ap1I(jpoint) =i_p_lm1(imax(3))
+                       i_p_ap1II(jpoint)=imax(3)
+                       wp1I(jpoint)=(Jlambda-Jold)/(Jold-BI6(i_p_lm1(imax(3))))
+                    END IF
+                 END DO
+              END IF
+              IF(nwp(2).NE.0) THEN
+                 IF(Jlambda.GT.Jnew.AND.Jnew.GT.Jlambda2) THEN
+                    DO iwp=1,nwp(4)
+                       jpoint=wp(iwp,4)
+                       i_p_am1I(jpoint) =i_p_lm1(imax(2))
+                       i_p_am1II(jpoint) =imax(2)
+                       wm1I(jpoint)=(Jnew-Jlambda2)/(Jlambda-Jlambda2)
+                    END DO
+                 END IF
+                 IF(Jlambda.GT.Jold.AND.Jold.GT.Jlambda2) THEN
+                    DO iwp=1,nwp(3)
+                       jpoint=wp(iwp,3)
+                       i_p_am1I(jpoint) =i_p_lm1(imax(2))
+                       i_p_am1II(jpoint) =imax(2)
+                       wm1I(jpoint)=(Jold-Jlambda2)/(Jlambda-Jlambda2)
+                    END DO
+                 END IF
+              END IF
+           END IF
+           IF(Jold.LT.Jlambda2) EXIT
+           IF(imax(4).EQ.0.OR..NOT.abottom) EXIT
+        END DO
+     END DO
+  END DO
+
+  !Transition from trapped to passing
+  DO ipoint=2,npoint
+     IF(i_p_lm1(ipoint).NE.1) CYCLE
+     Jlambda=BI6(ipoint)
+     !id=-1
+     Jnew=0
+     Jmax=0
+     imax=0     
+     DO jpoint=2,npoint
+        IF(i_p_ap1(jpoint).EQ.ipoint) THEN
+           Jnew=Jnew+BI6(jpoint)
+           IF(BI6(jpoint).GT.Jmax) THEN
+              imax(1)=jpoint
+              Jmax=BI6(jpoint)
+           END IF
+        END IF
+     END DO
+     IF(imax(1).EQ.0) THEN
+        imax(1)=i_p_am1(ipoint)
+        Jnew=BI6(imax(1))
      END IF
-     IF(i_l(i_p_am1(i_p_am1(ipoint))).EQ.i_l(ipoint).OR..NOT.CLOSEST_LAMBDA1) THEN
-        i_p_am2(ipoint)=i_p_am1(i_p_am1(ipoint))
-        dalpha_am2(ipoint)=dalpha_am1(i_p_am1(ipoint))
+     IF(Jlambda.GE.Jnew) THEN
+        i_p_am1I(ipoint) =1
+        i_p_am1II(ipoint)=imax(1)
+        wm1I(ipoint)=(Jlambda-Jnew)/(BI6(1)-Jnew)
+     END IF
+     !id=+1
+     Jnew=0
+     Jmax=0
+     imax=0
+     DO jpoint=2,npoint
+        IF(i_p_am1(jpoint).EQ.ipoint) THEN
+           Jnew=Jnew+BI6(jpoint)
+           IF(BI6(jpoint).GT.Jmax) THEN
+              imax(1)=jpoint
+              Jmax=BI6(jpoint)
+           END IF
+        END IF
+     END DO
+     IF(imax(1).EQ.0) THEN
+        imax(1)=i_p_ap1(ipoint)
+        Jnew=BI6(imax(1))
+     END IF
+     IF(Jlambda.GE.Jnew) THEN
+        i_p_ap1I(ipoint) =1
+        i_p_ap1II(ipoint)=imax(1)
+        wp1I(ipoint)=(Jlambda-Jnew)/(BI6(1)-Jnew)
      END IF
   END DO
 
-  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+  !Separate passing from trapped
+!  DO ipoint=1,npoint
+!     IF(i_p_am1I(ipoint).EQ.1) wm1I(ipoint)=0.0
+!     IF(i_p_ap1I(ipoint).EQ.1) wp1I(ipoint)=0.0
+!  END DO
+  
+  !Check JL
+  DO ipoint=1,npoint
+     IF(i_p_am1II(ipoint).EQ.0) i_p_am1II(ipoint)=1
+     IF(i_p_ap1II(ipoint).EQ.0) i_p_ap1II(ipoint)=1
+  END DO
+  
+  !Look for value of dalpha at other values of lambda
+123 DO ipoint=2,npoint
+     IF(dalpha_am1(ipoint).LT.PREC_EXTR) THEN
+        jpoint=ipoint
+        DO ila=i_l(ipoint),nlambda
+           jpoint=i_p_lp1(1,jpoint)
+           IF(jpoint.EQ.0) EXIT
+           IF(dalpha_am1(jpoint).GT.PREC_EXTR) THEN
+              dalpha_am1(ipoint)=dalpha_am1(jpoint)
+              EXIT
+           END IF
+        END DO
+        jpoint=ipoint
+        DO ila=1,i_l(ipoint)
+           IF(dalpha_am1(ipoint).GT.PREC_EXTR) EXIT
+           jpoint=i_p_lm1(jpoint)
+           IF(jpoint.EQ.0) EXIT
+           IF(dalpha_am1(jpoint).GT.PREC_EXTR) THEN
+              dalpha_am1(ipoint)=dalpha_am1(jpoint)
+              EXIT
+           END IF
+        END DO
+     END IF
+     IF(dalpha_ap1(ipoint).LT.PREC_EXTR) THEN
+        jpoint=ipoint
+        DO ila=i_l(ipoint),nlambda
+           jpoint=i_p_lp1(1,jpoint)
+           IF(jpoint.EQ.0) EXIT
+           IF(dalpha_ap1(jpoint).GT.PREC_EXTR) THEN
+              dalpha_ap1(ipoint)=dalpha_ap1(jpoint)
+              EXIT
+           END IF
+        END DO
+        jpoint=ipoint
+        DO ila=1,i_l(ipoint)
+           IF(dalpha_ap1(ipoint).GT.PREC_EXTR) EXIT
+           jpoint=i_p_lm1(jpoint)
+           IF(jpoint.EQ.0) EXIT
+           IF(dalpha_ap1(jpoint).GT.PREC_EXTR) THEN
+              dalpha_ap1(ipoint)=dalpha_ap1(jpoint)
+              EXIT
+           END IF
+        END DO
+     END IF
+  END DO
+ 
+  !Print
+  IF(DEBUG) THEN
+!     IF(ABS(wm1I(ipoint)).LT.ALMOST_ZERO) WRITE(iout,*) ipoint,i_p_lp1(1,ipoint),i_p_lm1(ipoint)
+!     IF(ABS(wp1I(ipoint)).LT.ALMOST_ZERO) WRITE(iout,*) -ipoint,i_p_lp1(1,ipoint),i_p_lm1(ipoint)
+     DO ipoint=2,npoint
+        WRITE(3400+myrank,'(2I6,1pe23.15,2I6,1pe23.15,2I6,20(1pe23.15))') &
+             & -ipoint          ,i_l(ipoint)          ,BI6(ipoint),&
+             & i_p_am1I(ipoint) ,i_l(i_p_am1I(ipoint)) ,BI6(i_p_am1I(ipoint)),&
+             & i_p_am1II(ipoint),i_l(i_p_am1II(ipoint)),BI6(i_p_am1II(ipoint)),wm1I(ipoint),dalpha_am1(ipoint)
+        WRITE(3400+myrank,'(2I6,1pe23.15,2I6,1pe23.15,2I6,20(1pe23.15))') &
+             & ipoint           ,i_l(ipoint)          ,BI6(ipoint),&
+             & i_p_ap1I(ipoint) ,i_l(i_p_ap1I(ipoint)) ,BI6(i_p_ap1I(ipoint)),&
+             & i_p_ap1II(ipoint),i_l(i_p_ap1II(ipoint)),BI6(i_p_ap1II(ipoint)),wp1I(ipoint),dalpha_ap1(ipoint)
+     END DO
+     CALL FLUSH(3400+myrank)
+  END IF
 
+  !Other weights and second neighbours
+  wm1II=1.0-wm1I
+  wp1II=1.0-wp1I
+  DO ipoint=2,npoint
+     i_p_am2I(  ipoint)=i_p_am1I( i_p_am1I(ipoint))
+     i_p_am2II( ipoint)=i_p_am1II(i_p_am1I(ipoint))
+     i_p_am2III(ipoint)=i_p_am1I( i_p_am1II(ipoint))
+     i_p_am2IV( ipoint)=i_p_am1II(i_p_am1II(ipoint))
+     wm2I(  ipoint)=wm1I( i_p_am1I(ipoint ))*wm1I(ipoint)
+     wm2II( ipoint)=wm1II(i_p_am1I(ipoint ))*wm1I(ipoint)
+     wm2III(ipoint)=wm1I( i_p_am1II(ipoint))*wm1II(ipoint)
+     wm2IV( ipoint)=wm1II(i_p_am1II(ipoint))*wm1II(ipoint)
+     dalpha_am2(ipoint)=dalpha_am1(i_p_am1I(ipoint))
+     i_p_ap2I(  ipoint)=i_p_ap1I( i_p_ap1I(ipoint))
+     i_p_ap2II( ipoint)=i_p_ap1II(i_p_ap1I(ipoint))
+     i_p_ap2III(ipoint)=i_p_ap1I( i_p_ap1II(ipoint))
+     i_p_ap2IV( ipoint)=i_p_ap1II(i_p_ap1II(ipoint))
+     wp2I(  ipoint)=wp1I( i_p_ap1I(ipoint ))*wp1I(ipoint)
+     wp2II( ipoint)=wp1II(i_p_ap1I(ipoint ))*wp1I(ipoint)
+     wp2III(ipoint)=wp1I( i_p_ap1II(ipoint))*wp1II(ipoint)
+     wp2IV( ipoint)=wp1II(i_p_ap1II(ipoint))*wp1II(ipoint)
+     dalpha_ap2(ipoint)=dalpha_ap1(i_p_ap1I(ipoint))
+  END DO
+  i_p_am2=i_p_am2I
+  i_p_ap2=i_p_ap2I
+
+  !Recalculate BI3 to be consistent with d_alpha J
+  BI3f(1)=0
+  BI3b(1)=0
+  BI3f(2:npoint)=BI3(2:npoint)
+  BI3b(2:npoint)=BI3(2:npoint)
+  DO ipoint=2,npoint
+!     WRITE(iout,*) ipoint,i_l(ipoint),BI7(ipoint)/dalpha_ap1(ipoint)
+!     CALL FLUSH(iout)
+     IF(i_p_ap1I(ipoint).NE.0.AND.i_p_ap1I(ipoint).NE.0.AND.wp1I(ipoint).GT.-100) &
+          & BI3f(ipoint)=(wp1I(ipoint)*lambda(i_l((i_p_ap1I(ipoint))))&
+                       & +wp1II(ipoint)*lambda(i_l((i_p_ap1II(ipoint))))&
+                       &               -lambda(i_l((ipoint))))&
+                       & *BI7(ipoint)/dalpha_ap1(ipoint)
+!     IF(i_p_ap1I(ipoint).NE.0.AND.i_p_ap1I(ipoint).NE.0.AND.wp1I(ipoint).LT.-100) &
+!   & BI3f(ipoint)=BI3(ipoint)/(mdlBI1opsitf(ipoint)/BI7(ipoint))
+        
+     IF(i_p_am1I(ipoint).NE.0.AND.i_p_am1I(ipoint).NE.0.AND.wm1I(ipoint).GT.-100) &
+          &  BI3b(ipoint)=(     lambda(i_l((ipoint)))&
+          &       -wm1I(ipoint)*lambda(i_l((i_p_am1I(ipoint))))&
+          &      -wm1II(ipoint)*lambda(i_l((i_p_am1II(ipoint)))))&
+          &  *BI7(ipoint)/dalpha_am1(ipoint)
+!     IF(i_p_am1I(ipoint).NE.0.AND.i_p_am1I(ipoint).NE.0.AND.wm1I(ipoint).LT.-100) &
+!          &  BI3b(ipoint)=BI3(ipoint)/(mdlBI1opsitb(ipoint)/BI7(ipoint))
+  END DO 
+
+  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE FIND_ALPHA_NEIGHBOURS
 
@@ -1389,12 +2309,12 @@ END SUBROUTINE FIND_ALPHA_NEIGHBOURS
 SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
                          & zb,tb,Bb,hBppb,vdb,z2,t2,B2,hBpp2,vd2,&
                          & nlambda,lambda,zlw,tlw,zrw,trw, &
-                         & BI1,BI2,BI3,BI4,BI5,Bi6,nmodes,BI7)
+                         & BI1,BI2,BI3,BI4,BI5,BI6,BI7,nmodes,BI8)
 !----------------------------------------------------------------------------------------------- 
 !For npoints characterized by i_w,i_l, with bounce points zlw, tlw, zrw and trw, located in nw 
 !wells characterized by z,t,B,hBpp and vd at extremes 1, 2 and b, and in a lambda grid of size
-!nlambda, calculate bounce integrals BI1, BI2, BI3, BI4, BI5, BI6 and, BI7, the latter with size
-! nmodes
+!nlambda, calculate bounce integrals BI1, BI2, BI3, BI4, BI5, BI6, BI7 and BI8, the latter with
+!size nmodes
 !----------------------------------------------------------------------------------------------- 
 
   USE GLOBAL  
@@ -1406,10 +2326,11 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
   REAL*8 z2(nw),t2(nw),B2(nw),hBpp2(nw),vd2(nqv,nw) 
   REAL*8 lambda(nlambda),zlw(npoint),tlw(npoint),zrw(npoint),trw(npoint)
   !Output
-  REAL*8 BI1(npoint),BI2(npoint),BI3(npoint),BI4(npoint),BI5(npoint),BI6(npoint)
-  REAL*8 BI7(npoint,nmodes)
+  REAL*8 BI1(npoint),BI2(npoint),BI3(npoint),BI4(npoint),BI5(npoint),BI6(npoint),BI7(npoint)
+  REAL*8 BI8(npoint,nmodes)
   !Others
-  INTEGER ipoint,iw,ila,nq
+  INTEGER ipoint,iw,ila,nq!,nav(nlambda)
+!  REAL*8 BI4av(nlambda)
   REAL*8, ALLOCATABLE :: Q(:)
   !Time
   CHARACTER*30, PARAMETER :: routine="COEFFICIENTS_DKE"
@@ -1417,7 +2338,6 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
   REAL*8,  SAVE :: ttotal=0
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
-!  REAL*8 dJdpsi(nlambda)
 
   CALL CPU_TIME(tstart)
 
@@ -1425,44 +2345,40 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
   IF(SOLVE_QN) nq=nq+nmodes
   ALLOCATE(Q(nq))
 
-!  dJdpsi=0
-
+!!$  BI4av=0
+!!$  nav=0
   DO ipoint=1,npoint
      iw =i_w(ipoint)
      ila=i_l(ipoint)
-     IF(ila.EQ.0.OR.ipoint.EQ.npoint) THEN
-        BI1(ipoint)=0
-        BI2(ipoint)=0
-        BI3(ipoint)=0
-        BI4(ipoint)=0
-        BI5(ipoint)=0
-        BI6(ipoint)=0
-        IF(SOLVE_QN) BI7(ipoint,1:nmodes)=0
-     ELSE
-        CALL BOUNCES(iw,z1(iw),t1(iw),B1(iw),hBpp1(iw),vd1(:,iw), &
-             &          zb(iw),tb(iw),Bb(iw),hBppb(iw),vdb(:,iw), &
-             &          z2(iw),t2(iw),B2(iw),hBpp2(iw),vd2(:,iw), &
-             & 1./lambda(ila),.FALSE.,nq,Q,&
-             & zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint))    
-        BI1(ipoint)=Q(1)
-        BI2(ipoint)=Q(2)
-        BI3(ipoint)=Q(3)
-        BI4(ipoint)=Q(4)
-        BI5(ipoint)=Q(5)  
-        BI6(ipoint)=Q(6)  
-        IF(SOLVE_QN) BI7(ipoint,1:nmodes)=Q(7:nq)           
-     END IF
-     IF(DEBUG.AND.(iw.EQ.I0.OR.I0.EQ.0)) WRITE(3100+myrank,'(3I6,7(1pe13.5),I4,4(1pe13.5))') ipoint,ila,iw,&
-          &  BI1(ipoint),BI2(ipoint),BI3(ipoint),&
-          &  BI4(ipoint),BI5(ipoint),BI6(ipoint),BI7(ipoint,1),nlambda,zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint)
-!     dJdpsi(ila)=dJdpsi(ila)+BI4(ipoint)*ABS(BI2(ipoint))
-!     WRITE(1000+myrank,'("dJdpsi_al ",1I6,7(1pe13.5))') ila,tlw(ipoint),BI4(ipoint),BI1(ipoint)
+     CALL BOUNCES(iw,z1(iw),t1(iw),B1(iw),hBpp1(iw),vd1(:,iw), &
+          &          zb(iw),tb(iw),Bb(iw),hBppb(iw),vdb(:,iw), &
+          &          z2(iw),t2(iw),B2(iw),hBpp2(iw),vd2(:,iw), &
+          & 1./lambda(ila),ipoint.EQ.1,nq,Q,&
+          & zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint))
+     BI1(ipoint)=Q(1)
+     BI2(ipoint)=Q(2)
+     BI3(ipoint)=Q(3)
+     BI4(ipoint)=Q(4)
+     BI5(ipoint)=Q(5)  
+     BI6(ipoint)=Q(6)
+     BI7(ipoint)=Q(7)
+     IF(SOLVE_QN) BI8(ipoint,1:nmodes)=Q(8:nq)
+     IF(DEBUG) WRITE(3100+myrank,'(3I6,8(1pe13.5),I5,4(1pe13.5))') &
+          &  ipoint,ila,iw,BI1(ipoint),BI2(ipoint),BI3(ipoint),&
+          &  BI4(ipoint),BI5(ipoint),BI6(ipoint),BI7(ipoint),BI8(ipoint,1),&
+          & npoint,zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint)
+!!$     BI4av(ila)=BI4av(ila)+BI4(ipoint)
+!!$     nav(ila)  =nav(ila)+1
   END DO
-!  stop
-!  DO ila=1,nlambda
-!     WRITE(1000,*) 'dJdpsi',ila,dJdpsi(ila)
-!  END DO
-!  stop
+!!$  DO ipoint=1,npoint
+!!$     ila=i_l(ipoint)
+!!$     IF(nav(ila).EQ.0) nav(ila)=1
+!!$     BI4(ipoint)=BI4av(ila)/nav(ila)
+!!$     WRITE(3100+myrank,'(3I6,8(1pe13.5),I5,4(1pe13.5))') &
+!!$          &  ipoint,ila,iw,BI1(ipoint),BI2(ipoint),BI3(ipoint),&
+!!$          &  BI4(ipoint),BI5(ipoint),BI6(ipoint),BI7(ipoint),BI8(ipoint,1),&
+!!$          & npoint,zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint)
+!!$  END DO
   
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -1474,7 +2390,7 @@ END SUBROUTINE COEFFICIENTS_DKE
 
 #ifdef MPIandPETSc
 
-SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb)
+SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb,matDIFf,matDIFb)
  
 !----------------------------------------------------------------------------------------------- 
 !Initialize linear problem of size npoint and nnz with PETSc: ksp and matrices matCOL, matVEAf
@@ -1494,7 +2410,7 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
   INTEGER npoint,nnz(npoint)
   !Output
 !  KSP ksp
-  Mat matCOL,matVEAf,matVEAb,matVMAf,matVMAb!,matA
+  Mat matCOL,matVEAf,matVEAb,matVMAf,matVMAb,matDIFf,matDIFb!,matA
   !Others
   PetscErrorCode ierr
   PetscInt iz,innz(0:npoint-1),npoint_ps,npalpha
@@ -1514,6 +2430,20 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
   CALL CPU_TIME(tstart)
 
   npoint_ps=npoint
+
+  IF(ntotal.NE.0) THEN
+     CALL MatDestroy(matCOL,ierr)
+     CALL MatDestroy(matVEAf,ierr)
+     CALL MatDestroy(matVEAb,ierr)
+     IF(CALC_DIFF) THEN
+        CALL MatDestroy(matDIFf,ierr)
+        CALL MatDestroy(matDIFb,ierr)
+     END IF
+     IF(TANG_VM) THEN
+        CALL MatDestroy(matVMAf,ierr)
+        CALL MatDestroy(matVMAb,ierr)
+     END IF
+  END IF
   
   !Number of non-zero elements per row
   DO iz=1,npoint
@@ -1523,12 +2453,14 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
   CALL MatCreate(PETSC_COMM_WORLD,matCOL,ierr)
   CALL MatSetSizes(matCOL,PETSC_DECIDE,PETSC_DECIDE,npoint_ps,npoint_ps,ierr)
   CALL MatSetType(matCOL,MATAIJ,ierr)
-  !  CALL MatSeqAIJSetPreallocation(matCOL,PETSC_NULL_INTEGER,innz,ierr)
+!  CALL MatSeqAIJSetPreallocation(matCOL,PETSC_NULL_INTEGER,innz,ierr)
   CALL MatSeqAIJSetPreallocation(matCOL,0,innz,ierr)
   CALL MatSetup(matCOL,ierr)
 
   IF(CENTERED_ALPHA) THEN
      npalpha=4
+  ELSE IF(SECOND_ORDER_ALPHA) THEN
+     npalpha=7
   ELSE
      npalpha=3
   END IF
@@ -1545,7 +2477,7 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
   CALL MatSetType(matVEAb,MATAIJ,ierr)
   CALL MatSeqAIJSetPreallocation(matVEAb,npalpha,PETSC_NULL_INTEGER,ierr)
   CALL MatSetup(matVEAb,ierr)
-  
+
   IF(TANG_VM) THEN
      !Tangential magnetic drift, forward derivative
      CALL MatCreate(PETSC_COMM_WORLD,matVMAf,ierr)
@@ -1559,6 +2491,20 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
      CALL MatSetType(matVMAb,MATAIJ,ierr)
      CALL MatSeqAIJSetPreallocation(matVMAb,npalpha,PETSC_NULL_INTEGER,ierr)
      CALL MatSetup(matVMAb,ierr)
+  END IF
+
+  IF(CALC_DIFF) THEN
+     npalpha=3
+     CALL MatCreate(PETSC_COMM_WORLD,matDIFf,ierr)
+     CALL MatSetSizes(matDIFf,PETSC_DECIDE,PETSC_DECIDE,npoint_ps,npoint_ps,ierr)
+     CALL MatSetType(matDIFf,MATAIJ,ierr)
+     CALL MatSeqAIJSetPreallocation(matDIFf,npalpha,PETSC_NULL_INTEGER,ierr)
+     CALL MatSetup(matDIFf,ierr)
+     CALL MatCreate(PETSC_COMM_WORLD,matDIFb,ierr)
+     CALL MatSetSizes(matDIFb,PETSC_DECIDE,PETSC_DECIDE,npoint_ps,npoint_ps,ierr)
+     CALL MatSetType(matDIFb,MATAIJ,ierr)
+     CALL MatSeqAIJSetPreallocation(matDIFb,npalpha,PETSC_NULL_INTEGER,ierr)
+     CALL MatSetup(matDIFb,ierr)
   END IF
   
 !!$  CALL KSPCreate(PETSC_COMM_WORLD,ksp,ierr)
@@ -1601,7 +2547,6 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
 !  CALL PCFactorSetMatOrderingType(pc,"amd",ierr)
 !  CALL PCFactorSetReuseOrdering(pc,.TRUE.,ierr)
 !Other options
-!  CALL PCFactorReorderForNonzeroDiagonal(pc,1E-3,ierr)
 !  CALL PCFactorSetPivotInBlocks(pc,.TRUE.,ierr)
 !  CALL PCFactorSetMatSolverType(pc,MATSOLVERMUMPS,ierr)
 !  CALL PCFactorSetUpMatSolverType(pc,ierr)
@@ -1617,10 +2562,15 @@ END SUBROUTINE INIT_LINEAR_PROBLEM
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
 SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
      & dalpha_am1,dalpha_ap1,dalpha_am2,dalpha_ap2,i_p_am1,i_p_ap1,i_p_am2,i_p_ap2,&
-     & i_l,lambda,dlambda_lm1,dlambda_lp1,i_p_lm1,nbif,nbifx,i_p_lp1,&
-     & BI1,BI2,BI4,BI5,matCOL,matVEAf,matVEAb,matVMAf,matVMAb,nnz,flag_nnz)
+     & i_p_am1I,i_p_am1II,i_p_am2I,i_p_am2II,i_p_am2III,i_p_am2IV,&
+     & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
+     & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,&
+     & wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV,&
+     & lambda,dlambda_lm1,dlambda_lp1,i_p_lm1,nbif,nbifx,i_p_lp1,&
+     & BI1,BI2,BI4,BI5,BI3oBI7,matCOL,matVEAf,matVEAb,matVMAf,matVMAb,nnz,flag_nnz,matDIFf,matDIFb)
 
 !----------------------------------------------------------------------------------------------- 
 !Fill row ipoint of npoint of several matrixes (matCOL, matVEAf, matVEAb, matVMAf, matVMAb), 
@@ -1634,34 +2584,41 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
   IMPLICIT NONE
   !Input
   LOGICAL flag_nnz
-  INTEGER ipoint,npoint,nbifx
-  INTEGER i_p_am1,i_p_ap1,i_p_am2,i_p_ap2,i_l(npoint),i_p_lm1(npoint),nbif(npoint),i_p_lp1(nbifx,npoint)
+  INTEGER ipoint,npoint,nbifx,nbif(npoint),i_p_lp1(nbifx,npoint)
+  INTEGER i_p_am1,i_p_ap1,i_p_am2,i_p_ap2,i_p_lm1(npoint)
+  INTEGER i_p_am1I,i_p_am1II,i_p_am2I,i_p_am2II,i_p_am2III,i_p_am2IV
+  INTEGER i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV
+  REAL*8 wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV
   REAL*8 lambda,dlambda_lm1(npoint),dlambda_lp1(npoint),dalpha_am1,dalpha_ap1,dalpha_am2,dalpha_ap2
-  REAL*8 BI1,BI2(npoint),BI4,BI5
+  REAL*8 BI1,BI2(npoint),BI4,BI5,BI3oBI7
   !Output
   INTEGER nnz
   REAL*8 matCOL(npoint),matVEAf(npoint),matVEAb(npoint),matVMAf(npoint),matVMAb(npoint)
+  REAL*8 matDIFf(npoint),matDIFb(npoint)
   !Others
+  CHARACTER*300 serr
   INTEGER ibif,jbif,j_p_lm1,j_p_lm2,j_p_lp1,j_p_lp2,jpoint
   REAL*8 denom,a,b,bm,bp,suma,sumb,d
-  REAL*8 twodlambda,dlambda2,fourdlambda2
+  REAL*8 dlambda,twodlambda,dlambda2,fourdlambda2
  !Time
 !  CHARACTER*30, PARAMETER :: routine="FILL_DKE_ROW"
 !  INTEGER, SAVE :: ntotal=0
 !  REAL*8,  SAVE :: ttotal=0
 !  REAL*8,  SAVE :: t0=0
 !  REAL*8 tstart
-!  
+
 !  CALL CPU_TIME(tstart)
-
+  
   j_p_lm1=i_p_lm1(ipoint)
+  IF(j_p_lm1.EQ.1.AND.i_p_lp1(1,ipoint).EQ.0) THEN
+     WRITE(serr,"(A7,I5,A9)") "Orbit ",ipoint, " isolated"
+     CALL END_ALL(serr,.FALSE.)
+  END IF
 
-  IF(j_p_lm1.EQ.npoint.AND.i_p_lp1(1,ipoint).EQ.npoint) THEN
-     nnz=1
-  ELSE IF(j_p_lm1.EQ.npoint) THEN
-     nnz=2
-  ELSE IF(nbif(ipoint).EQ.1.AND.nbif(j_p_lm1).EQ.1) THEN
+  IF(nbif(ipoint).EQ.1.AND.nbif(j_p_lm1).EQ.1) THEN
      nnz=3
+  ELSE IF(j_p_lm1.EQ.1.AND.nbif(1).GT.1.AND..NOT.PREC_TOP) THEN
+     nnz=2
   ELSE
      nnz=2
      DO ibif=1,nbif(j_p_lm1)
@@ -1669,20 +2626,29 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
         DO jbif=1,nbif(jpoint)
            j_p_lp1=i_p_lp1(jbif,jpoint)
            j_p_lp2=i_p_lp1(1  ,j_p_lp1)
-           IF(j_p_lp2.EQ.npoint) CYCLE
+           IF(j_p_lp2.EQ.0) CYCLE 
            nnz=nnz+1
            IF(jpoint.NE.ipoint) nnz=nnz+1
         END DO
      END DO
   END IF
-  IF(nnz.NE.1) nnz=nnz+4
+  
+  IF(nnz.NE.1) THEN
+     IF(CENTERED_ALPHA) THEN
+        nnz=nnz+4
+     ELSE IF(SECOND_ORDER_ALPHA) THEN
+        nnz=nnz+12
+     ELSE
+        nnz=nnz+4
+     END IF
+  END IF
   IF(flag_nnz) RETURN
 
   !Collision operator
   twodlambda=dlambda_lm1(ipoint)+dlambda_lp1(ipoint)
   dlambda2  =dlambda_lm1(ipoint)*dlambda_lp1(ipoint)
 
-  IF(.NOT.PHI1_READ.OR..NOT.GEN_FLAG(3)) THEN
+  IF(.NOT.PHI1_READ) THEN
      a=(BI2(ipoint)/lambda-BI1*lambda/2.)
      b=BI2(ipoint)
   ELSE
@@ -1690,159 +2656,297 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
      b=BI2(ipoint)        
   END IF
 
-  IF(j_p_lm1.EQ.npoint.AND.i_p_lp1(1,ipoint).EQ.npoint) THEN
-     WRITE(1100+myrank,*) 'These points should not exist'     
-     matCOL(ipoint)=1
-  ELSE IF(j_p_lm1.EQ.npoint) THEN
-     j_p_lp1=i_p_lp1(1,ipoint)
-     denom=twodlambda*dlambda_lm1(ipoint)*dlambda_lp1(ipoint)/2
-     matCOL(j_p_lp1)= b*dlambda_lm1(ipoint)/denom+ a/twodlambda
-     matCOL(ipoint) =-b*twodlambda         /denom
-  ELSE IF(nbif(ipoint).EQ.1.AND.nbif(j_p_lm1).EQ.1) THEN
+!  IF(KROOK_OP) THEN
+!     matCOL(ipoint)=-BI1
+!  ELSE IF(j_p_lm1.EQ.1.AND.i_p_lp1(1,ipoint).EQ.0) THEN
+  !     matCOL(ipoint)=1
+
+
+!!$  IF((nbif(ipoint).EQ.1.AND.nbif(j_p_lm1).EQ.1).OR.&
+!!$  IF((nbif(ipoint).EQ.1).OR.&
+!!$       (j_p_lm1.EQ.1.AND..NOT.PREC_TOP)) THEN
+!!$     j_p_lp1=i_p_lp1(1,ipoint)
+!!$     denom=twodlambda*(dlambda_lm1(ipoint)*dlambda_lm1(ipoint)+dlambda_lp1(ipoint)*dlambda_lp1(ipoint))/4
+!!$     matCOL(j_p_lp1)= b*dlambda_lp1(ipoint)/denom+ a/twodlambda
+!!$     matCOL(ipoint) =-b*twodlambda         /denom
+!!$     matCOL(j_p_lm1)= b*dlambda_lm1(ipoint)/denom- a/twodlambda
+!!$  ELSE
+!!$     DO ibif=1,nbif(j_p_lm1)
+!!$        jpoint=i_p_lp1(ibif,j_p_lm1)
+!!$!        jpoint=ipoint
+!!$        IF(j_p_lm1.EQ.1) THEN
+!!$           bm=BI2(jpoint)
+!!$           matCOL(i_p_lp1(1,jpoint))=matCOL(i_p_lp1(1,jpoint))-bm/(dlambda_lp1(jpoint)*twodlambda)
+!!$        ELSE
+!!$           j_p_lm2=i_p_lm1(j_p_lm1)
+!!$           bm=BI2(j_p_lm1)
+!!$           fourdlambda2=(dlambda_lp1(j_p_lm1)+dlambda_lm1(j_p_lm1))*twodlambda
+!!$           matCOL(j_p_lm2)=matCOL(j_p_lm2)+bm/fourdlambda2
+!!$           matCOL(jpoint )=matCOL(jpoint) -bm/fourdlambda2
+!!$        END IF
+!!$
+!!$        DO jbif=1,nbif(jpoint)
+!!$           j_p_lp1=i_p_lp1(jbif,jpoint)
+!!$           j_p_lp2=i_p_lp1(1  ,j_p_lp1)
+!!$           IF(j_p_lp2.EQ.0) CYCLE
+!!$           bp=BI2(j_p_lp1)
+!!$           IF(j_p_lm1.EQ.1) THEN
+!!$              fourdlambda2=dlambda_lp1(jpoint)*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
+!!$           ELSE
+!!$              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1)) 
+!!$           END IF
+!!$           matCOL(j_p_lp2)=matCOL(j_p_lp2)+bp/fourdlambda2
+!!$           matCOL(jpoint) =matCOL(jpoint) -bp/fourdlambda2
+!!$        END DO
+!!$     END DO
+!!$
+!!$     END IF
+
+  IF(nbif(ipoint).EQ.1.AND.nbif(j_p_lm1).EQ.1) THEN
      j_p_lp1=i_p_lp1(1,ipoint)
      suma=a/twodlambda
      sumb=b/dlambda2
      matCOL(j_p_lp1)=sumb+suma
      matCOL(ipoint) =-2*sumb
      matCOL(j_p_lm1)=sumb-suma
+  ELSE IF(j_p_lm1.EQ.1.AND.nbif(1).GT.1.AND..NOT.PREC_TOP) THEN
+     j_p_lp1=i_p_lp1(1,ipoint)
+     denom=twodlambda*(dlambda_lm1(ipoint)*dlambda_lm1(ipoint)+dlambda_lp1(ipoint)*dlambda_lp1(ipoint))/4
+     matCOL(j_p_lp1)= b*dlambda_lp1(ipoint)/denom+ a/twodlambda
+     matCOL(ipoint) =-b*twodlambda         /denom
   ELSE
-     j_p_lm2=i_p_lm1(j_p_lm1)
-     bm=BI2(j_p_lm1)
-     fourdlambda2=(dlambda_lp1(j_p_lm1)+dlambda_lm1(j_p_lm1))*twodlambda
-     matCOL(j_p_lm2)=bm/fourdlambda2
-     matCOL(ipoint)=-bm/fourdlambda2
+     j_p_lp1=i_p_lp1(1,ipoint)
+     IF(PREC_TOP.AND.j_p_lm1.EQ.1) THEN
+        bm=BI2(ipoint)
+        matCOL(j_p_lp1)=-bm/(dlambda_lp1(ipoint)*twodlambda)
+     ELSE
+        j_p_lm2=i_p_lm1(j_p_lm1)
+        bm=BI2(j_p_lm1)
+        fourdlambda2=(dlambda_lp1(j_p_lm1)+dlambda_lm1(j_p_lm1))*twodlambda 
+        matCOL(j_p_lm2)=bm/fourdlambda2  
+        matCOL(ipoint)=-bm/fourdlambda2
+     END IF
      DO ibif=1,nbif(j_p_lm1)
         jpoint=i_p_lp1(ibif,j_p_lm1)
+        IF(PREC_TOP.AND.j_p_lm1.EQ.1) jpoint=ipoint
         DO jbif=1,nbif(jpoint)
            j_p_lp1=i_p_lp1(jbif,jpoint)
            j_p_lp2=i_p_lp1(1  ,j_p_lp1)
-           IF(j_p_lp2.EQ.npoint) CYCLE
+           IF(j_p_lp2.EQ.0) CYCLE
            bp=BI2(j_p_lp1)
-           fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
+           IF(PREC_TOP.AND.j_p_lm1.EQ.1) THEN
+              fourdlambda2=dlambda_lp1(jpoint)*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
+           ELSE
+              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1)) 
+           END IF
            matCOL(j_p_lp2)=bp/fourdlambda2
            matCOL(jpoint)=matCOL(jpoint)-bp/fourdlambda2
         END DO
+        IF(PREC_TOP.AND.j_p_lm1.EQ.1) EXIT
      END DO
   END IF
-
   !d_psi J d_alpha g
   IF(nnz.NE.1) THEN
-     IF(INC_EXB) THEN
-        d=BI5
-     ELSE
-        d=BI1
-     END IF
-
-!     nnz=nnz+4
-     IF(CENTERED_ALPHA) THEN
-
-        denom=7*(dalpha_ap1+dalpha_am1)-dalpha_ap2-dalpha_am2
-        matVEAf(i_p_ap2)=  -d/denom
-        matVEAf(i_p_ap1)=+8*d/denom
-        matVEAf(i_p_am1)=-8*d/denom
-        matVEAf(i_p_am2)=  +d/denom
-        matVEAb(i_p_ap2)=  -d/denom
-        matVEAb(i_p_ap1)=+8*d/denom
-        matVEAb(i_p_am1)=-8*d/denom
-        matVEAb(i_p_am2)=  +d/denom
-        
-     ELSE
-        IF(i_p_ap2.NE.npoint.AND..NOT.FIRST_ORDER_ALPHA) THEN
-           denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
-           matVEAf(i_p_ap2)=-d*dalpha_ap1*dalpha_ap1/denom
-           matVEAf(i_p_ap1)=+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom
-           matVEAf(ipoint )=+d*(dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))&
-                & /denom
+     d=BI5
+!!$     ELSE IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$           denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$           matVEAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*&
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)
+!!$           matVEAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*&
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)                      
+!!$           matVEAf(ipoint )=+d*&
+!!$                & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))&
+!!$                & /denom
+!!$        IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$           denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
+!!$           matVEAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$           matVEAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$           matVEAb(ipoint )=-d*(dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))&
+!!$                & /denom
+     IF(NEW_DALPHA.AND.wp1I.LT.-100) THEN
+        IF(BI3oBI7.GT.0) THEN
+           dlambda=dlambda_lp1(ipoint)
         ELSE
-           IF(i_l(i_p_ap1).EQ.i_l(ipoint)) THEN
-              matVEAf(i_p_ap1)=+d/dalpha_ap1
-           ELSE
-              matVEAf(i_p_ap1)         =+(d/dalpha_ap1)*(1+i_l(ipoint)-i_l(i_p_ap1))
-              matVEAf(i_p_lm1(i_p_ap1))=+(d/dalpha_ap1)*(i_l(i_p_ap1)-i_l(ipoint))
-           END IF
-           matVEAf(ipoint )=-d/dalpha_ap1
+           dlambda=dlambda_lm1(ipoint)
         END IF
-        IF(i_p_am2.NE.npoint.AND..NOT.FIRST_ORDER_ALPHA) THEN
-           denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
-           matVEAb(i_p_am2)=+d*dalpha_am1*dalpha_am1/denom
-           matVEAb(i_p_am1)=-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom
-           matVEAb(ipoint )=-d*(dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))&
-                & /denom
-        ELSE
-           IF(i_l(i_p_am1).EQ.i_l(ipoint)) THEN
-              matVEAb(i_p_am1)=-d/dalpha_am1
-           ELSE
-              matVEAb(i_p_am1)         =-(d/dalpha_am1)*(1+i_l(ipoint)-i_l(i_p_am1))
-              matVEAb(i_p_lm1(i_p_am1))=-(d/dalpha_am1)*(i_l(i_p_am1)-i_l(ipoint))
-           END IF
-           matVEAb(ipoint )=+d/dalpha_am1
+        matVEAf(i_p_ap1I )= d/dalpha_ap1
+        matVEAf(i_p_ap1II)= d*ABS(BI3oBI7)/dlambda
+        matVEAf(ipoint )  =-d*(1./dalpha_ap1+ABS(BI3oBI7)/dlambda)
+        IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
+           sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
+           j_p_lm1=i_p_lm1(ipoint)
+           j_p_lp1=i_p_lp1(1,ipoint)
+           matDIFf(j_p_lp1)=sumb
+           matDIFf(ipoint) =-2*sumb
+           matDIFf(j_p_lm1)=sumb
         END IF
+     ELSE
+        matVEAf(i_p_ap1I )=wp1I *(+d/dalpha_ap1)
+        matVEAf(i_p_ap1II)=matVEAf(i_p_ap1II)+wp1II*(+d/dalpha_ap1)
+        matVEAf(ipoint )         =-d/dalpha_ap1
      END IF
-
+     IF(NEW_DALPHA.AND.wm1I.LT.-100) THEN
+        IF(BI3oBI7.GT.0) THEN
+           dlambda=dlambda_lm1(ipoint)
+        ELSE
+           dlambda=dlambda_lp1(ipoint)
+        END IF
+        matVEAb(i_p_am1I )=-d/dalpha_am1
+        matVEAb(i_p_am1II)=-d*ABS(BI3oBI7)/dlambda
+        matVEAb(ipoint )  = d*(1/dalpha_am1+ABS(BI3oBI7)/dlambda)
+        IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
+           sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
+           j_p_lm1=i_p_lm1(ipoint)
+           j_p_lp1=i_p_lp1(1,ipoint)
+           matDIFb(j_p_lp1)=sumb
+           matDIFb(ipoint) =-2*sumb
+           matDIFb(j_p_lm1)=sumb
+        END IF
+     ELSE
+        matVEAb(i_p_am1I )=wm1I *(-d/dalpha_am1)
+        matVEAb(i_p_am1II)=matVEAb(i_p_am1II)+wm1II*(-d/dalpha_am1)
+        matVEAb(ipoint )         =+d/dalpha_am1
+     END IF
+     
      IF(TANG_VM) THEN
+        d=-BI4 
+        IF(d.LT.0) THEN
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$                 matVMAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAf(ipoint )=+d*&
+!!$                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
+                 IF(NEW_DALPHA.AND.wp1I.LT.-100) THEN
+                    IF(BI3oBI7.GT.0) THEN
+                       dlambda=dlambda_lp1(ipoint)
+                    ELSE
+                       dlambda=dlambda_lm1(ipoint)
+                    END IF
+                    matVMAf(i_p_ap1I )= d/dalpha_ap1
+                    matVMAf(i_p_ap1II)= d*ABS(BI3oBI7)/dlambda
+                    matVMAf(ipoint )  =-d*(1./dalpha_ap1+ABS(BI3oBI7)/dlambda)
+                    IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
+                       sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
+                       j_p_lm1=i_p_lm1(ipoint)
+                       j_p_lp1=i_p_lp1(1,ipoint)
+                    END IF
+                 ELSE
+                    matVMAf(i_p_ap1I )=wp1I *(+d/dalpha_ap1)
+                    matVMAf(i_p_ap1II)=matVMAf(i_p_ap1II)+wp1II*(+d/dalpha_ap1)
+                    matVMAf(ipoint )         =-d/dalpha_ap1
+                 END IF
 
-        d=-BI4
-
-        IF(CENTERED_ALPHA) THEN
-
-           denom=7*(dalpha_ap1+dalpha_am1)-dalpha_ap2-dalpha_am2
-           matVMAf(i_p_ap2)=  -d/denom
-           matVMAf(i_p_ap1)=+8*d/denom
-           matVMAf(i_p_am1)=-8*d/denom
-           matVMAf(i_p_am2)=  +d/denom
-           matVMAb(i_p_ap2)=  -d/denom
-           matVMAb(i_p_ap1)=+8*d/denom
-           matVMAb(i_p_am1)=-8*d/denom
-           matVMAb(i_p_am2)=  +d/denom
-
-        ELSE
-
-           IF(d.LT.0) THEN 
-              IF(i_p_ap2.NE.npoint.AND..NOT.FIRST_ORDER_ALPHA) THEN
-                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2) 
-                 matVMAf(i_p_ap2)=-d*dalpha_ap1*dalpha_ap1/denom
-                 matVMAf(i_p_ap1)=+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom
-                 matVMAf(ipoint )=+d*(dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
-              ELSE
-                 matVMAf(i_p_ap1)=+d/dalpha_ap1
-                 matVMAf(ipoint )=-d/dalpha_ap1
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2) 
+!!$                 matVMAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAb(ipoint )=-d*&
+!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
+                 IF(NEW_DALPHA.AND.wm1I.LT.-100) THEN
+                    IF(BI3oBI7.GT.0) THEN
+                       dlambda=dlambda_lm1(ipoint)
+                    ELSE
+                       dlambda=dlambda_lp1(ipoint)
+                    END IF
+                    matVMAb(i_p_am1I )=-d/dalpha_am1
+                    matVMAb(i_p_am1II)=-d*ABS(BI3oBI7)/dlambda
+                    matVMAb(ipoint )  = d*(1/dalpha_am1+ABS(BI3oBI7)/dlambda)
+                    IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
+                       sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
+                       j_p_lm1=i_p_lm1(ipoint)
+                       j_p_lp1=i_p_lp1(1,ipoint)
+                       matDIFb(j_p_lp1)=sumb
+                       matDIFb(ipoint) =-2*sumb
+                       matDIFb(j_p_lm1)=sumb
+                    END IF
+                 ELSE
+                    matVMAb(i_p_am1I )=wm1I *(-d/dalpha_am1)
+                    matVMAb(i_p_am1II)=matVMAb(i_p_am1II)+wm1II*(-d/dalpha_am1)
+                    matVMAb(ipoint )         =+d/dalpha_am1
+                 END IF
+           ELSE IF(d.GT.0) THEN
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
+!!$                 matVMAf(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAf(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAf(ipoint )=-d*&
+!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
+                 IF(NEW_DALPHA.AND.wm1I.LT.-100) THEN
+                    IF(BI3oBI7.GT.0) THEN
+                       dlambda=dlambda_lm1(ipoint)
+                    ELSE
+                       dlambda=dlambda_lp1(ipoint)
+                    END IF
+                    matVMAf(i_p_am1I )=-d/dalpha_am1
+                    matVMAf(i_p_am1II)=-d*ABS(BI3oBI7)/dlambda
+                    matVMAf(ipoint )  = d*(1/dalpha_am1+ABS(BI3oBI7)/dlambda)
+                    IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
+                       sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
+                       j_p_lm1=i_p_lm1(ipoint)
+                       j_p_lp1=i_p_lp1(1,ipoint)
+                       matDIFb(j_p_lp1)=sumb
+                       matDIFb(ipoint) =-2*sumb
+                       matDIFb(j_p_lm1)=sumb
+                    END IF
+                 ELSE
+                    matVMAf(i_p_am1I )=wm1I *(-d/dalpha_am1)
+                    matVMAf(i_p_am1II)=matVMAf(i_p_am1II)+wm1II*(-d/dalpha_am1)
+                    matVMAf(ipoint )         =+d/dalpha_am1
+                 END IF
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$                 matVMAb(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAb(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAb(ipoint )=+d*&
+!!$                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
+                 IF(NEW_DALPHA.AND.wp1I.LT.-100) THEN
+                    IF(BI3oBI7.GT.0) THEN
+                       dlambda=dlambda_lp1(ipoint)
+                    ELSE
+                       dlambda=dlambda_lm1(ipoint)
+                    END IF
+                    matVMAb(i_p_ap1I )= d/dalpha_ap1
+                    matVMAb(i_p_ap1II)= d*ABS(BI3oBI7)/dlambda
+                    matVMAb(ipoint )  =-d*(1./dalpha_ap1+ABS(BI3oBI7)/dlambda)
+                    IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
+                       sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
+                       j_p_lm1=i_p_lm1(ipoint)
+                       j_p_lp1=i_p_lp1(1,ipoint)
+                    END IF
+                 ELSE
+                    matVMAb(i_p_ap1I )=wp1I *(+d/dalpha_ap1)
+                    matVMAb(i_p_ap1II)=matVMAb(i_p_ap1II)+wp1II*(+d/dalpha_ap1)
+                    matVMAb(ipoint )         =-d/dalpha_ap1
+                 END IF
               END IF
-              IF(i_p_am2.NE.npoint.AND..NOT.FIRST_ORDER_ALPHA) THEN
-                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2) 
-                 matVMAb(i_p_am2)=+d*dalpha_am1*dalpha_am1/denom
-                 matVMAb(i_p_am1)=-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom
-                 matVMAb(ipoint )=-d*(dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
-              ELSE
-                 matVMAb(i_p_am1)=-d/dalpha_am1
-                 matVMAb(ipoint )=+d/dalpha_am1
-              END IF
-           ELSE IF(d.GT.0) THEN 
-              IF(i_p_am2.NE.npoint.AND..NOT.FIRST_ORDER_ALPHA) THEN
-                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2) 
-                 matVMAf(i_p_am2)=+d*dalpha_am1*dalpha_am1/denom
-                 matVMAf(i_p_am1)=-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom
-                 matVMAf(ipoint )=-d*(dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
-              ELSE
-                 matVMAf(i_p_am1)=-d/dalpha_am1
-                 matVMAf(ipoint )=+d/dalpha_am1
-              END IF
-              IF(i_p_ap2.NE.npoint.AND..NOT.FIRST_ORDER_ALPHA) THEN
-                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2) 
-                 matVMAb(i_p_ap2)=-d*dalpha_ap1*dalpha_ap1/denom
-                 matVMAb(i_p_ap1)=+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom
-                 matVMAb(ipoint )=+d*(dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
-              ELSE
-                 matVMAb(i_p_ap1)=+d/dalpha_ap1
-                 matVMAb(ipoint )=-d/dalpha_ap1
-              END IF
-
            END IF
-           
         END IF
-        
-     END IF
-  END IF
-  
+
   IF(DEBUG) THEN
      WRITE(3150+myrank,'(10I6,5(1pe13.5),I4)') ipoint,i_p_am2,i_p_am1,i_p_ap1,i_p_ap2
      IF(ipoint.EQ.I0.OR.I0.EQ.0) THEN
@@ -1891,13 +2995,15 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
   !Others
   PetscErrorCode ierr
   PetscScalar factor
+  PetscReal, PARAMETER :: dtcol=0.5
+  PetscReal, PARAMETER :: damping=1E-10
   Mat matA!,matA2
   PC pc
-  INTEGER, PARAMETER :: MAXITS= 1000 
-  REAL*8, PARAMETER :: ATOL=1D-2
-  REAL*8, PARAMETER :: TOL =1D-1
+  INTEGER, PARAMETER :: MAXITS= 1000000 
+  REAL*8, PARAMETER :: ATOL=1E-17
+  REAL*8, PARAMETER :: RTOL =1E-12
   !Time
-  CHARACTER*30, PARAMETER :: routine="FILL_MATRIX"
+  CHARACTER*30, PARAMETER :: routine="FILL_MATRIX_PETSC"
   INTEGER, SAVE :: ntotal=0
   REAL*8,  SAVE :: ttotal=0
   REAL*8,  SAVE :: t0=0
@@ -1909,14 +3015,14 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
 !  CALL MatSetType(matA,MATAIJ,ierr)
 !  CALL MatSeqAIJSetPreallocation(matA,PETSC_NULL_INTEGER,innz(0:npoint-1),ierr)
 !  CALL MatSetup(matA,ierr)
-  CALL MatDuplicate(matCOL,MAT_COPY_VALUES,matA,ierr)
-!  CALL MatCOPY(matCOL,matA,ierr)
-!  CALL MatAssemblyBegin(matA,MAT_FINAL_ASSEMBLY,ierr)
-!  CALL MatAssemblyEnd(  matA,MAT_FINAL_ASSEMBLY,ierr)
 
+  CALL MatDuplicate(matCOL,MAT_COPY_VALUES,matA,ierr)
+!  CALL MatDuplicate(matCOL,MAT_DO_NOT_COPY_VALUES,matA,ierr) 
+!  factor=nu(jv)
+!  CALL MatAXPY(matA,factor,matCOL,SUBSET_NONZERO_PATTERN,IERR)
   factor=sgnB*Epsi/nu(jv)
   IF(sgnB*Epsi.LT.0) THEN
-     CALL MatAXPY(matA,factor,matVEAb,SUBSET_NONZERO_PATTERN,IERR)     
+     CALL MatAXPY(matA,factor,matVEAb,SUBSET_NONZERO_PATTERN,IERR)
   ELSE IF(sgnB*Epsi.GT.0) THEN
      CALL MatAXPY(matA,factor,matVEAf,SUBSET_NONZERO_PATTERN,IERR)
   END IF
@@ -1930,12 +3036,18 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
   END IF
 
   CALL KSPCreate(PETSC_COMM_WORLD,ksp,ierr)
-  CALL KSPSetTolerances(ksp,TOL,ATOL,PETSC_DEFAULT_REAL,MAXITS,ierr)
+  CALL KSPSetTolerances(ksp,RTOL,ATOL,PETSC_DEFAULT_REAL,MAXITS,ierr)
+
+!  CALL KSPSetType(ksp,KSPGMRES,ierr)
+!  CALL KSPGetPC(ksp,pc,ierr)
+!  CALL PCSetType(pc,PCJACOBI,ierr)
+
 !  CALL KSPSetType(ksp,KSPPREONLY,ierr)
 !  CALL KSPGetPC(ksp,pc,ierr)
 !  CALL PCSetType(pc,PCILU,ierr)
 !  CALL PCFactorSetLevels(pc,10,ierr)
 !  CALL PCFactorSetMatOrderingType(pc,"natural",ierr)
+
   CALL KSPSetType(ksp,KSPPREONLY,ierr)
   CALL KSPGetPC(ksp,pc,ierr)
   CALL PCSetType(pc,PCLU,ierr)
@@ -1943,18 +3055,18 @@ SUBROUTINE FILL_MATRIX_PETSC(matCOL,jv,Epsi,matVEAf,matVEAb,matVMAf,matVMAb,ksp)
 #if defined(PETSC_HAVE_SUPERLU)
   CALL PCFactorSetMatSolverType(pc,MATSOLVERSUPERLU,ierr)
 #endif
-  !!     CALL PCFactorSetMatOrderingType(pc,"natural",ierr)
-!!     CALL PCFactorSetReuseOrdering(pc,PETSC_TRUE,ierr)
-!!     CALL PCFactorSetReuseFill(pc,PETSC_TRUE,ierr)
+!  CALL PCFactorReorderForNonzeroDiagonal(pc,dtcol,ierr)
+!  CALL PCFactorSetShiftAmount(pc,dtcol,ierr)
+!  CALL PCFactorSetShiftNonzero(pc,damping,ierr)
+!  CALL PCFactorSetReuseOrdering(pc,PETSC_TRUE,ierr)
+!  CALL PCFactorSetReuseFill(pc,PETSC_TRUE,ierr)
+!  CALL PCFactorSetColumnPivot(pc,dtcol,ierr)
 !!#ifdef PETSC_HAVE_MUMPS
 !!     call PCFactorSetMatSolverType(pc,MATSOLVERMUMPS,ierr)
 !!     call PCFactorSetUpMatSolverType(pc,ierr)
 !!#endif
-
   CALL KSPSetOperators(ksp,matA,matA,ierr)
-
   CALL KSPSetUp(ksp,ierr)
-
   CALL MatDestroy(matA,ierr)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
@@ -2004,7 +3116,6 @@ SUBROUTINE FILL_MATRIX(npoint,COL,jv,Epsi,VEAf,VEAb,VMAf,VMAb,mat)
         mat=mat+VMAb*vmconst(jv)/nu(jv)
      END IF
   END IF
-
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE FILL_MATRIX
@@ -2017,10 +3128,10 @@ END SUBROUTINE FILL_MATRIX
 
 #ifdef MPIandPETSc
 
-SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,BI3,BI7,phi1c,ksp,gint)
+SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,mata,BI3,BI8,factnu,phi1c,ksp,gint)
 
 !-----------------------------------------------------------------------------------------------
-!Fill rhs with some linear combination (depending on phi1c,jv...) of arrays BI3 and BI7 of size
+!Fill rhs with some linear combination (depending on phi1c,jv...) of arrays BI3 and BI8 of size
 !npoint and invert linear system ksp to obtain g. Use nalphab to skip some helicities in phi1c
 !-----------------------------------------------------------------------------------------------  
 
@@ -2036,23 +3147,31 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,BI3,BI7,phi1c,ksp,gint)
 !#include <petsc/finclude/petscviewer.h>
   !Input
   INTEGER nalphab,jv,npoint
-  REAL*8 BI3(npoint),BI7(npoint,Nnmp),phi1c(Nnmp)
+  REAL*8 BI3(npoint),BI8(npoint,Nnmp),factnu(npoint),phi1c(Nnmp)
+  Mat matA
   KSP ksp
   !Output
   REAL*8 gint(npoint,Nnmp)
   !Others
   CHARACTER*100 serr
   INTEGER ii,irhs!,jrhs
-  PetscScalar c(npoint),g(npoint)
+  PetscScalar c(npoint),g(npoint),g2(npoint)
   PetscErrorCode ierr
   PetscInt indx(npoint),npoint_ps
   Vec vecb,vecx
+  Vec vecb2
   !Time
   CHARACTER*30, PARAMETER :: routine="INVERT_MATRIX"
   INTEGER, SAVE :: ntotal=0
   REAL*8,  SAVE :: ttotal=0
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
+  !Time
+  CHARACTER*30, PARAMETER :: routine2="INVERT_MATRIX2"
+  INTEGER, SAVE :: ntotal2=0
+  REAL*8,  SAVE :: ttotal2=0
+  REAL*8,  SAVE :: t02=0
+  REAL*8 tstart2
 
   CALL CPU_TIME(tstart)
 
@@ -2062,48 +3181,69 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,BI3,BI7,phi1c,ksp,gint)
   DO ii=1,npoint
      indx(ii)=ii-1
   END DO
+  CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint_ps,vecb2,ierr)
   CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint_ps,vecb,ierr)
   CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,npoint_ps,vecx,ierr)
   
-  !Scan in possible rhs of the DKE·(corresponding to different contributions the the radial ExB from varphi1)
+  !Scan in possible rhs of the DKE·
+  !(corresponding to different contributions the the radial ExB from varphi1)
   DO irhs=1,Nnmp  !Skip helicities too large for the alpha precision
-     IF(irhs.GT.1.AND.(ABS(ext_np(irhs)).GT.nalphab/nsamp.OR.ABS(ext_mp(irhs)).GT.nalphab/nsamp)) CYCLE
+     IF(irhs.GT.1.AND.(ABS(ext_np(irhs)).GT.nalphab/nsamp.OR.ABS(ext_mp(irhs)).GT.nalphab/nsamp))&
+          & CYCLE
+     CALL VecZeroEntries(vecb2,ierr)
      CALL VecZeroEntries(vecb,ierr)
      CALL VecZeroEntries(vecx,ierr)
      !Fill rhs and invert
      IF(irhs.EQ.1) THEN
-        c=BI3 !radial magnetic drift
+        c=BI3  !radial magnetic drift
 !        IF(PHI1_READ) THEN
 !           DO jrhs=2,Nnmp !total radial ExB drift added to the magnetic drift
-!              c=c+phi1c(jrhs)*BI7(:,jrhs)*2*borbic(0,0)/vdconst(jv)
+!              c=c+phi1c(jrhs)*BI8(:,jrhs)*2*borbic(0,0)/vdconst(jv)
 !           END DO
 !        END IF
      ELSE !radial ExB drift
-        c=BI7(:,irhs)/vdconst(jv)
+        c=BI8(:,irhs)/vdconst(jv)
      END IF
      CALL VecSetValues(vecb,npoint_ps,indx,c,INSERT_VALUES,ierr)      
      CALL VecAssemblyBegin(vecb,ierr)
      CALL VecAssemblyEnd(vecb,ierr)
      !Solve
+     CALL CPU_TIME(tstart2)
      CALL KSPSolve(ksp,vecb,vecx,ierr)
+     CALL CALCULATE_TIME(routine2,ntotal2,t02,tstart2,ttotal2)
      g=0
-     CALL VecGetValues(vecx,npoint_ps,indx,g,ierr)
+     IF(.NOT.CALC_DG) THEN
+        CALL VecGetValues(vecx,npoint_ps,indx,g,ierr)
+     ELSE IF(FLUX_NU) THEN
+        CALL MatMult(matA,vecx,vecb2,ierr)
+        CALL VecGetValues(vecb2,npoint_ps,indx,g,ierr)
+     ELSE IF(CALC_RHS.OR.CALC_DA.OR.CALC_DIFF.OR.CALC_COL) THEN
+        CALL MatMult(matA,vecx,vecb2,ierr)
+        CALL VecGetValues(vecb2,npoint_ps,indx,g2,ierr)
+        IF(CALC_DA) THEN
+           CALL VecGetValues(vecx,npoint_ps,indx,g,ierr)
+           g=g2/g
+        ELSE
+           g=g2
+        END IF
+     END IF
+     
 !     CALL KSPView(ksp,PETSC_VIEWER_STDOUT_WORLD,ierr)
 !     CALL PetscMemoryGetCurrentUsage(ierr)
 !     CALL PetscViewerASCIIOpen(MPI_COMM_WORLD,'filename.xml',viewer,ierr)
 !     CALL PetscViewerPushFormat(viewer,PETSC_VIEWER_DEFAULT,ierr)
 !     CALL PetscLogView(viewer,ierr)
      !Distribution function at each point
-     gint(:,irhs)=g*vdconst(jv)/nu(jv)
+     gint(:,irhs)=factnu*g*vdconst(jv)/nu(jv)     
 !     gint(:,irhs+1)=gint(:,irhs+1)+g*Sdke(jv)*weight(jv)
      IF(ierr.NE.0) THEN
         serr="Error when inverting the DKE"
         CALL END_ALL(serr,.FALSE.)
      END IF
-
+     
      IF(.NOT.SOLVE_QN) EXIT
   END DO
-  CALL KSPDestroy(ksp,ierr)
+  IF(ESCOTO.OR.ABS(BI3(npoint)).GT.0) CALL KSPDestroy(ksp,ierr)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   
@@ -2115,10 +3255,10 @@ END SUBROUTINE INVERT_MATRIX_PETSC
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE INVERT_MATRIX(nalphab,jv,npoint,BI3,BI7,phi1c,mat,gint)
+SUBROUTINE INVERT_MATRIX(nalphab,jv,npoint,BI3,BI8,phi1c,mat,gint)
 
 !-----------------------------------------------------------------------------------------------
-!Fill rhs with some linear combination (depending on phi1c,jv...) of arrays BI3 and BI7 of size
+!Fill rhs with some linear combination (depending on phi1c,jv...) of arrays BI3 and BI8 of size
 !npoint and invert linear system with matrix mat to obtain g.
 !Use nalphab to skip some helicities in phi1c
 !-----------------------------------------------------------------------------------------------  
@@ -2127,7 +3267,7 @@ SUBROUTINE INVERT_MATRIX(nalphab,jv,npoint,BI3,BI7,phi1c,mat,gint)
   IMPLICIT NONE
   !Input
   INTEGER nalphab,jv,npoint
-  REAL*8 BI3(npoint),BI7(npoint,Nnmp),phi1c(Nnmp),mat(npoint,npoint)
+  REAL*8 BI3(npoint),BI8(npoint,Nnmp),phi1c(Nnmp),mat(npoint,npoint)
   !Output
   REAL*8 gint(npoint,Nnmp)
   !Others
@@ -2147,17 +3287,17 @@ SUBROUTINE INVERT_MATRIX(nalphab,jv,npoint,BI3,BI7,phi1c,mat,gint)
   phi1c=phi1c !To be removed
     
   DO irhs=1,Nnmp  !Skip helicities too large for the alpha precision
-     IF(irhs.GT.1.AND.(ABS(ext_np(irhs)).GT.nalphab/nsamp.OR.ABS(ext_mp(irhs)).GT.nalphab/nsamp)) CYCLE
-
+     IF(irhs.GT.1.AND.(ABS(ext_np(irhs)).GT.nalphab/nsamp.OR.ABS(ext_mp(irhs)).GT.nalphab/nsamp))&
+          & CYCLE
      IF(irhs.EQ.1) THEN
         rhs=BI3 !radial magnetic drift
 !        IF(PHI1_READ) THEN
 !           DO jrhs=2,Nnmp !total radial ExB drift added to the magnetic drift
-!              rhs=rhs+phi1c(jrhs)*BI7(:,jrhs)*2*borbic(0,0)/vdconst(jv)
+!              rhs=rhs+phi1c(jrhs)*BI8(:,jrhs)*2*borbic(0,0)/vdconst(jv)
 !           END DO
 !        END IF
      ELSE !radial ExB drift
-        rhs=BI7(:,irhs)/vdconst(jv)
+        rhs=BI8(:,irhs)/vdconst(jv)
      END IF
      !Solve
      CALL DGETRF(npoint,npoint,mat,npoint,ipivot,ierr) 
@@ -2170,7 +3310,6 @@ SUBROUTINE INVERT_MATRIX(nalphab,jv,npoint,BI3,BI7,phi1c,mat,gint)
         serr="Error when inverting the DKE"
         CALL END_ALL(serr,.FALSE.)
      END IF
-
      IF(.NOT.SOLVE_QN) EXIT
   END DO
 
@@ -2184,7 +3323,7 @@ END SUBROUTINE INVERT_MATRIX
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
+SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
      & zetap,thetap,theta,B_al,vds_al,D11,dn1,dn1nm)
 
 !-----------------------------------------------------------------------------------------------
@@ -2196,8 +3335,10 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
 !----------------------------------------------------------------------------------------------- 
 
   USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD  
   IMPLICIT NONE
   !Input
+  LOGICAL notg
   INTEGER nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
   REAL*8 zetap(nalphab),thetap(nalpha,nalphab),theta(nalphab)
   REAL*8 lambda(nlambda),g(npoint,Nnmp),B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab)
@@ -2206,10 +3347,10 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
   !Others
   REAL*8, PARAMETER :: F5o12 =0.416666666666667
   REAL*8, PARAMETER :: F13o12=1.083333333333333
-  INTEGER ia,il,ial,ila,jla,kla,ipoint,jpoint,kpoint,ind,nm
+  INTEGER ia,il,ial,ila,jla,kla,ipoint,jpoint,kpoint,nm
   REAL*8 fdlambda,fhdlambda2,lambdaB,d3vdlambdadK,dlambda,fint
   REAL*8 D11_alp(nalpha*nalphab),D11_ale(3*nalpha),D11_zt(nalphab,nalphab)
-  REAL*8 dn1_alp(nalpha*nalphab),dn1_ale(3*nalpha)!,vds(Nnmp,nalpha*nalphab)
+  REAL*8 dn1_alp(nalpha*nalphab),dn1_ale(3*nalpha)
   REAL*8 one_o_modB,modB,lambda1,FSA,sqrt1mlB,dummy
   REAL*8 Jac(nalphab,nalphab),dn1_zt(nalphab,nalphab),dn1c_zt(nalphab,nalphab)
   COMPLEX*16 dn1c_nm(nalphab,nalphab)
@@ -2235,19 +3376,16 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
   dn1=0
   dn1nm=0
   IF(DEBUG) THEN
-
      DO ipoint=1,npoint  
-        WRITE(3400+myrank,'(I6,1(1pe13.5),2I6)') ipoint,g(ipoint,1),nalpha,nlambda
-!        IF(nalphab.EQ.0) STOP
+        WRITE(3500+myrank,'(I6,1(1pe13.5),2I6)') ipoint,g(ipoint,1),nalpha,nlambda
      END DO
-
   END IF
 
   IF(CALCULATED_INT.AND.PRE_INTV) GOTO 123
 #ifndef NAG
   IF(plan_fwd.NE.0) THEN
      CALL DFFTW_DESTROY_PLAN(plan_fwd)
-     plan_fwd=0!  IF(PRE_INTV.AND.QN)
+     plan_fwd=0
   END IF
 #endif
 
@@ -2268,6 +3406,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
 
   D11p=0
   IF(QN) dn1nmp=0
+
   DO il=1,nalphab
      IF(aiota/nzperiod.LT.1) THEN
         IF(iota.GT.0) THEN
@@ -2287,41 +3426,10 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
         thetape(2*nalpha+1: tnalpha,il)=thetap(1:nalpha,il)
      END IF
   END DO
-!!$  doff=offset-(TWOPI/nalphab)*INT(offset*nalphab/TWOPI)
-!!$  DO ia=1,nalphab
-!!$!     IF(SATAKE) THEN 
-!!$!        IF(siota.LT.0) THEN
-!!$!           theta(ia)=TWOPI-(ia-1)*TWOPI/nalphab!+offsetb-doff
-!!$!        ELSE
-!!$!           theta(ia)=ia*TWOPI/nalphab!+offsetb-doff
-!!$!        END IF
-!!$!!        IF(siota.LT.0) THEN
-!!$!!           theta(ia)=-TWOPI+(ia-1)*TWOPI/nalphab+offsetb-doff
-!!$!!        ELSE
-!!$!!           theta(ia)=ia*TWOPI/nalphab+offsetb-doff
-!!$!!        END IF
-!!$!     ELSE
-!!$     IF(siota.LT.0) THEN
-!!$        theta(ia)=-TWOPI+ia*TWOPI/nalphab+thetap(1,1)
-!!$     ELSE
-!!$        theta(ia)=(ia-1)*TWOPI/nalphab+thetap(1,1)
-!!$     END IF
-!!$!     END IF
-!!$  END DO
-!!$  imin=MINLOC(ABS(theta(:,1)),1)
-!!$  temp(1:nalphab-imin+1,      :)=theta(imin:nalphab)
-!!$  temp(nalphab-imin+2:nalphab)=theta(1:imin-1    )!+TWOPI
-!!$  theta=temp
+  
   !Precalculate quantities
   lambda1=lambda(1)
   dlambda=lambda(2)-lambda1
-!  DO ia=1,nalpha
-!     DO il=1,nalphab
-!        ial=(il-1)*nalpha+ia
-!        vds(:,ial)=vds_al(:,ia,il)
-!     END DO
-!  END DO
-!     CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
      ALLOCATE(vds_zt(Nnmp,nalphab,nalphab))
      DO ia=1,nalphab
         DO il=1,nalphab
@@ -2346,25 +3454,22 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
            jla=INT((one_o_modB-lambda1)/dlambda)        
            IF(jla.LE.1) jla=2
            IF(jla.NE.0) fdlambda=(one_o_modB-lambda(jla))/dlambda
-           kpoint=npoint
+           kpoint=1
            !Integral in lambda
-!           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3452+myrank,'(5(1pe13.5),10I6)') &
-!                & zetap(il),thetap(ia,il),lambda(1),g(1,1)-g(1,1)
            DO ila=jla,2,-1
               jpoint=i_p(ila,ia,il)
               fint=1
-              IF(jpoint.EQ.npoint) THEN
+              IF(jpoint.LE.1) THEN 
                  jpoint=kpoint
-                 IF(jpoint.EQ.npoint) CYCLE
+                 IF(jpoint.LE.1) CYCLE
                  fint=(ila-1.)/(kla-1.)
               ELSE
                  kpoint=jpoint
                  kla=ila
               END IF
               IF(PRE_INTV.AND.jpoint.NE.ipoint) CYCLE
-              IF(DEBUG.AND.ipoint.EQ.1) WRITE(3453+myrank,'(5(1pe13.5),10I6)') &
-                   & zetap(il),thetap(ia,il),lambda(1),g(1,1)-g(1,1)
-              
+!              IF(DEBUG.AND.ipoint.EQ.1) WRITE(3453+myrank,'(5(1pe13.5),10I6)') &
+!                   & zetap(il),thetap(ia,il),lambda(1),g(1,1)-g(1,1)              
               fhdlambda2=0.5*fdlambda*fdlambda
               IF(ila.EQ.jla) THEN
                  fint=fint*(F5o12+fdlambda+fhdlambda2)
@@ -2374,31 +3479,49 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
                  fint=fint*F13o12
               END IF
               lambdaB=lambda(ila)*modB
+              IF(lambdaB.GT.1) CYCLE
               sqrt1mlB=SQRT(1.-lambdaB)
               d3vdlambdadK=fint*modB/sqrt1mlB*dlambda
               IF(PRE_INTV) THEN   !Calculate the linear contribution of g(ipoint)
-                 D11_alp(ial)=D11_alp(ial)-d3vdlambdadK*vds_al(1,ia,il)*(1.0-0.5*lambdaB) /2.
-                 IF(QN) dn1_alp(ial)=dn1_alp(ial)+d3vdlambdadK       
-              ELSE                !Accumulate the total contribution g for each point jpoint
-                 IF(.NOT.PHI1_READ.OR..NOT.IMP1NU) THEN
-                    D11_alp(ial)=D11_alp(ial)-g(jpoint,1)*d3vdlambdadK*vds_al(1,ia,il)*(1.0-0.5*lambdaB)/2.
-                    IF(DEBUG.AND.ipoint.EQ.1) WRITE(3452+myrank,'(5(1pe13.5),10I6)') &
-                         & zetap(il),thetap(ia,il),lambda(ila),g(jpoint,1),modB
+                 IF(notg) THEN
+                    D11_alp(ial)=D11_alp(ial)+d3vdlambdadK
                  ELSE
-                    D11_alp(ial)=D11_alp(ial)+g(jpoint,1)*&
-                         & modB/(lambda(ila)*lambda(ila)*lambda(ila)*sqrt1mlb)*vds_al(1,ia,il)
+                    D11_alp(ial)=D11_alp(ial)-d3vdlambdadK*vds_al(1,ia,il)*(1.0-0.5*lambdaB) /2.
+                    IF(QN) dn1_alp(ial)=dn1_alp(ial)+d3vdlambdadK
                  END IF
-                 IF(QN) dn1_alp(ial)=dn1_alp(ial)+g(jpoint,1)*d3vdlambdadK        
+              ELSE                !Accumulate the total contribution g for each point jpoint
+                 IF(notg) THEN
+                    D11_alp(ial)=D11_alp(ial)+g(jpoint,1)*d3vdlambdadK
+                 ELSE
+                    IF(.NOT.PHI1_READ.OR..NOT.IMP1NU) THEN
+                       D11_alp(ial)=D11_alp(ial)-&
+                            & g(jpoint,1)*d3vdlambdadK*vds_al(1,ia,il)*(1.0-0.5*lambdaB)/2.
+                    ELSE
+                       D11_alp(ial)=D11_alp(ial)+g(jpoint,1)*&
+                            & modB/(lambda(ila)*lambda(ila)*lambda(ila)*sqrt1mlb)*vds_al(1,ia,il)
+                    END IF
+                    IF(QN) dn1_alp(ial)=dn1_alp(ial)+g(jpoint,1)*d3vdlambdadK        
+                 END IF
               END IF
            END DO
 
-           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3451+myrank,'(5(1pe13.5),10I6)') &
-                & zetap(il),thetap(ia,il),dn1_alp(ial),D11_alp(ial),vds_al(1,ia,il)
-
+!           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3451+myrank,'(5(1pe13.5),10I6)') &
+!                & il,ia,D11_alp(ial),vds_al(1,ia,il)
+ !           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3451+myrank,'(5(1pe13.5),10I6)') &
+ !                & zetap(il),thetap(ia,il),dn1_alp(ial),D11_alp(ial),vds_al(1,ia,il)
         END DO
-
      END DO
-
+     
+     IF(DEBUG) THEN
+        DO ia=1,nalpha
+           DO il=1,nalphab
+              ial=(il-1)*nalpha+ia
+              WRITE(3700+myrank,'(3(1pe13.5),2I6)') &
+                  & zetap(il),thetap(ia,il),D11_alp(ial),il,ia           
+           END DO
+        END DO
+     ENDIF
+     
      !Copy values to extended grid and interpolate to square grid
      dn1_zt=0
      DO il=1,nalphab
@@ -2420,29 +3543,23 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
               dn1_ale(2*nalpha+1: tnalpha)=dn1_alp(ial+1:ial+nalpha)
            END IF
         END IF
-
-!        DO ia=1,tnalpha
-
-!        END DO
         
         !Interpolation to square grid
         DO ia=1,nalphab
-           ind=(ia-1)*nalphab+il
            D11_zt(ia,il)=0
            CALL LAGRANGE(thetape(1:tnalpha,il),D11_ale(1:tnalpha),tnalpha,&
-                & theta(ia),D11_zt(ia,il),2)
-           IF(QN.OR.SATAKE)THEN
+                & theta(ia),D11_zt(ia,il),0)
+           IF(QN) THEN!.OR.NTV)THE
               dn1_zt(ia,il)=0
               CALL LAGRANGE(thetape(1:tnalpha,il),dn1_ale(1:tnalpha),tnalpha,&
-                 & theta(ia),dn1_zt(ia,il),2)
+                 & theta(ia),dn1_zt(ia,il),0)
            END IF
-           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3450+myrank,'(10(1pe13.5),10I6)') &
-                & zetap(il),theta(ia),dn1_zt(ia,il),D11_zt(ia,il)
+           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3800+myrank,'(3(1pe13.5),2I6)') &
+                & zetap(il),theta(ia),D11_zt(ia,il),il,ia
         END DO
      END DO
      !Flux surface average
      D11p(1,ipoint)=FSA(nalphab,nalphab,D11_zt,Jac,1)
-
      IF(QN) THEN
         DO nm=2,Nnmp
            IF(ONLY_PHI1) EXIT 
@@ -2456,9 +3573,8 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
         CALL FFTF_KN(nalphab,dn1c_zt,dn1c_nm)
         CALL FILL_ORBI(nalphab,nalphab,dn1c_nm,Nnmp,dn1nmp(:,ipoint))
      END IF
-     IF(.NOT.PRE_INTV.AND.ipoint.EQ.1) EXIT
+     IF(.NOT.PRE_INTV.AND.ipoint.EQ.1) EXIT !JL
   END DO
-
 
 123 IF(PRE_INTV) THEN
 
@@ -2487,9 +3603,125 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,&
 
  CALCULATED_INT=.TRUE.
 
-  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+ CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INTEGRATE_G
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
+     & thetap,B_al,vds_al,D11)
+
+!-----------------------------------------------------------------------------------------------
+!Calculate contribution D11 to the flux
+! by integrating in lambda grid of nlambda size the distribution function g known at npoints, i_p.
+! The integral is calculated in (zetap,thetap) grid of size nalphabxnalpha using precalculated values
+! of B_al and vds_al, and then interpolated to a (zetap,thetap) square grid, where flux-surface 
+!average is done for the flux
+!----------------------------------------------------------------------------------------------- 
+
+  USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD  
+  IMPLICIT NONE
+  !Input
+  LOGICAL notg
+  INTEGER nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
+  REAL*8 lambda(nlambda),g(npoint),thetap(nalpha,nalphab),B_al(nalpha,nalphab),vds_al(nalpha,nalphab)
+  !Output
+  REAL*8 D11
+  !Others
+  REAL*8, PARAMETER :: F5o12 =0.416666666666667
+  REAL*8, PARAMETER :: F7o12 =0.583333333333333
+  REAL*8, PARAMETER :: F13o12=1.083333333333333
+  REAL*8, PARAMETER :: F23o12=1.91666666666667
+  INTEGER ia,il,ila,ipoint,nla
+  REAL*8 lambdaB,d3vdlambdadK,dlambda,fdlambda,one_o_modB,modB,lambda1,sqrt1mlB
+  REAL*8 g1oB,D11_alp(nalpha,nalphab),dD11,doffset,offset,FSA2
+  !Time
+  CHARACTER*30, PARAMETER :: routine="INTEGRATE_G_NEW"
+  INTEGER, SAVE :: ntotal=0
+  REAL*8,  SAVE :: ttotal=0
+  REAL*8,  SAVE :: t0=0
+  REAL*8 tstart
+#ifdef MPIandPETSc
+  !Others
+!  INTEGER ierr
+  INCLUDE "mpif.h"
+#endif
+
+  CALL CPU_TIME(tstart)
+     
+  D11=0
+  IF(DEBUG) THEN
+     DO ipoint=1,npoint  
+        WRITE(3500+myrank,'(I6,1(1pe13.5),2I6)') ipoint,g(ipoint),nalpha,nlambda
+     END DO
+  END IF
+  
+  !Precalculate quantities
+  lambda1=lambda(1)
+  dlambda=lambda(2)-lambda1
+  
+  D11_alp=0
+  !Scan in the flux surface
+  DO ia=1,nalpha 
+     DO il=1,nalphab 
+        modB=B_al(ia,il)
+        one_o_modB=1./modB
+        DO ila=1,nlambda
+           IF(lambda(ila).GT.one_o_modB) THEN
+              nla=ila-1
+              fdlambda=(one_o_modB-lambda(nla))/dlambda
+              EXIT
+           END IF
+        END DO
+        IF(nla.EQ.0) CYCLE
+        IF(nla.GT.1) THEN
+           g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
+        ELSE
+           g1oB=g(i_p(nla,ia,il))
+        END IF
+        IF(notg) THEN
+           offset=2*g1oB*SQRT(1-lambda(1)*modB)
+        ELSE
+           offset=-2*g1oB*vds_al(ia,il)*0.25*SQRT(1-lambda(1)*modB)
+        END IF
+        DO ila=1,nla
+           lambdaB=lambda(ila)*modB
+           sqrt1mlB=SQRT(1.-lambdaB)
+           d3vdlambdadK=modB/sqrt1mlB
+           ipoint=i_p(ila,ia,il)
+           IF(notg) THEN
+              dD11=g(ipoint)*d3vdlambdadK
+              doffset=g1oB*d3vdlambdadK
+           ELSE
+              dD11=-g(ipoint)*(vds_al(ia,il)*(1.0-0.5*lambdaB)/2.)*d3vdlambdadK
+              doffset=-g1oB*vds_al(ia,il)*0.25*d3vdlambdadK
+           END IF
+           IF(ila.EQ.1) THEN
+              dD11   =dD11/2.
+              doffset=doffset/2.
+           ELSE IF(ila.EQ.nla) THEN
+              dD11   =dD11   *(1.+fdlambda)/2.
+              doffset=doffset*(1.+fdlambda)/2.
+           END IF
+           D11_alp(ia,il)=D11_alp(ia,il)+dD11-doffset
+        END DO
+        D11_alp(ia,il)=D11_alp(ia,il)*dlambda+offset
+        
+        IF(DEBUG) WRITE(3451+myrank,'(2I6,6(1pe13.5),10I6)') &
+             & il,ia,D11_alp(ia,il),vds_al(ia,il)
+     END DO
+  END DO
+  !Flux surface average
+  D11=FSA2(nalpha,nalphab,thetap(:,1),D11_alp,aiBtpBz/B_al/B_al,1)
+  CALCULATED_INT=.TRUE.
+  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+
+END SUBROUTINE INTEGRATE_G_NEW
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2631,3 +3863,176 @@ END SUBROUTINE FILL_ORBI
 
 
 
+!!$  IF((nbif(ipoint).EQ.1.AND.nbif(j_p_lm1).EQ.1).OR.&
+!!$  IF((nbif(ipoint).EQ.1).OR.&
+!!$       (j_p_lm1.EQ.1.AND..NOT.PREC_TOP)) THEN
+!!$     j_p_lp1=i_p_lp1(1,ipoint)
+!!$     denom=twodlambda*(dlambda_lm1(ipoint)*dlambda_lm1(ipoint)+dlambda_lp1(ipoint)*dlambda_lp1(ipoint))/4
+!!$     matCOL(j_p_lp1)= b*dlambda_lp1(ipoint)/denom+ a/twodlambda
+!!$     matCOL(ipoint) =-b*twodlambda         /denom
+!!$     matCOL(j_p_lm1)= b*dlambda_lm1(ipoint)/denom- a/twodlambda
+!!$  ELSE
+!!$     DO ibif=1,nbif(j_p_lm1)
+!!$        jpoint=i_p_lp1(ibif,j_p_lm1)
+!!$!        jpoint=ipoint
+!!$        IF(j_p_lm1.EQ.1) THEN
+!!$           bm=BI2(jpoint)
+!!$           matCOL(i_p_lp1(1,jpoint))=matCOL(i_p_lp1(1,jpoint))-bm/(dlambda_lp1(jpoint)*twodlambda)
+!!$        ELSE
+!!$           j_p_lm2=i_p_lm1(j_p_lm1)
+!!$           bm=BI2(j_p_lm1)
+!!$           fourdlambda2=(dlambda_lp1(j_p_lm1)+dlambda_lm1(j_p_lm1))*twodlambda
+!!$           matCOL(j_p_lm2)=matCOL(j_p_lm2)+bm/fourdlambda2
+!!$           matCOL(jpoint )=matCOL(jpoint) -bm/fourdlambda2
+!!$        END IF
+!!$
+!!$        DO jbif=1,nbif(jpoint)
+!!$           j_p_lp1=i_p_lp1(jbif,jpoint)
+!!$           j_p_lp2=i_p_lp1(1  ,j_p_lp1)
+!!$           IF(j_p_lp2.EQ.0) CYCLE
+!!$           bp=BI2(j_p_lp1)
+!!$           IF(j_p_lm1.EQ.1) THEN
+!!$              fourdlambda2=dlambda_lp1(jpoint)*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
+!!$           ELSE
+!!$              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1)) 
+!!$           END IF
+!!$           matCOL(j_p_lp2)=matCOL(j_p_lp2)+bp/fourdlambda2
+!!$           matCOL(jpoint) =matCOL(jpoint) -bp/fourdlambda2
+!!$        END DO
+!!$     END DO
+!!$
+!!$     END IF
+!!$     IF(CENTERED_ALPHA) THEN
+!!$        denom=dalpha_ap1+dalpha_am1
+!!$        matVEAf(i_p_ap1I)  =wp1I  *( d/denom)
+!!$        matVEAf(i_p_ap1II) =wp1II *( d/denom)
+!!$        matVEAf(i_p_am1I)  =wm1I  *(-d/denom)
+!!$        matVEAf(i_p_am1II) =wm1II *(-d/denom)
+!!$        matVEAb(i_p_ap1I)  =wp1I  *( d/denom)
+!!$        matVEAb(i_p_ap1II) =wp1II *( d/denom)
+!!$        matVEAb(i_p_am1I)  =wm1I  *(-d/denom)
+!!$        matVEAb(i_p_am1II) =wm1II *(-d/denom)
+!!$
+!!$        denom=7*(dalpha_ap1+dalpha_am1)-dalpha_ap2-dalpha_am2
+!!$        matVEAf(i_p_ap2I)  =wp2I  *(  -d/denom)
+!!$        matVEAf(i_p_ap2II) =wp2II *(  -d/denom)
+!!$        matVEAf(i_p_ap2III)=wp2III*(  -d/denom)
+!!$        matVEAf(i_p_ap2IV) =wp2IV *(  -d/denom)
+!!$        matVEAf(i_p_ap1I)  =wp1I  *(+8*d/denom)
+!!$        matVEAf(i_p_ap1II) =wp1II *(+8*d/denom)
+!!$        matVEAf(i_p_am1I)  =wm1I  *(-8*d/denom)
+!!$        matVEAf(i_p_am1II) =wm1II *(-8*d/denom)
+!!$        matVEAf(i_p_am2I)  =wm2I  *(  +d/denom)
+!!$        matVEAf(i_p_am2II) =wm2II *(  +d/denom)
+!!$        matVEAf(i_p_am2III)=wm2III*(  +d/denom)
+!!$        matVEAf(i_p_am2IV) =wm2IV *(  +d/denom)
+!!$        matVEAb(i_p_ap2I)  =wp2I  *(  -d/denom)
+!!$        matVEAb(i_p_ap2II) =wp2II *(  -d/denom)
+!!$        matVEAb(i_p_ap2III)=wp2III*(  -d/denom)
+!!$        matVEAb(i_p_ap2IV) =wp2IV *(  -d/denom)
+!!$        matVEAb(i_p_ap1I)  =wp1I  *(+8*d/denom)
+!!$        matVEAb(i_p_ap1II) =wp1II *(+8*d/denom)
+!!$        matVEAb(i_p_am1I)  =wm1I  *(-8*d/denom)
+!!$        matVEAb(i_p_am1II) =wm1II *(-8*d/denom)
+!!$        matVEAb(i_p_am2I)  =wm2I  *(  +d/denom)
+!!$        matVEAb(i_p_am2II) =wm2II *(  +d/denom)
+!!$        matVEAb(i_p_am2III)=wm2III*(  +d/denom)
+!!$        matVEAb(i_p_am2IV) =wm2IV *(  +d/denom)
+!!$     ELSE IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$           denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$           matVEAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*&
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)
+!!$           matVEAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*&
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)                      
+!!$           matVEAf(ipoint )=+d*&
+!!$                & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))&
+!!$                & /denom
+!!$        IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$           denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
+!!$           matVEAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$           matVEAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$           matVEAb(ipoint )=-d*(dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))&
+!!$                & /denom
+!!$        IF(CENTERED_ALPHA) THEN
+!!$           denom=dalpha_ap1+dalpha_am1
+!!$           matVMAf(i_p_ap1I)  =wp1I  *( d/denom)
+!!$           matVMAf(i_p_ap1II) =wp1II *( d/denom)
+!!$           matVMAf(i_p_am1I)  =wm1I  *(-d/denom)
+!!$           matVMAf(i_p_am1II) =wm1II *(-d/denom)
+!!$           matVMAb(i_p_ap1I)  =wp1I  *( d/denom)
+!!$           matVMAb(i_p_ap1II) =wp1II *( d/denom)
+!!$           matVMAb(i_p_am1I)  =wm1I  *(-d/denom)
+!!$           matVMAb(i_p_am1II) =wm1II *(-d/denom)
+!!$           denom=7*(dalpha_ap1+dalpha_am1)-dalpha_ap2-dalpha_am2
+!!$           matVMAf(i_p_ap2I)  =wp2I  *(  -d/denom)
+!!$           matVMAf(i_p_ap2II) =wp2II *(  -d/denom)
+!!$           matVMAf(i_p_ap2III)=wp2III*(  -d/denom)
+!!$           matVMAf(i_p_ap2IV) =wp2IV *(  -d/denom)
+!!$           matVMAf(i_p_ap1I)  =wp1I  *(+8*d/denom)
+!!$           matVMAf(i_p_ap1II) =wp1II *(+8*d/denom)
+!!$           matVMAf(i_p_am1I)  =wm1I  *(-8*d/denom)
+!!$           matVMAf(i_p_am1II) =wm1II *(-8*d/denom)
+!!$           matVMAf(i_p_am2I)  =wm2I  *(  +d/denom)
+!!$           matVMAf(i_p_am2II) =wm2II *(  +d/denom)
+!!$           matVMAf(i_p_am2III)=wm2III*(  +d/denom)
+!!$           matVMAf(i_p_am2IV) =wm2IV *(  +d/denom)
+!!$           matVMAb(i_p_ap2I)  =wp2I  *(  -d/denom)
+!!$           matVMAb(i_p_ap2II) =wp2II *(  -d/denom)
+!!$           matVMAb(i_p_ap2III)=wp2III*(  -d/denom)
+!!$           matVMAb(i_p_ap2IV) =wp2IV *(  -d/denom)
+!!$           matVMAb(i_p_ap1I)  =wp1I  *(+8*d/denom)
+!!$           matVMAb(i_p_ap1II) =wp1II *(+8*d/denom)
+!!$           matVMAb(i_p_am1I)  =wm1I  *(-8*d/denom)
+!!$           matVMAb(i_p_am1II) =wm1II *(-8*d/denom)
+!!$           matVMAb(i_p_am2I)  =wm2I  *(  +d/denom)
+!!$           matVMAb(i_p_am2II) =wm2II *(  +d/denom)  
+!!$           matVMAb(i_p_am2III)=wm2III*(  +d/denom)
+!!$           matVMAb(i_p_am2IV) =wm2IV *(  +d/denom)  
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$                 matVMAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAf(ipoint )=+d*&
+!!$                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2) 
+!!$                 matVMAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAb(ipoint )=-d*&
+!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
+!!$                 matVMAf(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAf(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAf(ipoint )=-d*&
+!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom                    
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$                 matVMAb(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAb(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAb(ipoint )=+d*&
+!!$                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom

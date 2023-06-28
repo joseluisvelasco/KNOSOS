@@ -24,6 +24,7 @@ SUBROUTINE INITIALIZE_MPI()
   CALL MPI_INIT(ierr)
   CALL MPI_COMM_SIZE(MPI_COMM_WORLD,numprocs,ierr)
   CALL MPI_COMM_RANK(MPI_COMM_WORLD,myrank,ierr)
+  iout=1000+MYRANK
 
 !  Can be used for splitting jobs  
 !  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,myrank/11,myrank,MPI_COMM_CALC)
@@ -35,9 +36,10 @@ SUBROUTINE INITIALIZE_MPI()
 
   myrank=0
   numprocs=1
-
-#endif
+  iout=6
   
+#endif
+
 END SUBROUTINE INITIALIZE_MPI
 
 
@@ -60,9 +62,15 @@ SUBROUTINE DISTRIBUTE_MPI(ns,rank)
   !Others
   INTEGER is,ierr,irank
 
+  rank=0
+  
   IF(ns.EQ.1.AND.nerr.EQ.1) THEN
 
-     rank=0
+     IF(FAST_IONS) THEN
+        rank=myrank
+     ELSE
+        rank=0
+     END IF
 
   ELSE IF(numprocs.GE.nerr*ns) THEN
 
@@ -119,12 +127,9 @@ SUBROUTINE REAL_ALLREDUCE(arrayr,narrayr)
   REAL*8 arrayr(narrayr)
   !Others
   INTEGER mpierr
-  REAL*8 arrays(narrayr)
   INCLUDE "mpif.h"
 
-  arrays=arrayr
-  arrayr=0
-  CALL MPI_ALLREDUCE(arrays,arrayr,narrayr,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,mpierr)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,arrayr,narrayr,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,mpierr)
   
 END SUBROUTINE REAL_ALLREDUCE
 
@@ -150,14 +155,16 @@ SUBROUTINE END_ALL(serr,parallel)
   INTEGER ierr
   INCLUDE "mpif.h"
 
-  IF(parallel.OR.myrank.EQ.0) WRITE(1000+myrank,*) serr
+  IF(parallel.OR.myrank.EQ.0) WRITE(iout,*) serr
+  CALL FLUSH(iout)
   CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
   CALL PETSCFINALIZE(ierr)
   CALL MPI_FINALIZE(ierr)
 
 #else
 
-  IF(parallel.OR.myrank.EQ.0) WRITE(1000+myrank,*) serr
+  IF(parallel.OR.myrank.EQ.0) WRITE(iout,*) serr
+  CALL FLUSH(iout)
 
 #endif
 

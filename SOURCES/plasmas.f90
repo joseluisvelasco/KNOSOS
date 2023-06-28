@@ -6,7 +6,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
+SUBROUTINE READ_PLASMAS(nbb,fracb,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
 
 !-------------------------------------------------------------------------------------------------
 !For nbb species of charge ZB(nbb), read density, temperature profiles:
@@ -17,7 +17,7 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   IMPLICIT NONE
   !Input
   INTEGER nbb
-  REAL*8 ZEFF,s0,ZB(nbb),AB(nbb)
+  REAL*8 fracb(nbb),s0,ZB(nbb),AB(nbb)
   !Output
   REAL*8 nb(nbb),dnbdpsi(nbb),Tb(nbb),dTbdpsi(nbb),Epsi
   !Others
@@ -34,9 +34,16 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   !If there are more than two species, look for the effective charge 
   IF(nbb.GE.3) THEN
      DO ib=3,nbb   !Incorrect if nbb>3, especially if not trace
-        nb(ib)     =     ne*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
-        dnbdpsi(ib)=dnedpsi*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
-!        dnbdpsi(ib)=0 !eta'=0
+        IF(ib.EQ.3) THEN
+           nb(ib)=ne*fracb(ib)
+           dnbdpsi(ib)=dnedpsi*fracb(ib)
+!           nb(ib)     =     ne*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
+!           dnbdpsi(ib)=dnedpsi*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
+        ELSE
+           nb(ib)=ne/1000.
+           dnbdpsi(ib)=dnedpsi/1000.
+        END IF
+        IF(ib.GT.nbulk.AND.SS_IMP) dnbdpsi(ib)=0        
      END DO
   END IF
   !Impose quasineutrality
@@ -49,18 +56,18 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   dnbdpsi(2)=dnbdpsi(2)/ZB(2)
 
   !Check if impurities are trace or not
-  DO ib=3,nbb
-     IF(SQRT(Ab(ib)/Ab(2))*(nb(ib)*ZB(ib)*ZB(ib))/(nb(2)*ZB(2)*ZB(2)).GT.5E-2) THEN
-        WRITE(1000+myrank,'(" ZEFF=",F6.3," (n_z/n_i)(Z_z/Z_i)^2(m_z/m_i)^{1/2}=",F6.3)') &
-             ZEFF,SQRT(Ab(ib)/Ab(2))*(nb(ib)*ZB(ib)*ZB(ib))/(nb(2)*ZB(2)*ZB(2))
-        serr="Not trace impurity"
+!  DO ib=3,nbb
+!     IF(SQRT(Ab(ib)/Ab(2))*(nb(ib)*ZB(ib)*ZB(ib))/(nb(2)*ZB(2)*ZB(2)).GT.5E-2) THEN
+!        WRITE(iout,'(" ZEFF=",F6.3," (n_z/n_i)(Z_z/Z_i)^2(m_z/m_i)^{1/2}=",F6.3)') &
+!             ZEFF,SQRT(Ab(ib)/Ab(2))*(nb(ib)*ZB(ib)*ZB(ib))/(nb(2)*ZB(2)*ZB(2))
+!       serr="Not trace impurity"
 !        IF(REGB(2).GT.0) THEN
 !           CALL END_ALL(serr,.FALSE.)
 !        ELSE
-           WRITE(1000+myrank,*) serr
+!           WRITE(iout,*) serr
 !        END IF
-     END IF
-  END DO
+!     END IF
+!  END DO
 !  IF(ne.LT.0) THEN
 !     IF(ONLY_DB) THEN
 !        ne=-ne
@@ -74,7 +81,7 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   CALL READ_PROFILE(s0,"te",Te,dTedpsi,nbb)
   CALL READ_PROFILE(s0,"ti",Ti,dTidpsi,nbb)
   IF(Te.LT.0) THEN
-     WRITE(1000+myrank,*) 'No electron temperature available, setting T_e=T_i'
+     WRITE(iout,*) 'No electron temperature available, setting T_e=T_i'
      Te=Ti
      dTedpsi=dTidpsi
   END IF 
@@ -83,12 +90,12 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   !Impurities have the same temperature than the bulk ions
   Tb(2:nbb)     =Ti     *(1.0+RGAUSS(iperr))
   dTbdpsi(2:nbb)=dTidpsi*(1.0+RGAUSS(iperr))
- 
+  IF(nbb.GT.nbulk.AND.SS_IMP) dTbdpsi(nbulk+1:nbb)=0        
   !Read electrostatic potential (varphi0 is ignored)
   IF(.NOT.SOLVE_AMB) THEN
      IF(TRIVIAL_AMB) THEN
         !Ion root solution with ions in the 1/nu regime
-        WRITE(1000+myrank,*) 'Ambipolarity is not solved:  &
+        WRITE(iout,*) 'Ambipolarity is not solved:  &
              & ion root solution with ions in the 1/nu regime'
         dPhidpsi=-(3.5*dTbdpsi(2)+Tb(2)*dnbdpsi(2)/nb(2))/ZB(2) 
      ELSE
@@ -192,6 +199,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   CHARACTER*13 nametask3d
   CHARACTER*14 nametask3d2
   CHARACTER*15 namedr
+  CHARACTER*15 nametg2
   CHARACTER*22 nameneo
   CHARACTER*10 nameprof
   CHARACTER*7 namepoint
@@ -207,7 +215,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=nametask3d2,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nametask3d2,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') nametask3d2
+     WRITE(iout,'(" File ",A22," read")') nametask3d2
      IF(filename.EQ."ti") THEN
         nprof=2
      ELSE IF(filename.EQ."te") THEN
@@ -238,7 +246,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=nametask3d,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nametask3d,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') nametask3d
+     WRITE(iout,'(" File ",A22," read")') nametask3d
      READ(1,*) line
      READ(1,*) line
      IF(filename.EQ."ti") THEN
@@ -273,13 +281,12 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
 !     GOTO 1000    
   END IF
 
-
   !GRAZ profile format
   namegraz="profiles.txt"
   OPEN(unit=1,file=namegraz,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//namegraz,action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') namegraz
+     WRITE(iout,'(" File ",A22," read")') namegraz
      READ(1,*) line
      IF(filename.EQ."ti") THEN
         nprof=3
@@ -318,14 +325,13 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
      END IF
 !     GOTO 1000    
   END IF
-
   
   !GRAZ profile format
   namegraz2="profiles2.txt"
   OPEN(unit=1,file=namegraz2,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//namegraz2,action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') namegraz2
+     WRITE(iout,'(" File ",A22," read")') namegraz2
      READ(1,*) line
      IF(filename.EQ."ti") THEN
         nprof=6
@@ -360,14 +366,13 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
      END IF
 !     GOTO 1000    
   END IF
-
   
   !TG profile format
   nametg="profiles.TG"
   OPEN(unit=1,file=nametg,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nametg,action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') nametg
+     WRITE(iout,'(" File ",A22," read")') nametg
      IF(filename.EQ."ti") THEN
         nprof=568
      ELSE IF(filename.EQ."te") THEN
@@ -412,13 +417,12 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
 !     GOTO 1000    
   END IF
 
-
   !DR@W7-X profile format
   namedr="profiles_DR.txt"
   OPEN(unit=1,file=namedr,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//namedr,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') namedr
+     WRITE(iout,'(" File ",A22," read")') namedr
      IF(filename.EQ."ti") THEN
         nprof=3
      ELSE IF(filename.EQ."te") THEN
@@ -427,6 +431,46 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
         nprof=1
      END IF
      READ(1,*) line
+     DO is=1,ns0
+        READ(1,*,iostat=iostat) rho(is),(q_p(is),iprof=1,nprof)
+        IF(iostat.NE.0) EXIT
+     END DO
+     ns=is-1
+     CLOSE(1)
+     IF(rho(ns).LT.0.9) rho=rho/rad_a
+     s=rho*rho
+     dqdx_p(1)=(-3*q_p(1)+4*q_p(2)-q_p(3))/(rho(3)-rho(1))
+     DO is=2,ns-1
+        dqdx_p(is)=(q_p(is+1)-q_p(is-1))/(rho(is+1)-rho(is-1))
+     END DO
+     dqdx_p(ns)=(3*q_p(ns)-4*q_p(ns-1)+q_p(ns-2))/(rho(3)-rho(1))
+     dqdpsi_p=dqdx_p/(2.*SQRT(s0)*atorflux)  !x=rho=r/a
+     !Interpolate at s0
+     CALL LAGRANGE(s,     q_p,ns,s0,     q,MIN(ns,3))
+     CALL LAGRANGE(s,dqdpsi_p,ns,s0,dqdpsi,MIN(ns,3))    
+     IF(filename.NE."ne") THEN
+        q     =q     *1.0E3      !Temperatures and radial electric field are read in keV and kV/m
+        dqdpsi=dqdpsi*1.0E3
+     END IF
+!     GOTO 1000    
+  END IF
+  
+  !TG profile format
+  nametg2="profiles_TG.txt"
+  OPEN(unit=1,file=nametg2,action='read',iostat=iostat)
+  IF(iostat.NE.0) OPEN(unit=1,file="../"//nametg2,action='read',iostat=iostat)
+  IF(iostat.EQ.0.AND.filename.NE."ph") THEN
+     WRITE(iout,'(" File ",A22," read")') nametg2
+     IF(filename.EQ."ti") THEN
+        nprof=4
+     ELSE IF(filename.EQ."te") THEN
+        nprof=3
+     ELSE IF(filename.EQ."ne") THEN
+        nprof=2
+     END IF
+     DO is=1,15
+        READ(1,*) line
+     END DO
      DO is=1,ns0
         READ(1,*,iostat=iostat) rho(is),(q_p(is),iprof=1,nprof)
         IF(iostat.NE.0) EXIT
@@ -455,7 +499,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=nameneo,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nameneo,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') nameneo
+     WRITE(iout,'(" File ",A22," read")') nameneo
      IF(filename.EQ."ti") THEN
         nprof=3
      ELSE IF(filename.EQ."te") THEN
@@ -498,7 +542,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=nameeut,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nameeut,action='read',iostat=iostat)
   IF(iostat.EQ.0.AND.filename.NE."ph") THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') nameeut
+     WRITE(iout,'(" File ",A22," read")') nameeut
      IF(filename.EQ."ti") THEN
         nprof=1
      ELSE IF(filename.EQ."te") THEN
@@ -530,7 +574,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
      OPEN(unit=1,file=nameeut,action='read',iostat=iostat)
      IF(iostat.NE.0) OPEN(unit=1,file="../"//nameeut,action='read',iostat=iostat)
      IF(iostat.EQ.0) THEN
-        WRITE(1000+myrank,'(" File ",A22," read")') nameeut
+        WRITE(iout,'(" File ",A22," read")') nameeut
         READ(1,*) line
         READ(1,*) line
         READ(1,*) line
@@ -548,13 +592,12 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
      END IF
   END IF
 
-
   !neprof profile format
   nameprof=filename//"prof_r.d"
   OPEN(unit=1,file=nameprof,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//nameprof,action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') nameprof
+     WRITE(iout,'(" File ",A22," read")') nameprof
      READ(1,*) line
      DO is=1,ns0
         READ(1,*,iostat=iostat) rho(is),dummy,q_p(is),dummy,dummy,dqdx_p(is),dummy
@@ -584,7 +627,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
   OPEN(unit=1,file=namepoint,action='read',iostat=iostat)
   IF(iostat.NE.0) OPEN(unit=1,file="../"//namepoint,action='read',iostat=iostat)
   IF(iostat.EQ.0) THEN
-     WRITE(1000+myrank,'(" File ",A22," read")') namepoint
+     WRITE(iout,'(" File ",A22," read")') namepoint
      READ(1,*) line
      READ(1,*,iostat=iostat) q,dlnqdx_p(1)  !x=r=rho*a
      dqdpsi=q*dlnqdx_p(1)/psip        
@@ -595,9 +638,8 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
      END IF
   END IF
 
-
   IF(filename.NE."ph".AND.filename.NE."te".AND.q.LT.ALMOST_ZERO.AND..NOT.SATAKE) THEN
-     WRITE(1000,*) filename,q
+!     WRITE(1000,*) filename,q
      serr="Missing profile"
      CALL END_ALL(serr,.FALSE.)
   END IF
@@ -630,7 +672,7 @@ SUBROUTINE READ_SOURCES(nbb,s0,Sb,Pb)
   REAL*8, PARAMETER :: P_ECH  = 1E6       !Wm^-3
   REAL*8, PARAMETER :: J_to_eV= 1.602e-19 
 
-  WRITE(1000+myrank,*) 'SUBROUTINE READ_SOURCES not ready'
+  WRITE(iout,*) 'SUBROUTINE READ_SOURCES not ready'
   RETURN
   
   Sb=0
@@ -678,10 +720,10 @@ SUBROUTINE DKE_CONSTANTS(ib,nbb,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,flag)
   !Calculate thermal velocity
   vth(ib)=1.389165e4*SQRT(Tb(ib)/AB(ib)) 
   IF(flag) THEN
-     WRITE(1000+myrank,*) 'Calculating source',ZB(ib)
-     WRITE(1000+myrank,*) 'Temperature (keV) =',Tb(ib)/1.0E3
-     WRITE(1000+myrank,*) 'Density (10^{19}m^{-3}) =',nb(ib)
-     WRITE(1000+myrank,'(" Reference v_{th}=",1pe13.5)') vth(ib)
+     WRITE(iout,*) 'Calculating source',ZB(ib)
+     WRITE(iout,*) 'Temperature (keV) =',Tb(ib)/1.0E3
+     WRITE(iout,*) 'Density (10^{19}m^{-3}) =',nb(ib)
+     WRITE(iout,'(" Reference v_{th}=",1pe13.5)') vth(ib)
   END IF
   
   !Calculate prefactor of the collision frequency
@@ -722,21 +764,21 @@ SUBROUTINE DKE_CONSTANTS(ib,nbb,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,flag)
      !Determine the collisionality regime of each ion species
      IF(ib.EQ.2.AND.jb.GT.2) THEN
         IF(jb.EQ.3) THEN
-           WRITE(1000+myrank,*) "------------------------------------------------------"
-           WRITE(1000+myrank,*) "Mixed collisionality?"
+           WRITE(iout,*) "------------------------------------------------------"
+           WRITE(iout,*) "Mixed collisionality?"
         END IF
         nuzi(jb)=(2./3./SQPI)*nu0*nb(ib)*ZB(jb)*ZB(jb)*coul_log*AB(ib)/AB(jb)
         nuzistar=rad_R*nuzi(jb)/(1.389165e4*SQRT(Tb(jb)/AB(jb)))           
         aleph=eps32*Zb(jb)*Zb(jb)*Ab(2)/Ab(jb)
-        WRITE(1000+myrank,'(" Impurity #",I1," (Z=",f3.0,",A=",f8.4,"): (nu_zi)^*=",1pe13.5,&
+        WRITE(iout,'(" Impurity #",I1," (Z=",f3.0,",A=",f8.4,"): (nu_zi)^*=",1pe13.5,&
              & ",  aleph=",1pe13.5,",  (nu_zi)^*/aleph^{1/2}=",1pe13.5)') jb,ZB(jb),AB(jb),&
              & nuzistar,aleph,nuzistar/SQRT(aleph)
      END IF
      nu=nu+nu0*nb(jb)*ZB(jb)*ZB(jb)*coul_log*(ERFv*(1.-.5/kx2)+expke/(sqpi*kx))/x3
      IF(ib.EQ.2.AND.jb.GT.2.AND.jb.EQ.nbb) THEN
-        WRITE(1000+myrank,'(" Bulk ions: (nu_i)^*/EPS^{3/2}=",1pe13.5)') &
+        WRITE(iout,'(" Bulk ions: (nu_i)^*/EPS^{3/2}=",1pe13.5)') &
              & rad_R*nu(iv0)/vth(ib)/eps32*x(iv0)*x2M(iv0)*SQRT(x2M(iv0))
-        WRITE(1000+myrank,*) "------------------------------------------------------"
+        WRITE(iout,*) "------------------------------------------------------"
 !        IF(rad_R*nu(iv0)/vth(ib)/eps32*x(iv0)*x2M(iv0)*SQRT(x2M(iv0)).GT.10) THEN
 !           TRACE_IMP=.FALSE.
 !           WRITE(1100+myrank,'(" Bulk ions: (nu_i)^*/EPS^{3/2}=",1pe13.5)') &
@@ -744,7 +786,7 @@ SUBROUTINE DKE_CONSTANTS(ib,nbb,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,flag)
 !        END IF
      END IF
 
-     IF(ib.LE.2) nuth(ib)=nu0*nb(2)*ZB(2)*ZB(2)*coul_log !collision frequency of thermal species
+     IF(ib.LE.2) nuth(ib)=nu0*nb(MIN(2,nbb))*ZB(MIN(2,nbb))*ZB(MIN(2,nbb))*coul_log !collision frequency of thermal species
 
      nustar=rad_R*nu(iv0)/vth(ib)/eps32*x(iv0)*x2M(iv0)*SQRT(x2M(iv0))
      rhostar=vth(ib)*Ab(ib)*m_e/Zb(ib)/borbic(0,0)/rad_R

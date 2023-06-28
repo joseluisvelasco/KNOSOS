@@ -48,7 +48,7 @@ SUBROUTINE CALC_NTV(jt,s,ib,regb,Zb,Ab,nb,dnbdpsi,Tb,dTbdpsi,Epsi,L1b,Gb)
   
 !  DO n=-ntorb,ntorb
 !     DO m=0,mpolb
-!        WRITE(1000+myrank,*) '1',borbic(n,m),borbis(n,m)
+!        WRITE(iout,*) '1',borbic(n,m),borbis(n,m)
 !     END DO
   !  END DO
 
@@ -63,9 +63,9 @@ SUBROUTINE CALC_NTV(jt,s,ib,regb,Zb,Ab,nb,dnbdpsi,Tb,dTbdpsi,Epsi,L1b,Gb)
 !!$           An0=An
 !!$           Bn0=Bn
 !!$        END IF
-!!$        WRITE(1000+myrank,'(1(1pe13.5),I4,1000(1pe13.5))') th,n,-An,Bn,1-An0
+!!$        WRITE(iout,'(1(1pe13.5),I4,1000(1pe13.5))') th,n,-An,Bn,1-An0
 !!$        CALL CALC_AN_AND_BN(th,-n,An,Bn)
-!!$        WRITE(1000+myrank,'(1(1pe13.5),I4,1000(1pe13.5))') th,-n,-An,Bn,1-An0
+!!$        WRITE(iout,'(1(1pe13.5),I4,1000(1pe13.5))') th,-n,-An,Bn,1-An0
 !!$     END DO
 !!$  END DO
 !!$  stop
@@ -133,7 +133,7 @@ SUBROUTINE CALC_NTV(jt,s,ib,regb,Zb,Ab,nb,dnbdpsi,Tb,dTbdpsi,Epsi,L1b,Gb)
 
 !    DO n=-ntorb,ntorb
 !     DO m=0,mpolb
-!        WRITE(1000+myrank,*) '2',borbic(n,m),borbis(n,m)
+!        WRITE(iout,*) '2',borbic(n,m),borbis(n,m)
 !     END DO
 !  END DO
 !!!!
@@ -200,7 +200,7 @@ SUBROUTINE CALC_NTV(jt,s,ib,regb,Zb,Ab,nb,dnbdpsi,Tb,dTbdpsi,Epsi,L1b,Gb)
 !!$
 !!$    DO n=-ntorb,ntorb
 !!$     DO m=0,mpolb
-!!$        WRITE(1000+myrank,*) '3',borbic(n,m),borbis(n,m)
+!!$        WRITE(iout,*) '3',borbic(n,m),borbis(n,m)
 !!$     END DO
 !!$  END DO
 !!$!!!!!
@@ -387,9 +387,9 @@ SUBROUTINE CALC_NTV(jt,s,ib,regb,Zb,Ab,nb,dnbdpsi,Tb,dTbdpsi,Epsi,L1b,Gb)
   END IF
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  WRITE(1000+myrank,*) 'k',ib,ivmin
+  WRITE(iout,*) 'k',ib,ivmin
   DO iv=1,nv
-     WRITE(1000+myrank,*) 'k',k1nu(iv),ksqrtnu(iv),ksbp(iv)
+     WRITE(iout,*) 'k',k1nu(iv),ksqrtnu(iv),ksbp(iv)
   END DO
 
  !!$  IF(ABS(Epsi).GT.1E-9) THEN

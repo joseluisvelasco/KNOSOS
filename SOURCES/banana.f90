@@ -12,6 +12,7 @@ SUBROUTINE CALC_BANANA(jv,Epsi,D11)
 !-----------------------------------------------------------------------------------------------
   
   USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
   !Input
   INTEGER jv
@@ -31,7 +32,7 @@ SUBROUTINE CALC_BANANA(jv,Epsi,D11)
   REAL*8 dt,theta(nal),t1,tb,t2,t_ini,t_l,t_fin,dt_l
   REAL*8 Sov(nal,nal,nla)
   REAL*8 vds(Nnmp),vd(nqv),dummy,vdummy(Nnmp)
-
+  
   IF(.NOT.USE_B0) THEN
      bnmc0(1:Nnm)=bnmc(1:Nnm)
      bnms0(1:Nnm)=bnms(1:Nnm)
@@ -39,7 +40,7 @@ SUBROUTINE CALC_BANANA(jv,Epsi,D11)
      bnms1(1:Nnm)=0
   END IF
   RETURN
-!  WRITE(1000+myrank,*) 'Calculating BANANA'
+!  WRITE(iout,*) 'Calculating BANANA'
 !  serr="Not implemented"
 !  CALL END_ALL(serr,.FALSE.)
 
@@ -137,7 +138,8 @@ SUBROUTINE CALC_BANANA(jv,Epsi,D11)
 !  END IF
 
   G11dkes=fdkes(jv)*D11
-  WRITE(200+myrank,'(2(1pe13.5)," NaN NaN ",2(1pe13.5)," NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
+  IF(.NOT.KNOSOS_STELLOPT) WRITE(200+myrank,'(2(1pe13.5)," NaN NaN ",2(1pe13.5)," &
+       & NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
        & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,fdkes(jv)*D11,fdkes(jv)*D11
   IF(DEBUG) THEN
      IF(cmul_PS.GT.0) THEN
@@ -170,16 +172,18 @@ SUBROUTINE CALC_B0
 !-----------------------------------------------------------------------------------------------
 
   USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
   !Others
-  INTEGER, PARAMETER :: npar=3
+  INTEGER, PARAMETER :: npar=1
   INTEGER, PARAMETER :: npt=64
   INTEGER, PARAMETER :: nsurf=npt/2
   LOGICAL shift_twopi
   INTEGER iz,iz0,it,ieta,iturn,ibranch,imat,ipar,n,m,np1,mp1,fint
   INTEGER izmin(npt),hel_N,hel_M
-  REAL*8 Bmax,epsilon,iotat,dist,distb
-  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt)
+  REAL*8 epsilon,iotat,dist,distb
+  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt)!,Btemp
+  REAL*8 Bmax_var,Bmin_var
   REAL*8 val_eta(nsurf),zeta(npt),theta(npt),temp(npt),zetat(npt,npt),zetal(nsurf,npt),zeta0(npt,npt)
   !Matrix
   INTEGER ierr,lwork,rank
@@ -187,15 +191,22 @@ SUBROUTINE CALC_B0
   REAL*8, ALLOCATABLE :: rwork(:),work(:)
   REAL*8 rcond,s_svd(npar),rhs(nsurf*npt),mat(nsurf*npt,npar),parB(npar)
   COMPLEX*16 B0mn(npt,npt)
-
+  REAL(rprec) , SAVE :: save_borbic0(-ntorbd:ntorbd,0:mpolbd)
+  LOGICAL, SAVE :: FIRST_TIME=.TRUE.
+  
+  WRITE(iout,*) 'Calculating B0'
   borbic0=0!borbic
   borbis0=0!borbis
   dborbic0dpsi=0
   dborbis0dpsi=0
   !Determine helicity of B_0
   Bmax=0
-  DO m=0,mpolbd
-     DO n=-ntorbd,ntorbd
+  IF(KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9)) THEN
+     helN=nzperiod
+     helM=0
+  ELSE
+    DO m=0,mpolbd
+      DO n=-ntorbd,ntorbd
         IF(n.EQ.0.AND.m.EQ.0) CYCLE
 !        IF(n.EQ.0) CYCLE
         IF(ABS(borbic(n,m)).GT.Bmax) THEN
@@ -203,8 +214,9 @@ SUBROUTINE CALC_B0
            helN=n*nzperiod
            helM=m
         END IF
-     END DO
-  END DO
+      END DO
+    END DO
+  END IF
   iotat=iota/(helN-iota*helM)
 
   !Look for a QS omnigenous
@@ -242,8 +254,10 @@ SUBROUTINE CALC_B0
   Bmax=0
   Bmax_th=0
   Bmax_av=0
+  Bmax_var=0
   Bmin_th=1E3
   Bmin_av=0
+  Bmin_var=0
    DO iz=1,npt
      zeta(iz)=(iz-1)*TWOPI/(npt*nzperiod)
   END DO
@@ -279,6 +293,7 @@ SUBROUTINE CALC_B0
   !Find maximum of B, minimum of B and contours of minima B
   DO it=1,npt
      DO iz=1,npt
+        IF(KN_STELLOPT(8).AND.iz.LE.npt/2) KN_WBW=KN_WBW+Bzt(iz,it)*zeta(iz)*zeta(iz)
         IF(Bzt(iz,it).GT.Bmax_th(it)) Bmax_th(it)=Bzt(iz,it)
         IF(Bzt(iz,it).LT.Bmin_th(it)) THEN
            Bmin_th(it)=Bzt(iz,it)
@@ -286,11 +301,23 @@ SUBROUTINE CALC_B0
         END IF
      END DO
      IF(Bmax_th(it).GT.Bmax) Bmax=Bmax_th(it)
-     Bmax_av=Bmax_av+Bmax_th(it)
+!     Bmax_av=Bmax_av+Bmax_th(it)
+     Bmax_av=Bmax_av+Bzt(1,it)
      Bmin_av=Bmin_av+Bmin_th(it)
+     Bmax_var=Bmax_var+Bzt(1,it)*Bzt(1,it)
+     Bmin_var=Bmin_var+Bmin_th(it)*Bmin_th(it)
   END DO
   Bmax_av=Bmax_av/npt
   Bmin_av=Bmin_av/npt
+  IF(KN_STELLOPT(8)) KN_WBW=KN_WBW/(borbic(0,0)*TWOPI*TWOPI*npt*npt/2)
+  IF(KN_STELLOPT(6)) KN_VBT=(Bmax_var/npt-Bmax_av*Bmax_av)/borbic(0,0)/borbic(0,0)
+  IF(KN_STELLOPT(7)) KN_VBB=(Bmin_var/npt-Bmin_av*Bmin_av)/borbic(0,0)/borbic(0,0)
+  borbic0=borbic
+  borbis0=borbis
+  dborbic0dpsi=dborbicdpsi
+  dborbis0dpsi=dborbisdpsi
+  IF(.NOT.KN_STELLOPT(9)) RETURN
+
   epsilon=((Bmax_av/Bmin_av)-1.)/2.
   shift_twopi=.FALSE.
   IF(ABS(zetat(izmin(npt/2),npt/2)-PI).GT.(0.1*PI)) THEN
@@ -356,6 +383,7 @@ SUBROUTINE CALC_B0
 !  END DO
 
   !Find parameters
+!  dist=0 !new12
   lwork=-1
   ierr=0
   rcond=-1
@@ -404,10 +432,16 @@ SUBROUTINE CALC_B0
                             & SIN(ibranch*ipar*(theta(it)+iotat*(PI-val_eta(ieta))))
                     END DO
                  END IF
-!                 WRITE(1,'(3(1pe13.5),I3)') zeta0(iz,it),theta(it),B0(iz,it),iz
+                 IF(ibranch.EQ.1) WRITE(iout,'(3(1pe13.5),I3)') MOD(zeta0(iz,it),TWOPI),zetal(ieta,it),theta(it),iz
                  IF(shift_twopi) zeta0(iz,it)=MOD(zeta0(iz,it)+PI,TWOPI)
                  zeta0(iz,it)=MOD((zeta0(iz,it)+helM*theta(it))/helN+TWOPI,TWOPI/nzperiod)
                  IF(helM.NE.0.AND.Bzt(1,1).LT.Bzt(1,npt/2)) zeta0(iz,it)=MOD(zeta0(iz,it)+PI,TWOPI/nzperiod)
+                 !dist=dist+(zeta0(iz,it)-val_eta(ieta))*(zeta0(iz,it)-val_eta(ieta)) !new2
+
+!new1
+!                 CALL SUM_BORBI(zeta0(iz,it),theta(it),Btemp)
+!                 dist=dist+(Btemp-val_B(ieta))*(Btemp-val_B(ieta))
+!new1
 !                 WRITE(1,'(3(1pe13.5),I3)') zeta0(iz,it),theta(it),B0(iz,it),-iz
               END DO
            END DO
@@ -415,6 +449,10 @@ SUBROUTINE CALC_B0
 !        CLOSE(1)
      END IF
   END DO
+
+!  KN_DBO=SQRT(dist/(npt*(nsurf+1)))/TWOPI !new2
+!  KN_DBO=SQRT(dist/(npt*npt))/borbic(0,0) !new1
+!  RETURN !new12
 
   !Interpolate
   DO it=1,npt
@@ -470,6 +508,12 @@ SUBROUTINE CALC_B0
      END DO
   END DO
 
+  !Reescale B_0
+  borbic0(0,0)=borbic(0,0)
+  IF(FIRST_TIME) save_borbic0=borbic0
+  FIRST_TIME=.FALSE.
+  borbic0=save_borbic0
+
   !Calculate distance between B and B_0
   dist=0
   distB=0
@@ -485,7 +529,13 @@ SUBROUTINE CALC_B0
      END DO
   END DO
   dist=SQRT(dist)/borbic(0,0)
-!  dist=SQRT(dist)/ABS(borbic(helN,helM))
+  IF(KN_STELLOPT(9)) KN_DBO=dist
+  !  dist=SQRT(dist)/ABS(borbic(helN,helM))
+
+  borbic0=borbic
+  borbis0=borbis
+  dborbic0dpsi=dborbicdpsi
+  dborbis0dpsi=dborbisdpsi
     
 END SUBROUTINE CALC_B0
 

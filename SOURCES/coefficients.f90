@@ -3,7 +3,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
-SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
+SUBROUTINE FIND_WELLS(na,mturn,nw0,z1,t1,B1,hBpp1,vd1,&
      &                       zb,tb,Bb,hBppb,vdb,&
      &                       z2,t2,B2,hBpp2,vd2,&
      &                       nw,alphap,offset)
@@ -18,7 +18,7 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
   USE GLOBAL
   IMPLICIT NONE
   !Input
-  INTEGER na,nw0
+  INTEGER na,mturn,nw0
   !Input/output
   REAL*8 z1(nwx),z2(nwx),zb(nwx),hBpp1(nwx),vd1(nqv,nwx)
   REAL*8 t1(nwx),t2(nwx),tb(nwx),hBppb(nwx),vdb(nqv,nwx)
@@ -29,6 +29,7 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
   !Others
   INTEGER ialpha,iw,flag
   REAL*8 z_ini,t_ini,dtheta0,theta0(nwx),zeta0,Bp1,Bp2,dummy,vdummy(Nnmp)
+!  REAL*8, SAVE :: theta_ext=-1E3
   !Time
   CHARACTER*30, PARAMETER :: routine="FIND_WELLS"
   INTEGER, SAVE :: ntotal=0
@@ -40,22 +41,31 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
 
   !Follow na field-lines along nzperiods and collapses everything into
   !nalpha field-lines in the first period
-!  IF(SATAKE) THEN
-!     dtheta0=TWOPI/na
-!  ELSE
-  dtheta0=iota*(TWOPI/nzperiod)/na
+!  IF(theta_ext.LT.-200) THEN
+!     IF(siota.GT.0) THEN
+!        theta_ext=1E2
+!     ELSE
+!        theta_ext=-1E2
+!     END IF
 !  END IF
-  DO ialpha=1,na
-     theta0(ialpha)=ialpha*dtheta0
-  END DO
-
+!  IF(NTV) THEN
+!     dtheta0=TWOPI/na
+  !  ELSE
+  IF(na.EQ.1) THEN
+     theta0=0
+  ELSE
+     dtheta0=iota*(TWOPI/nzperiod)/na
+     DO ialpha=1,na
+        theta0(ialpha)=ialpha*dtheta0
+     END DO
+  END IF
+  
   !Calculate B_0 at (0,0) and (0,pi) and find location of maximum
   CALL CALCB(ZERO       ,ZERO,0,.FALSE.,Bp1,&
        & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
 
   !Set starting point around a maximum
-  offset=0
-!  IF(SATAKE) THEN
+!  IF(NTV) THEN
 !     CALL CALCB(PI/nzperiod,ZERO,0,.USE_B0.,Bp2,&
 !          & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy)
 !     IF(Bp2.GT.Bp1) offset=PI/nzperiod
@@ -64,35 +74,38 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
   CALL CALCB(ZERO,PI,0,.FALSE.,Bp2,&
        & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
   IF(Bp2.GT.Bp1) THEN
-     offset=PI
+     offset=offset+PI
   ELSE IF(iota.LT.0) THEN
-     offset=TWOPI
+     offset=offset+TWOPI
   END IF
-  offset=offset-iota*PI/nzperiod    
-  
+     
   IF(NTV) THEN
      zeta0=0!PI
   ELSE
      zeta0=0
   END IF
   theta0=theta0+offset
-  
-  !  END IF
+
+!  IF(siota.GT.0) THEN
+!     theta_ext=MIN(theta0(1),theta_ext)
+!  ELSE
+!     theta_ext=MAX(theta0(1),theta_ext)
+!  END IF
 
   iw=nw0-1  !nw0 wells have already been found, look for more
   DO ialpha=1,na
      
      IF(nw0.GT.1.AND.MOD(ialpha,2).EQ.0) CYCLE
-!     IF(.FALSE..AND.na.EQ.1) THEN !CHECK
+!     IF(.FALSE..AND.na.EQ.1) THEN
 !        t_ini=tmax
 !        z_ini=zmax
 !     ELSE
      t_ini=theta0(ialpha)
      z_ini=zeta0
-!     END IF
      iw=iw+1
      !Find maxima and minima of the magnetic field strength along line that contains (z_ini,t_ini)
-     CALL EXTREME_POINT(z_ini,t_ini,0, &
+     !     CALL EXTREME_POINT(z_ini,t_ini,0, &
+     CALL EXTREME_POINT(z_ini,t_ini,-1, &
           & z1(iw),t1(iw),B1(iw),hBpp1(iw),vd1(:,iw),flag)
      IF(flag.EQ.1) THEN  !Depending on flag, the extreme found was a maximum or a minimum
         zb(iw)=z1(iw)    !If mimimum, go backwards
@@ -110,7 +123,6 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
           & z2(iw),t2(iw),B2(iw),hBpp2(iw),vd2(:,iw),flag)   
      
      DO WHILE (.TRUE.) 
- !    DO WHILE (na.NE.1.OR.B1(iw).LT.B1(1).0.999)                 
         !Left extreme of new well is right extreme of the previous one
         iw=iw+1
         z1(iw)   =z2(iw-1)
@@ -119,35 +131,19 @@ SUBROUTINE FIND_WELLS(na,nw0,z1,t1,B1,hBpp1,vd1,&
         hBpp1(iw)=hBpp2(iw-1)
         vd1(:,iw)=vd2(:,iw-1)
         !Find new points until a large enough region has been covered
-        IF(ABS(t1(iw)-theta0(1)).GT.2*TWOPI+1*ABS(dtheta0)) THEN
+        !        IF(ABS(t1(iw)-theta_ext).GT.(NTURN+1)*TWOPI) THEN
+        IF(ABS(t1(iw)-theta0(1)).GT.(mturn+1)*TWOPI) THEN
            iw=iw-1
            EXIT
         END IF
-!        IF  ((ABS(t1(iw)-theta0(1)).GT.2*TWOPI+1*ABS(dtheta0)).OR.&
-!             & (ABS(z1(iw)-zeta0).GT.0.5*TWOPI.AND.SATAKE)) THEN !CHECK
-!!             & (ABS(t1(iw)-theta0(1)).GT.TWOPI+ABS(dtheta0).AND.SATAKE)) THEN !CHECK
-!           iw=iw-1
-!           EXIT
-!        END IF
         CALL EXTREME_POINT(z1(iw),t1(iw),+1, &
              & zb(iw),tb(iw),Bb(iw), hBppb(iw),vdb(:,iw),flag)
         CALL EXTREME_POINT(zb(iw),tb(iw),+2, &
              & z2(iw),t2(iw),B2(iw),hBpp2(iw),vd2(:,iw),flag)
-     END DO     
+     END DO
   END DO
   nw=iw
 
-  !Move to the integration region
-!  DO iw=nw0,nw
-!     IF(na.NE.1.AND.USE_B0) THEN !CHECK
-!        STOP !offset should be exactly 0 or PI?
-!        ztemp=z1(iw)
-!        z1(iw)=MODANGHEL(z1(iw),offset,TWOPI/nzperiod)
-!        zb(iw)=zb(iw)+z1(iw)-ztemp
-!        z2(iw)=z2(iw)+z1(iw)-ztemp
-!     END IF
-!     alphap(iw)=t1(iw)-iota*z1(iw)
-!  END DO
   alphap(nw0:nw)=t1(nw0:nw)-iota*z1(nw0:nw)
 
   IF(DEBUG) THEN
@@ -226,7 +222,7 @@ SUBROUTINE EXTREME_POINT(z_in,t_in,flag_in,z_out,t_out,B_out,hBpp_out,vd,flag_ou
   dB=(dBdz+dBdt*iota)/iBtpBz  !not exactly dBdl, but proportional to it and with the same sign
 
   !Locate extrema of B by finding (z_l,t_l) where dBdl changes sign
-  DO WHILE (ABS(dz_l).GT.PREC_EXTR) 
+  DO WHILE (ABS(dz_l).GT.PREC_EXTR)
      dBold=dB
      z_l=z_l+dz_l
      t_l=t_l+dt_l 
@@ -260,6 +256,7 @@ SUBROUTINE EXTREME_POINT(z_in,t_in,flag_in,z_out,t_out,B_out,hBpp_out,vd,flag_ou
      GOTO 1
   END IF
 
+  
 END SUBROUTINE EXTREME_POINT
 
 
@@ -300,9 +297,6 @@ SUBROUTINE CALC_VDBP(z_in,t_in,B_out,Bp_out,hBpp_out,vd)
   END IF
   vd(2)=0.5*(iBtpBz*dBdpsi+(Bzeta*dBdt_0-Btheta*dBdz_0)*diotadpsi*z_in)/denom     !tangential v_M 
   vd(3)=B_0*B_0/avB2   !incompressibility factor
-!  IF(USE_B0) THEN
-!     vd(1)=vd(1)+0.5*(Btheta*dBdz_1-Bzeta*dBdt_1)/denom !CHECK
-!  END IF
 
 END SUBROUTINE CALC_VDBP
 
@@ -435,7 +429,6 @@ SUBROUTINE CALCB_DEL(cosnm,sinnm,flag,flagB1,&
   DO nm=1,Nnm
      n=np(nm)
      m=mp(nm)
-
      IF(STELL_ANTISYMMETRIC) THEN
 
         IF(flag.EQ.0.OR.flag.EQ.2) THEN
@@ -493,7 +486,6 @@ SUBROUTINE CALCB_DEL(cosnm,sinnm,flag,flagB1,&
      END IF
 
   END DO
-
 
 END SUBROUTINE CALCB_DEL
 
@@ -631,18 +623,17 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
   REAL*8 Bp1,hBpp1,vd1(nqv)
   REAL*8 Bp2,hBpp2,vd2(nqv)
   REAL*8 NaN
-!  Time
-!  CHARACTER*30, PARAMETER :: routine="BOUNCES"
-!  INTEGER, SAVE :: ntotal=0
-!  REAL*8,  SAVE :: ttotal=0
-!  REAL*8,  SAVE :: t0=0
-!  REAL*8 tstart
+  !Time
+  CHARACTER*30, PARAMETER :: routine="BOUNCES"
+  INTEGER, SAVE :: ntotal=0
+  REAL*8,  SAVE :: ttotal=0
+  REAL*8,  SAVE :: t0=0
+  REAL*8 tstart
 
-!  CALL CPU_TIME(tstart)
+  CALL CPU_TIME(tstart)
 
 !  NaN=1/0. does not work for some compilers
   NaN=0.
-
   !Find bounce points
   topl=top.AND.(B1x.LE.B2x)  !if one bounce point is very close to 1
   IF(topl) THEN              !BOUNCE_POINT there may be numerical problems
@@ -654,6 +645,7 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
   ELSE
      CALL BOUNCE_POINT(zbx,tbx,Bbounce,z1x,t1x,z1,t1,Bp1,hBpp1,vd1,-1)
   END IF
+
   topr=top.AND.(B2x.LE.B1x) !same with 2
   IF(topr) THEN
      z2=z2x
@@ -675,7 +667,7 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
        &             Bp2,hBpp2,vd2,  &
        &             zbx,bbx,hBppbx,vdbx,nq,Q)
   
-!  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   
 END SUBROUTINE BOUNCES
 
@@ -746,12 +738,22 @@ SUBROUTINE BOUNCE_POINT(z_in,t_in,Bbounce,z_lim,t_lim, &
      z_l=z_l+dz_l
      t_l=t_l+dt_l      !t_lim and z_lim are probably redundant
      IF ((ABS(t_l-t_in).GT.ABS(t_lim-t_in)).OR.(ABS(z_l-z_in).GT.ABS(z_lim-z_in))) THEN
-        z_l=z_lim      !do not go beyond (z_lim,t_lim)
-        t_l=t_lim      !(there, no particles for small Bbounce, other wells for large Bbounce)
+        z_l=z_l-dz_l     !do not go beyond (z_lim,t_lim)
+        t_l=t_l-dt_l     !(there, no particles for small Bbounce, other wells for large Bbounce)
+        dz_l=z_lim-z_l
+        dt_l=t_lim-t_l
+        CALL FILL_PHASE(dz_l,dt_l,cosnm_del,sinnm_del)
+        z_l=z_l+dz_l
+        t_l=t_l+dt_l        
      END IF
      IF ((ABS(t_l-t_lim).GT.ABS(t_lim-t_in)).OR.(ABS(z_l-z_lim).GT.ABS(z_lim-z_in))) THEN
-        z_l=z_in       !do not go beyond (z_in,t_in)
-        t_l=t_in       !(that region is explored with opposite sign of flag)
+        z_l=z_l-dz_l     !do not go beyond (z_in,t_in)
+        t_l=t_l-dt_l     !(that region is explored with opposite sign of flag)
+        dz_l=z_in-z_l
+        dt_l=t_in-t_l
+        CALL FILL_PHASE(dz_l,dt_l,cosnm_del,sinnm_del)
+        z_l=z_l+dz_l
+        t_l=t_l+dt_l
      END IF 
      IF(DEL) THEN
         CALL DELTA_PHASE(cosnm,sinnm,cosnm_del,sinnm_del)
@@ -769,7 +771,6 @@ SUBROUTINE BOUNCE_POINT(z_in,t_in,Bbounce,z_lim,t_lim, &
            CALL FILL_PHASE(dz_l,dt_l,cosnm_del,sinnm_del)  
         END IF
      END IF
-     
   END DO
   z_out=z_l
   t_out=t_l
@@ -811,12 +812,12 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
   INTEGER, PARAMETER :: nmin=3  !calculate with at least 9 points
   INTEGER, PARAMETER :: nmax=20 !large enough (it means ~10^9 points, but PREC_EXTR reached before)
   !Others
-  INTEGER nint,iq,ifrac,nfrac
+  INTEGER nint,iq,ifrac,nfrac,idq
   REAL*8 dzl,ddzl,tdzl,tdzlo3,z_l
   REAL*8 dtl,ddtl,tdtl,tdtlo3,t_l
   REAL*8 cosnm(Nnm),cosnm_ini(Nnm),cosnm_del(Nnm),cosnm_del2(Nnm),cosnm_del4(Nnm)
   REAL*8 sinnm(Nnm),sinnm_ini(Nnm),sinnm_del(Nnm),sinnm_del2(Nnm),sinnm_del4(Nnm)
-  REAL*8 Qold(nq),Qsum(nq),Qint(nq),Qana(nq0)
+  REAL*8 Qold(nq),Qsum(nq),Qint(nq),Qana(nq0),ds(10000),deltas,maxdeltas,mindeltas
   !Time
 !  CHARACTER*30, PARAMETER :: routine="BOUNCE_INTEGRAL"
 !  INTEGER, SAVE :: ntotal=0
@@ -840,7 +841,8 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
   t_l=0.5*(t_ini+t_fin)
   CALL FILL_PHASE(z_l,t_l,cosnm,sinnm)
   !Calculate integrand
-  CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)  
+  CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
+
   !First calculation removing the divergence
   IF(REMOVE_DIV) THEN 
      CALL BOUNCE_INTEGRAND_MINF(iw,z_l,z_ini,lambd,ZERO  ,Bp_ini,hBpp_ini,vd_ini,nq0,Qint(1:nq0)) 
@@ -875,8 +877,11 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
      z_l=z_ini+0.5*dzl
      t_l=t_ini+0.5*dtl
      Qsum=0
+     ds=0
+     idq=0
      DO ifrac=1,nfrac
         CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
+!        ds(idq)=Qint(3)!/atorflux
         CALL DELTA_PHASE(cosnm,sinnm,cosnm_del4,sinnm_del4)
         IF(REMOVE_DIV) THEN
            CALL BOUNCE_INTEGRAND_MINF(iw,z_l,z_ini,lambd,MONE  ,Bp_ini,hBpp_ini,vd_ini,nq0,Qint(1:nq0)) 
@@ -887,6 +892,8 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
         t_l=t_l+ddtl
         Qsum=Qsum+qint
         CALL BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
+        idq=idq+1
+        ds(idq)=Qint(3)
         CALL DELTA_PHASE(cosnm,sinnm,cosnm_del2,sinnm_del2)
         IF(REMOVE_DIV) THEN
            CALL BOUNCE_INTEGRAND_MINF(iw,z_l,z_ini,lambd,MONE  ,Bp_ini,hBpp_ini,vd_ini,nq0,Qint(1:nq0)) 
@@ -904,15 +911,35 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
      END IF
 
      !Convergence is checked looking at the total integral (Q+Qana)
-     IF(nint.GE.nmin.AND.(dzl.LT.PREC_EXTR.OR.&
-          & (ABS(1-(Q(1)+Qana(1))/(Qold(1)+Qana(1))).LT.PREC_BINT.AND.&
-          & (ABS(1-(Q(2)+Qana(2))/(Qold(2)+Qana(2))).LT.PREC_BINT)))) EXIT
+!     IF(FAST_IONS) THEN
+!        IF(nint.GE.nmin.AND.(dzl.LT.PREC_EXTR.OR.&
+!             & (ABS(1-(Q(6)+Qana(6))/(Qold(6)+Qana(6))).LT.PREC_BINT))) EXIT
+!     ELSE
+        IF(nint.GE.nmin.AND.(dzl.LT.PREC_EXTR.OR.&
+             & (ABS(1-(Q(1)+Qana(1))/(Qold(1)+Qana(1))).LT.PREC_BINT.AND.&
+             & (ABS(1-(Q(2)+Qana(2))/(Qold(2)+Qana(2))).LT.PREC_BINT)))) EXIT
+!     END IF
           
      Qold=Q
      nfrac=nfrac*3
+     deltas=0
+     maxdeltas=0
+     mindeltas=0
+     DO iq=1,idq
+        deltas=deltas+ds(iq)*tdzl/idq
+        IF(deltas.GT.maxdeltas) maxdeltas=deltas
+        IF(deltas.LT.mindeltas) mindeltas=deltas
+     END DO
+     DO iq=idq,1,-1
+        deltas=deltas+ds(iq)*tdzl/idq
+        IF(deltas.GT.maxdeltas) maxdeltas=deltas
+        IF(deltas.LT.mindeltas) mindeltas=deltas
+     END DO
      
   END DO
   
+  IF(FAST_IONS) Q(2)=maxdeltas-mindeltas
+
   !Warnings
   IF(dzl.LT.PREC_EXTR) WRITE(1100+myrank,*) 'Bounce integral not converged, try reducing DTMIN'
   IF(nint.GE.nmax) WRITE(1100+myrank,*) 'Bounce integral not converged, try increasing NMAX!!'
@@ -969,7 +996,6 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
 !  CALL CPU_TIME(tstart)
 
   Qint=0
-
   IF(DELTA) THEN
      CALL CALCB_DEL(cosnm,sinnm,2,USE_B0,B_0,dBdz_0,dBdt_0,dBdpsi,B_1,dBdz_1,dBdt_1,Phi_1,dPhdz,dPhdt)
   ELSE
@@ -978,10 +1004,11 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
   lambdaB0=lambd*B_0
   sqrt1mlb=SQRT(1.-lambdaB0)
   IF(lambdaB0.GE.1) THEN
-     IF(lambdaB0-1.GT.1E-4) THEN
-        serr="lambda*B>1"
+!     IF(lambdaB0-1.GT.1E-4) THEN
+     serr="lambda*B>1"
+!     WRITE(iout,*) 'lambda*B>1'
 !        CALL END_ALL(serr,.FALSE.)
-     END IF
+!     END IF
      RETURN
   END IF
   denom=aiBtpBz*B_0
@@ -999,12 +1026,18 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
      Qint(3)=vds/sqrt1mlb             ! radial magnetic drift
 !     IF(USE_B1) Qint(3)=factB*(Btheta*dBdz_1-Bzeta*dBdt_1)     
      Qint(4)=vda/sqrt1mlb             ! tangential magnetic drift
-     Qint(5)=B_0*B_0/avB2/sqrt1mlb    ! factor for incompressible ExB tangential drift 
-     Qint(6)=sqrt1mlb                 ! J
+     IF(INC_EXB) THEN
+        Qint(5)=(B_0*B_0/avB2)/sqrt1mlb ! factor for incompressible ExB tangential drift
+     ELSE
+        Qint(5)=(B_0/avB)/sqrt1mlb ! ExB as in d'Herbemont et al.
+     END IF
+     Qint(6)=sqrt1mlb                 ! J/2v
+     Qint(7)=B_0/sqrt1mlb/2/sgnB      ! -(dJ/dlambda)/2v
+!     Qint(7)=B_0/sqrt1mlb/2      ! -(dJ/dlambda)/2v
      IF(SOLVE_QN) THEN                ! contribution of each mode to radial ExB drift
         factnm(1:Nnm)=(Btheta*np(1:Nnm)*nzperiod-Bzeta*mp(1:Nnm))/sqrt1mlb/aiBtpBz
-        Qint(7    :6+Nnm )=-factnm(1:Nnm)*sinnm(1:Nnm)
-        Qint(7+Nnm:6+Nnmp)=+factnm(1:Nnm)*cosnm(1:Nnm)
+        Qint(8    :7+Nnm )=-factnm(1:Nnm)*sinnm(1:Nnm)
+        Qint(8+Nnm:7+Nnmp)=+factnm(1:Nnm)*cosnm(1:Nnm)
      END IF
   ELSE
      vds=((Btheta* dBdz_1-        Bzeta* dBdt_1        )*(2+lambd*(B_1-2*B_0))/lambd/B_1-&
@@ -1015,9 +1048,9 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
      Qint(4)=0.0
   END IF
 
-  Qint(1:nq)=Qint(1:nq)*aiBtpBz/B_0   !dl=dz*(dz/dl)
-  IF(DEBUG.AND.(iw.EQ.I0.OR.I0.EQ.0)) & 
-       & WRITE(2200+myrank,'(I6,7(1pe13.5))') iw,z_l,(Qint(iq),iq=1,nq0),lambd
+  Qint(1:nq)=Qint(1:nq)*aiBtpBz/B_0   !dl=dz*(dz/dl) 
+!  IF(DEBUG.AND.(iw.EQ.L0.OR.L0.EQ.0)) & 
+!       & WRITE(2200+myrank,'(I6,7(1pe13.5))') iw,z_l,(Qint(iq),iq=1,nq0),lambd
 
 !  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
  
@@ -1071,7 +1104,7 @@ SUBROUTINE BOUNCE_INTEGRAND_MINF(iw,z_l,zb,lambda,Bb,Bpb,hBppb,vdb,nq,Qint)
   Qint(4)=Qint(4)-qdiv*vdb(2)
   Qint(5)=Qint(5)-qdiv*vdb(3)
 
-  IF(DEBUG.AND.(iw.EQ.I0.OR.I0.EQ.0)) WRITE(2300+myrank,'(I6,10(1pe13.5))') &
+  IF(DEBUG.AND.(iw.EQ.L0.OR.L0.EQ.0)) WRITE(2300+myrank,'(I6,10(1pe13.5))') &
   & iw,z_l,qdiv,qdiv-qdiv,qdiv*vdb(1),qdiv*vdb(2),qdiv*vdb(3),lambda
 
 END SUBROUTINE BOUNCE_INTEGRAND_MINF
@@ -1125,7 +1158,7 @@ SUBROUTINE ANA_INTEGRAL(iw,dzb,lambda,Bb,Bpb,hBppb,vdb,nq,Qana)
   Qana(4)=Qana(4)+Ib*vdb(2)
   Qana(5)=Qana(5)+Ib*vdb(3)
 
-  IF(DEBUG.AND.(iw.EQ.I0.OR.I0.EQ.0)) WRITE(2600+myrank,'(I6,10(1pe13.5))') iw,lambda,Ib
+  IF(DEBUG.AND.(iw.EQ.L0.OR.L0.EQ.0)) WRITE(2600+myrank,'(I6,10(1pe13.5))') iw,lambda,Ib
 
 END SUBROUTINE ANA_INTEGRAL
 
