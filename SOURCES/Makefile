@@ -225,7 +225,7 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 #FFT_DIR  =
 #MKL_DIR  =
 COMP_LIB = 
-FFLAGS   = -cpp -O2 -g -fexternal-blas -fbacktrace -fcheck=all -fallow-argument-mismatch
+FFLAGS   = -cpp -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fallow-argument-mismatch
 IFLAGS   = -I/opt/local/include $(shell nf-config --fflags) -I${PETSC_DIR}/include
 LFLAGS   = -L/opt/local/lib -lopenblas -lfftw3 $(PETSC_LIB) -lpetsc $(shell nf-config --flibs)
 endif
