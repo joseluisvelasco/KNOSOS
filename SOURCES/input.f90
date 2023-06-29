@@ -202,10 +202,10 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,fracb)
   ioutt=iout
 
   IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN
-!     filename='kn_log.'//TRIM(KN_EXT)
-     filename=TRIM(KN_EXT)
+     filename='kn_log.'//TRIM(KN_EXT)
      OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
           access='append',status='old')
+    ioutt=iout
   ELSE
      IF(numprocs.EQ.1) THEN
         filename="STDOUT"
@@ -670,25 +670,26 @@ SUBROUTINE INIT_FILES()
      OPEN(unit=7000+myrank,form='formatted',action='write',iostat=iostat)
   END IF
 
-!!$  IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN
-!!$     !     filename='kn_log.'//TRIM(KN_EXT)
-!!$     filename=TRIM(KN_EXT)
-!!$     OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
-!!$          access='append',status='old')
-!!$  ELSE
-!!$     IF(numprocs.EQ.1) THEN
-!!$        filename="STDOUT"
-!!$        OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
-!!$             access='append',status='old')
-!!$        filename="STDERR"
-!!$        OPEN(unit=1100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-!!$     ELSE
-!!$        WRITE(filename,'("STDOUT.",I2.2)') myrank
-!!$        OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat)
-!!$        WRITE(filename,'("STDERR.",I2.2)') myrank
-!!$        OPEN(unit=1100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
-!!$     END IF
-!!$  END IF
+  IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN
+     !     filename='kn_log.'//TRIM(KN_EXT)
+     filename=TRIM(KN_EXT)
+     OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
+          access='append',status='old')
+  ELSE
+     IF(numprocs.EQ.1) THEN
+        filename="STDOUT"
+        OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat,&
+             access='append',status='old')
+        filename="STDERR"
+        OPEN(unit=1100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+     ELSE
+        WRITE(filename,'("STDOUT.",I2.2)') myrank
+        OPEN(unit=iout,file=filename,form='formatted',action='write',iostat=iostat)
+        WRITE(filename,'("STDERR.",I2.2)') myrank
+        OPEN(unit=1100+myrank,file=filename,form='formatted',action='write',iostat=iostat)
+     END IF
+  END IF
+
   IF(.NOT.(KNOSOS_STELLOPT)) THEN
      IF(numprocs.EQ.1) filename="B.map"
      IF(numprocs.GT.1) WRITE(filename,'("B.map.",I2.2)') myrank

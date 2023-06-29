@@ -1225,13 +1225,13 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
 #ifdef MPIandPETSc
 !!$     la(2,1)=myrank
 !!$     la(1,1)=lambdac
-!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MINLOC,MPI_COMM_WORLD,ierr)
+!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MINLOC,MPI_COMM_KNOSOS,ierr)
 !!$     glambdac=la(1,1)
 !!$     la(1,1)=lambdab
-!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MAXLOC,MPI_COMM_WORLD,ierr)
+!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MAXLOC,MPI_COMM_KNOSOS,ierr)
 !!$     glambdab=la(1,1)
-     CALL MPI_BCAST(glambdac,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)
-     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)     
+     CALL MPI_BCAST(glambdac,1,MPI_REAL8,12,MPI_COMM_KNOSOS,ierr)
+     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_KNOSOS,ierr)     
 #endif
      dlambdap=(glambdab-glambdac)/nlambda
      lambda(1)=glambdac+INT((lambdac-glambdac)/dlambdap)*dlambdap
@@ -3230,7 +3230,7 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,mata,BI3,BI8,factnu,phi1c,ksp,g
      
 !     CALL KSPView(ksp,PETSC_VIEWER_STDOUT_WORLD,ierr)
 !     CALL PetscMemoryGetCurrentUsage(ierr)
-!     CALL PetscViewerASCIIOpen(MPI_COMM_WORLD,'filename.xml',viewer,ierr)
+!     CALL PetscViewerASCIIOpen(MPI_COMM_KNOSOS,'filename.xml',viewer,ierr)
 !     CALL PetscViewerPushFormat(viewer,PETSC_VIEWER_DEFAULT,ierr)
 !     CALL PetscLogView(viewer,ierr)
      !Distribution function at each point

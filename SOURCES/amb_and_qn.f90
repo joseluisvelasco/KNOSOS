@@ -454,7 +454,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
             !After bulk species have been calculated, solve QN
             IF(QN.AND.kb.EQ.2) CALL CALC_QN(jt,jt0,phi1anm,phi1nm,phi1c)
 
-!            CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!            CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
 
          ELSE
 
@@ -510,13 +510,13 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
                        & phi1(nalphab,nalphab),Mbb(nalphab,nalphab),trM(nalphab,nalphab))
                END IF               
                !Calculate (zeta,theta) map of varphi1, Mbb and trM
-!               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!               CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
                CALL PRECALC_TRIG(nalphab,zeta(1:nalphab),theta(1:nalphab),trig,dtrigdz,dtrigdt)
-!               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!               CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
                CALL PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,&
                     & n1nmb,Mbbnm,trMnm,phi1c(jt,:),Ab(2),Tb(2),Epsi,s,zeta(1:nalphab),theta(1:nalphab),&
                     & phi1,Mbb,trM)
-!               CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!               CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
                ephi1oTsize=(MAXVAL(phi1)-MINVAL(phi1))/Tb(2)/2.
                !Check if varphi1 and M exist from previous calculations
                IF(.NOT.SOLVE_AMB) THEN
@@ -1115,9 +1115,9 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
 !           IF(array(il,ia).EQ.0) CYCLE
            varphi1=0
            varphi1(is)=phi1(il,ia)
-!           CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!           CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
            CALL REAL_ALLREDUCE(varphi1,ns)
-!           CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!           CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
 
            IF(npow.LT.5) THEN
               is0=is-npoints
@@ -1155,7 +1155,7 @@ SUBROUTINE PREPARE_IMP_CALC(jt,jt0,nbb,nalphab,trig,dtrigdz,dtrigdt,n1nmb,Mbbnm,
               END DO
               phi1coeff(1:ms)=varphi1(is0:is1)
            END IF
-!           CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!           CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
 !           CALL DGELSD(ns,npow,1,mats,ns,phi1coeff,ns,s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)  
            CALL DGELSD(ms,npow,1,mats(1:ms,:),ms,phi1coeff(1:ms),ms,s_svd,rcond,rank,work,lwork,rwork,iwork,ierr)  
            DO js=1,ms

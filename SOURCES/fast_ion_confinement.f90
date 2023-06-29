@@ -710,10 +710,10 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 
   la(2,1)=myrank
   la(1,1)=lambda(1)
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT,MPI_MINLOC,MPI_COMM_WORLD,ierr)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT,MPI_MINLOC,MPI_COMM_KNOSOS,ierr)
   lambdac=la(1,1)
   la(1,1)=lambda(nlambda)
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT,MPI_MAXLOC,MPI_COMM_WORLD,ierr)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT,MPI_MAXLOC,MPI_COMM_KNOSOS,ierr)
   lambdab=la(1,1)
   dlambda=lambda(2)-lambda(1)
   nla=(lambdab-lambdac+ALMOST_ZERO)/dlambda+1
@@ -822,7 +822,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 !           dummy=BIi(ig)
 !           IF(ISNAN(dummy)) BIi(ig)=0
            BIg(myrank+1,ial,ig)=BIi(ig)
-           CALL MPI_ALLREDUCE(MPI_IN_PLACE,BIg(:,ial,ig),ns,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,ierr)
+           CALL MPI_ALLREDUCE(MPI_IN_PLACE,BIg(:,ial,ig),ns,MPI_REAL8,MPI_SUM,MPI_COMM_KNOSOS,ierr)
 !           IF(ISNAN(dummy)) BIi(ig)=dummy
         END DO
 
@@ -990,7 +990,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 
   END DO
 
-  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+  CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -1060,7 +1060,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         irank(ipoint)=INT(ran*numprocs)
      END DO
   END IF
-  CALL MPI_BCAST(irank,npoint,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+  CALL MPI_BCAST(irank,npoint,MPI_INTEGER,0,MPI_COMM_KNOSOS,ierr)
   DO ipoint=2,npoint
      IF(irank(ipoint).EQ.myrank) THEN
         norbit=norbit+1
@@ -1287,7 +1287,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   DO ipoint=1,npoint
        IF(tau(ipoint).LT.0) tau(ipoint)=0
     END DO
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE,tau,npoint,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,ierr)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,tau,npoint,MPI_REAL8,MPI_SUM,MPI_COMM_KNOSOS,ierr)
   DO ipoint=1,npoint
      IF(tau(ipoint).LT.DTFI) tau(ipoint)=10*TENDFI
   END DO

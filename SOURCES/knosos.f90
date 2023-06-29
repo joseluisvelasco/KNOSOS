@@ -49,11 +49,12 @@ PROGRAM KNOSOS
   ALLOCATE(nb(nbb,ns,nerr),dnbdpsi(nbb,ns,nerr),Tb(nbb,ns,nerr),dTbdpsi(nbb,ns,nerr),&
     & Epsi(ns,nerr),Gb(nbb,ns,nerr),Qb(nbb,ns,nerr),Sb(nbb,ns,nerr),Pb(nbb,ns,nerr),rank(ns,nerr))
   !Initialize PETSC and the random number generator according to the input, distribute MPI jobs
-  CALL DISTRIBUTE_MPI(ns,rank)
-#ifdef MPIandPETSc
-  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,myrank,myrank,PETSC_COMM_WORLD,ierr)
-  CALL PETSCINITIALIZE(PETSC_NULL_CHARACTER,ierr)
-#endif
+  CALL MPI_INIT_PETSC(ns,nerr,rank,MPI_COMM_KNOSOS)
+!  CALL DISTRIBUTE_MPI(ns,rank)
+!#ifdef MPIandPETSc
+!  CALL MPI_COMM_SPLIT(MPI_COMM_KNOSOS,myrank,myrank,PETSC_COMM_WORLD,ierr)
+!  CALL PETSCINITIALIZE(PETSC_NULL_CHARACTER,ierr)
+!#endif
   IF(nerr.GT.0.OR.FAST_IONS) CALL INIT_RANDOMSEED(0)
   WRITE(iout,*) 'Initialized'
   CALL INIT_FILES()

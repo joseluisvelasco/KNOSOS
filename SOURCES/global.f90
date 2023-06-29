@@ -7,6 +7,9 @@ MODULE GLOBAL
 
   IMPLICIT NONE
 
+  ! MPI_COMM_HELPER
+  INTEGER :: MPI_COMM_KNOSOS
+
   !Maximum number of points in (alpha,lambda), wells, points
   INTEGER, PARAMETER :: nlambdax  =1024
   INTEGER, PARAMETER :: nax       =512
