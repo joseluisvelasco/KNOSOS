@@ -300,7 +300,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
      END DO
      lambda(jla)=LJMAP
   END IF
-  
+
   !For each point in the (zeta,theta) grid, determine well and absolute point
   !For each absolute point, determine alpha, lambda and well number
   IF(ALLOCATED(i_l)) DEALLOCATE(i_l)
@@ -312,7 +312,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   itemp=i_l(1:npoint);DEALLOCATE(i_l);ALLOCATE(i_l(npoint));i_l=itemp
   itemp=i_w(1:npoint);DEALLOCATE(i_w);ALLOCATE(i_w(npoint));i_w=itemp
   DEALLOCATE(itemp)
-
+  
   IF(ALLOCATED(BI1)) THEN
      DEALLOCATE(nbif,i_p_ap1,i_p_am1,i_p_ap2,i_p_am2,i_p_lp1,i_p_lm1,&
           & dalpha_am1,dalpha_ap1,dalpha_am2,dalpha_ap2,dlambda_lm1,dlambda_lp1,&
@@ -347,7 +347,6 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   ALLOCATE(i_p_am2I(npoint),i_p_am2II(npoint),i_p_am2III(npoint),i_p_am2IV(npoint))
   ALLOCATE(wm1I(npoint),wm1II(npoint),wm2I(npoint),wm2II(npoint),wm2III(npoint),wm2IV(npoint))
   ALLOCATE(wp1I(npoint),wp1II(npoint),wp2I(npoint),wp2II(npoint),wp2III(npoint),wp2IV(npoint))
-
   !Order alphas in interval [0,2*pi]
   CALL SORT_ALPHA(nalpha,nalphab,alphap,zetax,thetax,thetap,B_al,vds_al,j_al,nlambda,i_p)
   DO WHILE(MAXVAL(thetap(:,1))-MINVAL(thetap(:,1)).GT.TWOPI)
@@ -381,10 +380,11 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 !!$     END DO
 !!$  END DO
 !!$  stop
-  
+
   !Find neighbours in lambda
   CALL FIND_LAMBDA_NEIGHBOURS(npoint,nalpha,nalphab,nlambda,nw,nbifx,i_p,&
        & bottom,i_w,i_p_lm1,nbif,i_p_lp1)
+  
  !Correct delta lambda at the bottom
   dlambda_lm1=dlambdap 
   dlambda_lp1=dlambdap
@@ -432,7 +432,10 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
        & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
        & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV,lambda,&
        & BI7,BI3,BI3b,BI3f,dlambda_lm1,dlambda_lp1)
-  
+#ifdef MPIandPETSc
+  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+#endif
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
   DEALLOCATE(connected,bottom,z1,t1,B1,hBpp1,vd1,zb,tb,Bb,hBppb,vdb,&
        &    z2,t2,B2,hBpp2,vd2,alphap_w,Bt,Btt,lambdab_w,lambdac_w) 
 
@@ -543,8 +546,9 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 
   END DO
   IF(DEBUG) CALL FLUSH(3200+myrank)
-
+  !CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 #ifdef MPIandPETSc 
+  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
   
   CALL MatAssemblyBegin(matCOL,MAT_FINAL_ASSEMBLY,ierr)
   CALL MatAssemblyEnd(  matCOL,MAT_FINAL_ASSEMBLY,ierr)
@@ -726,6 +730,40 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   END IF
   
   IF(PHI1_READ) bnmc0=bnmc0-2*borbic(0,0)*phi1c/vdconst(jv)
+
+    IF ( ALLOCATED(connected) )  DEALLOCATE(connected)
+  IF ( ALLOCATED(bottom) ) DEALLOCATE(bottom)
+  IF ( ALLOCATED(ltemp) ) DEALLOCATE(ltemp)
+  IF ( ALLOCATED(ltemp2) ) DEALLOCATE(ltemp2)
+  IF ( ALLOCATED(z1) ) DEALLOCATE(z1)
+  IF ( ALLOCATED(t1) ) DEALLOCATE(t1)
+  IF ( ALLOCATED(B1) ) DEALLOCATE(B1)
+  IF ( ALLOCATED(hBpp1) ) DEALLOCATE(hBpp1)
+  IF ( ALLOCATED(hBpp1) ) DEALLOCATE(hBpp1)
+  IF ( ALLOCATED(vd1) ) DEALLOCATE(vd1)
+  IF ( ALLOCATED(zb) ) DEALLOCATE(zb)
+  IF ( ALLOCATED(tb) ) DEALLOCATE(tb)
+  IF ( ALLOCATED(Bb) ) DEALLOCATE(Bb)
+  IF ( ALLOCATED(hBppb) ) DEALLOCATE(hBppb)
+  IF ( ALLOCATED(vdb) ) DEALLOCATE(vdb)
+  IF ( ALLOCATED(z2) ) DEALLOCATE(z2)
+  IF ( ALLOCATED(t2) ) DEALLOCATE(t2)
+  IF ( ALLOCATED(B2) ) DEALLOCATE(B2)
+  IF ( ALLOCATED(hBpp2) ) DEALLOCATE(hBpp2)
+  IF ( ALLOCATED(vd2) ) DEALLOCATE(vd2)
+  IF ( ALLOCATED(alphap_w) ) DEALLOCATE(alphap_w)
+  IF ( ALLOCATED(Bt) ) DEALLOCATE(Bt)
+  IF ( ALLOCATED(Btt) ) DEALLOCATE(Btt)
+  IF ( ALLOCATED(temp) ) DEALLOCATE(temp)
+  IF ( ALLOCATED(temp2) ) DEALLOCATE(temp2)
+  IF ( ALLOCATED(i_w) ) DEALLOCATE(i_w)
+  IF ( ALLOCATED(itemp) ) DEALLOCATE(itemp)
+  IF ( ALLOCATED(one_o_lambda) ) DEALLOCATE(one_o_lambda)
+  IF ( ALLOCATED(alphap) ) DEALLOCATE(alphap)
+  IF ( ALLOCATED(lambdab_w) ) DEALLOCATE(lambdab_w)
+  IF ( ALLOCATED(lambdac_w) ) DEALLOCATE(lambdac_w)
+  IF ( ALLOCATED(tlw) ) DEALLOCATE(tlw)
+  IF ( ALLOCATED(trw) ) DEALLOCATE(trw)
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -1212,6 +1250,11 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
 #endif
   
   CALL CPU_TIME(tstart)
+
+  DO iw=1,nw !ierr=1,nw
+     !WRITE(iout,*) 'extr',Bb(ierr),Bt(ierr)
+     WRITE(iout,*) 'extr',Bb(iw),Bt(iw)
+  END DO
   
   !Create uniform grid
   lambdab_w=1./Bb
@@ -1225,13 +1268,13 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
 #ifdef MPIandPETSc
 !!$     la(2,1)=myrank
 !!$     la(1,1)=lambdac
-!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MINLOC,MPI_COMM_KNOSOS,ierr)
+!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MINLOC,MPI_COMM_WORLD,ierr)
 !!$     glambdac=la(1,1)
 !!$     la(1,1)=lambdab
-!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MAXLOC,MPI_COMM_KNOSOS,ierr)
+!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MAXLOC,MPI_COMM_WORLD,ierr)
 !!$     glambdab=la(1,1)
-     CALL MPI_BCAST(glambdac,1,MPI_REAL8,12,MPI_COMM_KNOSOS,ierr)
-     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_KNOSOS,ierr)     
+     CALL MPI_BCAST(glambdac,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)
+     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)     
 #endif
      dlambdap=(glambdab-glambdac)/nlambda
      lambda(1)=glambdac+INT((lambdac-glambdac)/dlambdap)*dlambdap
@@ -1272,6 +1315,12 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
   CALL CALCB(ZERO       ,ZERO,0,.FALSE.,B1,&
        & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
   CALL CALCB(ZERO,PI,0,.FALSE.,B2,&
+       & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
+  IF(B2.GT.B1) B1=B2
+  CALL CALCB(PI/nzperiod,ZERO,0,.FALSE.,B2,&
+       & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
+  IF(B2.GT.B1) B1=B2
+  CALL CALCB(PI/nzperiod,PI,0,.FALSE.,B2,&
        & dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
   lambdac=1./MAX(B1,B2)
 
@@ -1459,7 +1508,7 @@ SUBROUTINE LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
   END DO
   
   WRITE(iout,'(" Global grid ",I6," points")') npoint
-
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE LABEL_GRIDPOINTS
@@ -2296,7 +2345,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
 !     IF(i_p_am1I(ipoint).NE.0.AND.i_p_am1I(ipoint).NE.0.AND.wm1I(ipoint).LT.-100) &
 !          &  BI3b(ipoint)=BI3(ipoint)/(mdlBI1opsitb(ipoint)/BI7(ipoint))
   END DO 
-
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE FIND_ALPHA_NEIGHBOURS
@@ -2350,7 +2399,8 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
   DO ipoint=1,npoint
      iw =i_w(ipoint)
      ila=i_l(ipoint)
-     CALL BOUNCES(iw,z1(iw),t1(iw),B1(iw),hBpp1(iw),vd1(:,iw), &
+     CALL BOUNCES(iw,zb(iw),&
+          &          z1(iw),t1(iw),B1(iw),hBpp1(iw),vd1(:,iw), &
           &          zb(iw),tb(iw),Bb(iw),hBppb(iw),vdb(:,iw), &
           &          z2(iw),t2(iw),B2(iw),hBpp2(iw),vd2(:,iw), &
           & 1./lambda(ila),ipoint.EQ.1,nq,Q,&
@@ -2379,6 +2429,8 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
 !!$          &  BI4(ipoint),BI5(ipoint),BI6(ipoint),BI7(ipoint),BI8(ipoint,1),&
 !!$          & npoint,zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint)
 !!$  END DO
+
+  IF ( ALLOCATED(Q) ) DEALLOCATE(Q)
   
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -3230,7 +3282,7 @@ SUBROUTINE INVERT_MATRIX_PETSC(nalphab,jv,npoint,mata,BI3,BI8,factnu,phi1c,ksp,g
      
 !     CALL KSPView(ksp,PETSC_VIEWER_STDOUT_WORLD,ierr)
 !     CALL PetscMemoryGetCurrentUsage(ierr)
-!     CALL PetscViewerASCIIOpen(MPI_COMM_KNOSOS,'filename.xml',viewer,ierr)
+!     CALL PetscViewerASCIIOpen(MPI_COMM_WORLD,'filename.xml',viewer,ierr)
 !     CALL PetscViewerPushFormat(viewer,PETSC_VIEWER_DEFAULT,ierr)
 !     CALL PetscLogView(viewer,ierr)
      !Distribution function at each point
@@ -3603,6 +3655,9 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
 
  CALCULATED_INT=.TRUE.
 
+ IF ( ALLOCATED(thetape)) DEALLOCATE(thetape)
+ IF ( ALLOCATED(vds_zt)) DEALLOCATE(vds_zt)
+
  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INTEGRATE_G
@@ -3660,7 +3715,6 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
         WRITE(3500+myrank,'(I6,1(1pe13.5),2I6)') ipoint,g(ipoint),nalpha,nlambda
      END DO
   END IF
-  
   !Precalculate quantities
   lambda1=lambda(1)
   dlambda=lambda(2)-lambda1
@@ -3672,28 +3726,39 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
         modB=B_al(ia,il)
         one_o_modB=1./modB
         DO ila=1,nlambda
+           nla=nlambda
            IF(lambda(ila).GT.one_o_modB) THEN
               nla=ila-1
-              fdlambda=(one_o_modB-lambda(nla))/dlambda
+              IF(nla.NE.0) fdlambda=(one_o_modB-lambda(nla))/dlambda
               EXIT
            END IF
         END DO
         IF(nla.EQ.0) CYCLE
-        IF(nla.GT.1) THEN
-           g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
-        ELSE
+        IF(i_p(nla,ia,il).EQ.0) CYCLE
+        IF(nla.LE.1) THEN
            g1oB=g(i_p(nla,ia,il))
+        ELSE IF(i_p(nla-1,ia,il).LE.1) THEN
+           g1oB=g(i_p(nla,ia,il))
+        ELSE 
+           g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
         END IF
+!        IF(nla.GT.1.AND.i_p(nla-1,ia,il).GT.1) THEN
+!           g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
+!        ELSE
+!           g1oB=g(i_p(nla,ia,il))
+!        END IF
         IF(notg) THEN
            offset=2*g1oB*SQRT(1-lambda(1)*modB)
         ELSE
            offset=-2*g1oB*vds_al(ia,il)*0.25*SQRT(1-lambda(1)*modB)
         END IF
+
         DO ila=1,nla
            lambdaB=lambda(ila)*modB
            sqrt1mlB=SQRT(1.-lambdaB)
            d3vdlambdadK=modB/sqrt1mlB
            ipoint=i_p(ila,ia,il)
+           IF(ipoint.EQ.0) CYCLE
            IF(notg) THEN
               dD11=g(ipoint)*d3vdlambdadK
               doffset=g1oB*d3vdlambdadK

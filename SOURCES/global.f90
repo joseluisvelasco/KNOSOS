@@ -7,9 +7,6 @@ MODULE GLOBAL
 
   IMPLICIT NONE
 
-  ! MPI_COMM_HELPER
-  INTEGER :: MPI_COMM_KNOSOS
-
   !Maximum number of points in (alpha,lambda), wells, points
   INTEGER, PARAMETER :: nlambdax  =1024
   INTEGER, PARAMETER :: nax       =512
@@ -32,7 +29,7 @@ MODULE GLOBAL
   REAL*8, PARAMETER :: SQ2         = 1.4142135623731
   REAL*8, PARAMETER :: ZERO        = 0.00000000000000
   REAL*8, PARAMETER :: ONE         = 1.00000000000000
-  REAL*8, PARAMETER :: MONE        =-1.00000000000000
+  REAL*8 :: MONE        =-1.00000000000000
   REAL*8, PARAMETER :: ALMOST_ZERO = 1.00000000000E-9
   REAL*8, PARAMETER :: SMALL       = 1.00000000000E-7
   COMPLEX*16, PARAMETER :: NUMI    = CMPLX(0.0,1.0)
@@ -58,13 +55,13 @@ MODULE GLOBAL
   !Namelist /model/
   LOGICAL ONLY_B0,CALC_DB,NO_PLATEAU,ONLY_DB,INC_EXB,TANG_VM,CLASSICAL,FRICTION,ANISOTROPY
   LOGICAL SCAN_ER,SOLVE_AMB,TRIVIAL_AMB,SOLVE_QN,TRIVIAL_QN,ZERO_PHI1,ONLY_PHI1,COMPARE_MODELS
-  LOGICAL PREDICTIVE,NEOTRANSP,TASK3D,TASK3Dlike,PENTA,NTV,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
+  LOGICAL TANGO,NEOTRANSP,TASK3D,TASK3Dlike,PENTA,NTV,SATAKE,ANA_NTV,JPP,ESCOTO,NEQ2
   INTEGER D_AND_V,ER_ROOT,NBULK
   REAL*8 FN,FI,FS,FP,FE,FR,FB,FACT_CON,FNE,FTE,FTI,FDLNE,FDLTE,FDLTI,FER
   !Namelist /fastions/
   LOGICAL JMAP,LINEART,GLOBALFI,MODELFI,RANDOMSL,JCORRECTION,JTRANS,FITRANS
   INTEGER JORBIT,FDMAX
-  REAL*8 GTH,TENDFI,DTFI,EFI,AFI,ZFI,TWOEFIoZ,VDoV,LJMAP,FIDELTA,PREC_J,PREC_S,PREC_TRANS
+  REAL*8 ENERGETIC_IONS,GTH,TENDFI,DTFI,EFI,AFI,ZFI,TWOEFI,TWOEFIoZ,VDoV,LJMAP,FIDELTA,PREC_J,PREC_S,PREC_TRANS
   !Namelist /species/
   LOGICAL SS_IMP
   !Global
@@ -77,8 +74,8 @@ MODULE GLOBAL
   !Global configuration constants
   INTEGER helN,helM,sgnhel
   REAL*8 rad_a,rad_R,atorflux,torflux,sgnB
-  INTEGER, PARAMETER :: mpolbd=128
-  INTEGER, PARAMETER :: ntorbd=128
+  INTEGER, PARAMETER :: mpolbd=256
+  INTEGER, PARAMETER :: ntorbd=256
   INTEGER, PARAMETER :: mpold = 1100
   INTEGER, PARAMETER :: ntord = 1100
   INTEGER, PARAMETER :: nmd=2*mpolbd*ntorbd
@@ -88,21 +85,24 @@ MODULE GLOBAL
 
   !Flux-surface constants
   REAL*8 eps,eps32,avB,avB2,etet
-  REAL*8 psip,chip,iota,siota,aiota,iota2,diotadpsi,Bzeta,Btheta
-  REAL*8 iBtpBz,aiBtpBz,dBzdpsi,dBtdpsi,dB0dpsi
+  REAL*8 psip,chip,iota,siota,aiota,iota2,diotadpsi,Bzeta,Btheta,phi0
+  REAL*8 iBtpBz,aiBtpBz,dBzdpsi,dBtdpsi,dB0dpsi,dmu0Pdpsi
   REAL*8 Bmax,Bmax_av,Bmin,Bmin_av
   REAL*8 spol,dspolds
   !Magnetic field map
   REAL(rprec) borbi(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) borbic(-ntorbd:ntorbd,0:mpolbd)  ,borbis(-ntorbd:ntorbd,0:mpolbd)
   REAL(rprec) borbic0(-ntorbd:ntorbd,0:mpolbd),borbis0(-ntorbd:ntorbd,0:mpolbd)
+  REAL(rprec) etac(-ntorbd:ntorbd,0:mpolbd),etas(-ntorbd:ntorbd,0:mpolbd)  
   REAL(rprec) dborbicdpsi(-ntorbd:ntorbd,0:mpolbd),dborbisdpsi(-ntorbd:ntorbd,0:mpolbd)
-  REAL(rprec) dborbic0dpsi(-ntorbd:ntorbd,0:mpolbd),dborbis0dpsi(-ntorbd:ntorbd,0:mpolbd)   
+  REAL(rprec) dborbic0dpsi(-ntorbd:ntorbd,0:mpolbd),dborbis0dpsi(-ntorbd:ntorbd,0:mpolbd)
+  REAL(rprec) drorbicdpsi(-ntorbd:ntorbd,0:mpolbd),dporbisdpsi(-ntorbd:ntorbd,0:mpolbd),dzorbisdpsi(-ntorbd:ntorbd,0:mpolbd)
+  REAL(rprec) drorbisdpsi(-ntorbd:ntorbd,0:mpolbd),dporbicdpsi(-ntorbd:ntorbd,0:mpolbd),dzorbicdpsi(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 rorbic(-ntorbd:ntorbd,0:mpolbd),rorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 zorbic(-ntorbd:ntorbd,0:mpolbd),zorbis(-ntorbd:ntorbd,0:mpolbd)
   REAL*8 porbic(-ntorbd:ntorbd,0:mpolbd),porbis(-ntorbd:ntorbd,0:mpolbd)
-  REAL*8 bnmc(nmd),bnmc0(nmd),bnmc1(nmd),dbnmcdpsi(nmd)
-  REAL*8 bnms(nmd),bnms0(nmd),bnms1(nmd),dbnmsdpsi(nmd)
+  REAL*8 bnmc(nmd),bnmc0(nmd),bnmc1(nmd),dbnmcdpsi(nmd),enmc(nmd)
+  REAL*8 bnms(nmd),bnms0(nmd),bnms1(nmd),dbnmsdpsi(nmd),enms(nmd)
   REAL*8, ALLOCATABLE :: absnablar(:,:)
   REAL*8, ALLOCATABLE ::  posx(:,:), posy(:,:), posz(:,:)
   REAL*8, ALLOCATABLE :: zoomx(:,:),zoomy(:,:),zoomz(:,:),zoomdr(:,:)
@@ -114,7 +114,7 @@ MODULE GLOBAL
   REAL*8,  ALLOCATABLE :: s_b(:),spol_b(:),iota_b(:),pres_b(:),beta_b(:),psip_b(:),psi_b(:),bvco_b(:),buco_b(:)
   REAL*8,  ALLOCATABLE :: bmnc_b(:,:),rmnc_b(:,:),pmns_b(:,:),zmns_b(:,:),gmnc_b(:,:)
   REAL*8,  ALLOCATABLE :: bmns_b(:,:),rmns_b(:,:),pmnc_b(:,:),zmnc_b(:,:)
-  
+  REAL*8,  ALLOCATABLE :: phi_b(:),phip_b(:)
 
   !Grid, resolution and experimetal points
   REAL*8 zmax,tmax,dzstep

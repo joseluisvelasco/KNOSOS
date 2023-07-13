@@ -12,8 +12,7 @@ PROGRAM KNOSOS
 #endif
   IMPLICIT NONE
   !Parameters
-  INTEGER, PARAMETER :: ntime=1
-  REAL*8,  PARAMETER :: dt=1E-10
+  INTEGER, PARAMETER :: ntime=100000
   !Allocatable
   INTEGER, ALLOCATABLE :: rank(:,:)
   REAL*8, ALLOCATABLE :: nb(:,:,:),dnbdpsi(:,:,:),Tb(:,:,:),dTbdpsi(:,:,:),Epsi(:,:)
@@ -21,11 +20,11 @@ PROGRAM KNOSOS
   !Other
   CHARACTER*100 serr
   INTEGER itime,is,ns,nbb,regb(nbx),jerr
-  REAL*8 S(nsx),Zb(nbx),Ab(nbx),fracb(nbx)
+  REAL*8 dt,S(nsx),Zb(nbx),Ab(nbx),fracb(nbx)
 #ifdef MPIandPETSc
   INTEGER ierr
 #endif
-#ifdef IPPorNIFS
+#ifdef IPPoNIFS
 ! INCLUDE "mpif.h"
 #include <petsc/finclude/petscsys.h>
 #endif
@@ -44,17 +43,16 @@ PROGRAM KNOSOS
   KN_STELLOPT=.FALSE.
   KN_EXT=""
   KN_DKESFILE="boozmn.nc"
-  CALL READ_INPUT(ns,s,nbb,Zb,Ab,regb,fracb)
+  CALL READ_INPUT(dt,ns,s,nbb,Zb,Ab,regb,fracb)
   !Allocate some transport-related quantities
   ALLOCATE(nb(nbb,ns,nerr),dnbdpsi(nbb,ns,nerr),Tb(nbb,ns,nerr),dTbdpsi(nbb,ns,nerr),&
     & Epsi(ns,nerr),Gb(nbb,ns,nerr),Qb(nbb,ns,nerr),Sb(nbb,ns,nerr),Pb(nbb,ns,nerr),rank(ns,nerr))
   !Initialize PETSC and the random number generator according to the input, distribute MPI jobs
-  CALL MPI_INIT_PETSC(ns,nerr,rank,MPI_COMM_KNOSOS)
-!  CALL DISTRIBUTE_MPI(ns,rank)
-!#ifdef MPIandPETSc
-!  CALL MPI_COMM_SPLIT(MPI_COMM_KNOSOS,myrank,myrank,PETSC_COMM_WORLD,ierr)
-!  CALL PETSCINITIALIZE(PETSC_NULL_CHARACTER,ierr)
-!#endif
+  CALL DISTRIBUTE_MPI(ns,rank)
+#ifdef MPIandPETSc
+  CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,myrank,myrank,PETSC_COMM_WORLD,ierr)
+  CALL PETSCINITIALIZE(PETSC_NULL_CHARACTER,ierr)
+#endif
   IF(nerr.GT.0.OR.FAST_IONS) CALL INIT_RANDOMSEED(0)
   WRITE(iout,*) 'Initialized'
   CALL INIT_FILES()
@@ -71,8 +69,8 @@ PROGRAM KNOSOS
               CALL READ_BFIELD(s(is))
               !Create (or read) a DKES-like database of monoenergetic transport coefficients
               CALL CALC_DATABASE(s,is,ns)
-              IF(KNOSOS_STELLOPT) WRITE(600+myrank,'(11(1pe13.5))') s(is),&
-                & KN_1NU,KN_SNU,KN_SBP,KN_GMC,KN_GMA,KN_QER,KN_VBT,KN_VBB,KN_WBW,KN_DBO
+              IF(KNOSOS_STELLOPT) WRITE(600+myrank,'(13(1pe13.5))') s(is),&
+                & KN_1NU,KN_SNU,KN_SBP,KN_GMC,KN_GMA,KN_QER,KN_VB0,KN_VBB,KN_WBW,KN_DBO,KN_VBM,KN_FTR
               IF(ONLY_DB) CYCLE
               !Read the plasma profiles 
               CALL READ_PLASMAS(nbb,fracb(1:nbb),s(is),Zb(1:nbb),Ab(1:nbb),nb(:,is,jerr),dnbdpsi(:,is,jerr),&
@@ -86,10 +84,11 @@ PROGRAM KNOSOS
                 & nb(:,is,jerr),dnbdpsi(:,is,jerr),Tb(:,is,jerr),dTbdpsi(:,is,jerr),&
                 & Epsi(is,jerr),Gb(:,is,jerr),Qb(:,is,jerr))
         END DO
-        !Evolve the plasma profiles (without error propagation) 
-        CALL TRANSPORT(nbb,ns,dt,s(1:ns),Zb(1:nbb),Ab(1:nbb),REGB(1:nbb),&
+        !Evolve the plasma profiles (without error propagation)
+        CALL TRANSPORT(dt,nbb,ns,s(1:ns),Zb(1:nbb),Ab(1:nbb),REGB(1:nbb),&
              & nb(:,:,jerr),dnbdpsi(:,:,jerr),Gb(:,:,jerr),Sb,&
              & Tb(:,:,jerr),dTbdpsi(:,:,jerr),Qb(:,:,jerr),Pb,Epsi(:,jerr))
+        IF(dt.LT.0.AND..NOT.SS_IMP) EXIT
      END DO
   END DO
   IF(nerr.GT.1) CALL AVERAGE_SAMPLES(nbb,ns,s(1:ns),Epsi,Gb,Qb) 

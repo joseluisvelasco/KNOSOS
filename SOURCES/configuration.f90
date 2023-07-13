@@ -35,13 +35,13 @@ SUBROUTINE READ_BFIELD(s0)
   REAL*8,  SAVE :: ttotal=0
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
+  NAMELIST /datain/mpol,ntor,lalpha,ipmb,mmnn,meshtz,idisk,lfout,ifscl,nrun,cmul,&
+       & efield,nzperiod,chip,psip,mpolb,ntorb,nvalsb,borbi,btheta,bzeta,ibbi
 #ifdef MPIandPETSc
   !Others
   INTEGER ierr
   INCLUDE "mpif.h"
 #endif
-  NAMELIST /datain/mpol,ntor,lalpha,ipmb,mmnn,meshtz,idisk,lfout,ifscl,nrun,cmul,&
-       & efield,nzperiod,chip,psip,mpolb,ntorb,nvalsb,borbi,btheta,bzeta,ibbi
   
   CALL CPU_TIME(tstart)
 
@@ -135,11 +135,7 @@ SUBROUTINE READ_BFIELD(s0)
 
   IF(boozmndata_read.OR.booztxt_read) CALL JACOBIAN_AND_3DGRID(s0)
 
-  CALL INTERPOLATE_FIELD(s0,boozmndata_read.OR.booztxt_read)
-
-  !If USE_B0 is .TRUE. , use [Calvo 2017 PPCF], but B_0 MUST be omnigenous!
-  !If USE_B0 is .FALSE., calculation using the total B=B_0+B_1
-  IF(USE_B0.OR.KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9)) CALL CALC_B0()
+  CALL INTERPOLATE_FIELD(s0,boozmndata_read.OR.booztxt_read,ZERO)
 
   !Find maximum helicity and truncate spectra accordingly
   hel_Nmax=0
@@ -168,8 +164,14 @@ SUBROUTINE READ_BFIELD(s0)
   dzstep=TWOPI/(nzperiod*hel_NMAX*100)
   
   !Copy some information to arrays (Bmn, etc) with only one index
+  borbic0=borbic
+  borbis0=borbis
   CALL FILL_NM()
-
+  !If USE_B0 is .TRUE. , use [Calvo 2017 PPCF], but B_0 MUST be omnigenous!
+  !If USE_B0 is .FALSE., calculation using the total B=B_0+B_1
+  IF(USE_B0.OR.KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9)) CALL CALC_B0()
+  CALL FILL_NM()
+  
   !If rescaled field, write in file
   IF(ABS(FI*FE*FB*FR-1).GT.ALMOST_ZERO) THEN
      borbi=borbic
@@ -178,41 +180,45 @@ SUBROUTINE READ_BFIELD(s0)
      CLOSE(1)
   END IF  
 
-  IF(FAST_IONS) THEN
-     IF(ALLOCATED(Bmax_b)) DEALLOCATE(Bmax_b,Bmin_b)
-     ALLOCATE(Bmax_b(ns_b),Bmin_b(ns_b))
-     Bmax_b=0
-     Bmin_b=0
-#ifdef MPIandPETSc     
-     DO is=1,ns_b
-        IF(js_b(is).EQ.0) CYCLE
-        IF(MOD(is-1,numprocs).EQ.myrank) THEN
-           CALL INTERPOLATE_FIELD(s_b(js_b(is)),.TRUE.)
-           CALL FIND_BMIN_BMAX(js_b(is),MAL,MAL,.TRUE.)
-        END IF
-     END DO
-     CALL MPI_ALLREDUCE(MPI_IN_PLACE,Bmax_b,ns_b,MPI_REAL8,MPI_SUM,MPI_COMM_KNOSOS,ierr)
-     CALL MPI_ALLREDUCE(MPI_IN_PLACE,Bmin_b,ns_b,MPI_REAL8,MPI_SUM,MPI_COMM_KNOSOS,ierr)
-#else
-     DO is=1,ns_b
-        IF(js_b(is).EQ.0) CYCLE
-        CALL INTERPOLATE_FIELD(s_b(js_b(is)),.TRUE.)
-        CALL FIND_BMIN_BMAX(js_b(is),MAL,MAL,.TRUE.)
-     END DO
-#endif   
-  END IF
-
-  CALL INTERPOLATE_FIELD(s0,boozmndata_read.OR.booztxt_read)
+  CALL INTERPOLATE_FIELD(s0,boozmndata_read.OR.booztxt_read,ZERO)
   
   !Calculate quantities on the flux surface, such as <B^2>, <B> or the location of the maximum of B
   CALL FILL_BGRID(MAL,MAL,s0,.FALSE.)
   IF(addkes_read.OR.USE_B0) CALL FILL_BGRID(MAL,MAL,s0,.FALSE.)
   CALL FILL_BGRID(MAL,MAL,s0,.TRUE.)
+  borbic0=borbic
+  borbis0=borbis
+  dborbic0dpsi=dborbicdpsi
+  dborbis0dpsi=dborbisdpsi
+  CALL FILL_NM()
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   IF(ONLY_B0) THEN 
      serr="B0 calculated"
      CALL END_ALL(serr,.FALSE.)
+  END IF
+
+  IF(FAST_IONS) THEN
+     IF(ALLOCATED(phi_b)) DEALLOCATE(phi_b,phip_b)
+     ALLOCATE(phi_b(ns_b),phip_b(ns_b))
+     phi_b=0
+     phip_b=0
+     IF(s_b(1).LT.0) s_b(1)=-s_b(1)
+     DO is=1,ns_b
+        CALL INTERPOLATE_FIELD(s_b(is),boozmndata_read.OR.booztxt_read,ZERO)
+        CALL READ_PROFILE(s_b(is),"ph",phi_b(is),phip_b(is),1)
+     END DO
+     IF(ABS(phi_b(1)).LT.SMALL) THEN
+        DO is=ns_b-1,1,-1
+           phi_b(is)=phi_b(is+1)-0.5*(phip_b(is+1)+phip_b(is))*(s_b(is+1)-s_b(is))*atorflux
+           WRITE(iout,*) 'ph',is,ns_b,phi_b(is),phip_b(is+1),phip_b(is),s_b(is+1),s_b(is)
+        END DO
+     END IF
+  END IF
+  CALL INTERPOLATE_FIELD(s0,boozmndata_read.OR.booztxt_read,ZERO)
+  IF(FAST_IONS) THEN
+     phi_b=phi_b-phi0
+     phi0=0
   END IF
   
 END SUBROUTINE READ_BFIELD
@@ -253,7 +259,7 @@ SUBROUTINE READ_BOOZMNDATA(s0,boozmndata_read)
   ALLOCATE(s_b(ns_b),js_b(ns_b),iota_b(ns_b),pres_b(ns_b),beta_b(ns_b),&
        &psip_b(ns_b),psi_b(ns_b),bvco_b(ns_b),buco_b(ns_b))
   !Give values to quantities at the magnetic axis
-  s_b(1)=ALMOST_ZERO
+  s_b(1)=0
   iota_b(1)=0
   pres_b(1)=0
   beta_b(1)=0
@@ -311,6 +317,7 @@ SUBROUTINE READ_BOOZMNDATA(s0,boozmndata_read)
   ixn_b=ixn_b/nfp_b
   torflux=psi_b(ns_b)/TWOPI
   psip=2*torflux*sqrt(s0)/rad_a
+  nzperiod=nfp_b
 
 END SUBROUTINE READ_BOOZMNDATA
 
@@ -333,7 +340,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   LOGICAL boozmndata_read
   !Others
   CHARACTER*100 serr
-  CHARACTER*100 version
+  CHARACTER*38 version
   INTEGER nsval,jsize,is0,imn
   REAL*8 aspect_b,rmax_b,rmin_b,betaxis_b
   !netcdf by Satake
@@ -357,7 +364,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   END IF
   IF(status_nc.NE.nf_noerr) RETURN
   boozmndata_read=.TRUE.
-  WRITE(iout,*) 'File "boozmn.nc" found'   
+  WRITE(iout,*) 'File "',TRIM(filename),'" found'   
   !Read scalar values
   varname='nfp_b'
   status_nc=nf_inq_varid(ncid,varname,rhid)
@@ -404,14 +411,14 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   IF(status_nc.NE.nf_noerr) CALL QUIT_READ(filename,varname,status_nc) 
   status_nc=nf_inq_dim(ncid,idimid,varname,jsize)
   IF(ALLOCATED(s_b)) DEALLOCATE(s_b,js_b,iota_b,pres_b,beta_b,psip_b,psi_b,bvco_b,buco_b,&
-       & bmnc_b,rmnc_b,zmns_b,pmns_b,rmns_b,zmnc_b,pmnc_b,bmns_b,gmnc_b,ixn_b,ixm_b)
+       & bmnc_b,rmnc_b,zmns_b,pmns_b,rmns_b,zmnc_b,pmnc_b,bmns_b,gmnc_b,ixn_b,ixm_b)!,jlist,idx_b,packed2d)
   ! note : jsize is the number of flux surfaces contained in booz_xform (/=ns_b)
   ALLOCATE(s_b(ns_b),js_b(ns_b),iota_b(ns_b),pres_b(ns_b),beta_b(ns_b),&
        &psip_b(ns_b),psi_b(ns_b),bvco_b(ns_b),buco_b(ns_b))
   ALLOCATE(ixm_b(mnboz_b),ixn_b(mnboz_b),gmnc_b(mnboz_b,ns_b))
   ALLOCATE(bmnc_b(mnboz_b,ns_b),rmnc_b(mnboz_b,ns_b),zmns_b(mnboz_b,ns_b),pmns_b(mnboz_b,ns_b))
   ALLOCATE(rmns_b(mnboz_b,ns_b),zmnc_b(mnboz_b,ns_b),pmnc_b(mnboz_b,ns_b),bmns_b(mnboz_b,ns_b))
-  ALLOCATE(jlist(jsize),idx_b(ns_b),packed2d(mnboz_b,jsize,5))
+  ALLOCATE(jlist(jsize),packed2d(mnboz_b,jsize,5),idx_b(ns_b))
   !Give values to quantities at the magnetic axis
   s_b=-EPSILON(0d0)
   iota_b(1)=0
@@ -540,6 +547,7 @@ SUBROUTINE READ_BOOZMNNC(s0,boozmndata_read)
   ixn_b=ixn_b/nfp_b
   torflux=psi_b(ns_b)/TWOPI
   psip=2*torflux*sqrt(s0)/rad_a
+  nzperiod=nfp_b
 
 END SUBROUTINE READ_BOOZMNNC
 
@@ -582,8 +590,13 @@ SUBROUTINE READ_BOOZTXT(s0,booztxt_read)
   END DO
   jsn=ns_b
   mnboz_b=MAX(mboz_b*(2*nboz_b+1)+nboz_b+1,(mboz_b+1)*(2*nboz_b+1))
-  IF(ALLOCATED(s_b)) DEALLOCATE(s_b,js_b,iota_b,psip_b,psi_b,bvco_b,buco_b,spol_b,pprime,sqrtg00,&
-       & bmnc_b,rmnc_b,zmns_b,pmns_b,rmns_b,zmnc_b,pmnc_b,bmns_b,ixm_b,ixn_b)
+  IF(ALLOCATED(s_b)) DEALLOCATE(s_b,js_b,iota_b,psip_b,psi_b,bvco_b,buco_b)
+  IF(ALLOCATED(spol_b)) DEALLOCATE(spol_b)
+  IF(ALLOCATED(pprime)) DEALLOCATE(pprime,sqrtg00)
+  IF(ALLOCATED(bmnc_b)) DEALLOCATE(bmnc_b,rmnc_b,zmns_b)
+  IF(ALLOCATED(pmns_b)) DEALLOCATE(pmns_b,rmns_b,zmnc_b,pmnc_b,bmns_b,ixm_b,ixn_b)
+!    IF(ALLOCATED(spol_b)) DEALLOCATE(spol_b,pprime,sqrtg00,&
+!       & bmnc_b,rmnc_b,zmns_b,pmns_b,rmns_b,zmnc_b,pmnc_b,bmns_b,ixm_b,ixn_b)
   ALLOCATE(s_b(ns_b),js_b(ns_b),iota_b(ns_b),psip_b(ns_b),psi_b(ns_b),bvco_b(ns_b),buco_b(ns_b))
   ALLOCATE(spol_b(ns_b),pprime(ns_b),sqrtg00(ns_b))
   ALLOCATE(rmnc_b(mnboz_b,ns_b),zmns_b(mnboz_b,ns_b),pmns_b(mnboz_b,ns_b),bmnc_b(mnboz_b,ns_b))
@@ -642,7 +655,8 @@ SUBROUTINE READ_BOOZTXT(s0,booztxt_read)
   pmns_b=pmns_b*TWOPI/nfp_b
   torflux=torflux/TWOPI
   psip=2*torflux*sqrt(s0)/rad_a
-                
+  nzperiod=nfp_b
+  
 END SUBROUTINE READ_BOOZTXT
 
 
@@ -661,6 +675,7 @@ SUBROUTINE READ_DDKESDATA(s0)
   !Input/output
   REAL*8 s0
   !Others
+  CHARACTER*100 serr
   INTEGER iostat,imn,n,m
   INTEGER mmnn(mpold+2,ntord),nvalsb(ntorbd),mpol,ntor,lalpha,ipmb,meshtz,idisk,lfout,ifscl,nrun,ibbi
   REAL*8 cmul,efield
@@ -690,6 +705,9 @@ SUBROUTINE READ_DDKESDATA(s0)
         CLOSE(1)  
         IF(s0.LT.0) s0=psip*psip/borbic(0,0)/borbic(0,0)/rad_a/rad_a
      END IF
+  ELSE
+     serr="Configuration file not found"
+     CALL END_ALL(serr,.FALSE.)
   END IF
 
   nfp_b=nzperiod
@@ -783,6 +801,7 @@ SUBROUTINE RESCALE()
   nfp_b=INT(nfp_b*FP+0.1)
   iota_b=iota_b*FI
   bmnc_b=bmnc_b  *FB*FE
+
   bvco_b=bvco_b  *FB      *FR
   buco_b=buco_b  *FB      *FR
   psip   =psip   *FB*FE   *FR
@@ -798,18 +817,20 @@ END SUBROUTINE RESCALE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)  
+SUBROUTINE INTERPOLATE_FIELD(s0,booz_read,E_o_mu)  
 !-------------------------------------------------------------------------------------------
 !Interpolate
 !-------------------------------------------------------------------------------------------
   
   USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
   !Input
   LOGICAL booz_read
-  REAL*8 s0
+  REAL*8 s0,E_o_mu
   !Others
   INTEGER imn,n,m,is,is0,is1
+  REAL*8, PARAMETER :: mu0=1.256637E-6
   REAL*8 fs0,fs1,f_ext(mboz_b)
   !Time
   CHARACTER*30, PARAMETER :: routine="INTERPOLATE_FIELD"
@@ -825,9 +846,9 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
      IF(s0.LE.s_b(js_b(1))) THEN
         is0=js_b(1)
         is1=js_b(2)
-        f_ext(1)=SQRT(s0/s_b(js_b(1)))
+        f_ext(1)=SQRT(s0/s_b(is0))
         DO imn=2,mboz_b
-           f_ext(imn)=f_ext(imn)*f_ext(imn-1)
+           f_ext(imn)=f_ext(imn-1)*f_ext(1)
         END DO
      ELSE IF(s0.GT.s_b(js_b(jsn))) THEN
         is0=jsn-1
@@ -854,6 +875,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
   mpolb=mboz_b
   ntorb=nboz_b
   nzperiod=nfp_b
+
   bzeta =bvco_b(is0)*fs0+bvco_b(is1)*fs1
   btheta=buco_b(is0)*fs0+buco_b(is1)*fs1
   iota=  iota_b(is0)*fs0+iota_b(is1)*fs1
@@ -862,6 +884,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
      spol  =spol_b(is0)*fs0+spol_b(is1)*fs1
      dspolds=(spol_b(is1)-spol_b(is0))/(s_b(is1)-s_b(is0))
   END IF
+  IF(ALLOCATED(phi_b)) phi0=phi_b(is0)*fs0+phi_b(is1)*fs1
      
   !Calculate some radial derivatives
   !The radial coordinate is the toroidal flux over 2pi
@@ -876,8 +899,10 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
   diotadpsi=FS*(iota_b(is1)-iota_b(is0))/dpsi
   dBzdpsi =    (bvco_b(is1)-bvco_b(is0))/dpsi
   dBtdpsi =    (buco_b(is1)-buco_b(is0))/dpsi
-  
+  dmu0Pdpsi=mu0*(pres_b(is1)-pres_b(is0))/dpsi
+
   !Calculate several other flux-surface quantities
+  psip=2*atorflux*sqrt(s0)/rad_a
   aiota=ABS(iota)
   siota=iota/aiota
   iota2=iota*iota
@@ -897,25 +922,38 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
   zorbic=0
   dborbicdpsi=0
   dborbisdpsi=0
+  drorbicdpsi=0
+  drorbisdpsi=0
+  dporbicdpsi=0
+  dporbisdpsi=0
+  dzorbicdpsi=0
+  dzorbisdpsi=0
   DO imn=1,mnboz_b
      n=ixn_b(imn)
      m=ixm_b(imn)
      IF(s0.GE.s_b(js_b(1)).OR.m.EQ.0) THEN
         borbic(n,m)=bmnc_b(imn,is0)*fs0+bmnc_b(imn,is1)*fs1
-!        IF(ABS(borbic(n,m)).GT.10) WRITE(iout,*) n,m,borbic(n,m)
         IF(STELL_ANTISYMMETRIC) borbis(n,m)=bmns_b(imn,is0)*fs0+bmns_b(imn,is1)*fs1
         IF(booz_read) THEN
-           porbis(n,m)=pmns_b(imn,is0)*fs0+pmns_b(imn,is1)*fs1
            rorbic(n,m)=rmnc_b(imn,is0)*fs0+rmnc_b(imn,is1)*fs1
+           porbis(n,m)=pmns_b(imn,is0)*fs0+pmns_b(imn,is1)*fs1
            zorbis(n,m)=zmns_b(imn,is0)*fs0+zmns_b(imn,is1)*fs1
            IF(STELL_ANTISYMMETRIC) THEN
-              porbic(n,m)=pmnc_b(imn,is0)*fs0+pmnc_b(imn,is1)*fs1
               rorbis(n,m)=rmns_b(imn,is0)*fs0+rmns_b(imn,is1)*fs1
+              porbic(n,m)=pmnc_b(imn,is0)*fs0+pmnc_b(imn,is1)*fs1
               zorbic(n,m)=zmnc_b(imn,is0)*fs0+zmnc_b(imn,is1)*fs1
            END IF
 !           IF(is0.LT.2.OR.is1.GT.ns_b-1) THEN
-              dborbicdpsi(n,m)=(bmnc_b(imn,is1)-bmnc_b(imn,is0))/dpsi
+           dborbicdpsi(n,m)=(bmnc_b(imn,is1)-bmnc_b(imn,is0))/dpsi
+           drorbicdpsi(n,m)=(rmnc_b(imn,is1)-rmnc_b(imn,is0))/dpsi
+           dporbisdpsi(n,m)=(pmns_b(imn,is1)-pmns_b(imn,is0))/dpsi
+           dzorbisdpsi(n,m)=(zmns_b(imn,is1)-zmns_b(imn,is0))/dpsi
+           IF(STELL_ANTISYMMETRIC) THEN
               dborbisdpsi(n,m)=(bmns_b(imn,is1)-bmns_b(imn,is0))/dpsi
+              drorbisdpsi(n,m)=(rmns_b(imn,is1)-rmns_b(imn,is0))/dpsi
+              dporbicdpsi(n,m)=(pmnc_b(imn,is1)-pmnc_b(imn,is0))/dpsi
+              dzorbicdpsi(n,m)=(zmnc_b(imn,is1)-zmnc_b(imn,is0))/dpsi
+           END IF
 !           ELSE
 !              dborbicdpsi(n,m)=(fs0*(bmnc_b(imn,is1)-bmnc_b(imn,is0-1))+fs1*(bmnc_b(imn,is1+1)-bmnc_b(imn,is0)))/(4*dpsi)
 !              dborbisdpsi(n,m)=(fs0*(bmns_b(imn,is1)-bmns_b(imn,is0-1))+fs1*(bmns_b(imn,is1+1)-bmns_b(imn,is0)))/(4*dpsi)
@@ -923,7 +961,6 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
         END IF
      ELSE
         borbic(n,m)=bmnc_b(imn,is0)*f_ext(m)
-!        IF(ABS(borbic(n,m)).GT.10) WRITE(iout,*) n,m,borbic(n,m)
         IF(STELL_ANTISYMMETRIC) borbis(n,m)=bmns_b(imn,is0)*f_ext(m)
         IF(booz_read) THEN
            porbis(n,m)=pmns_b(imn,is0)*f_ext(m)
@@ -934,26 +971,45 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
               rorbis(n,m)=rmns_b(imn,is0)*f_ext(m)
               zorbic(n,m)=zmnc_b(imn,is0)*f_ext(m)
            END IF
-           dborbicdpsi(n,m)=bmnc_b(imn,is0)*f_ext(m)*(m/2.)/s0
-           dborbisdpsi(n,m)=bmns_b(imn,is0)*f_ext(m)*(m/2.)/s0
+           dborbicdpsi(n,m)=bmnc_b(imn,is0)*f_ext(m)*(m/2.)/(s0*atorflux)
+           drorbicdpsi(n,m)=(rmnc_b(imn,is1)-rmnc_b(imn,is0))/dpsi
+           dporbisdpsi(n,m)=(pmns_b(imn,is1)-pmns_b(imn,is0))/dpsi
+           dzorbisdpsi(n,m)=(zmns_b(imn,is1)-zmns_b(imn,is0))/dpsi
+           IF(STELL_ANTISYMMETRIC) THEN
+              dborbisdpsi(n,m)=bmns_b(imn,is0)*f_ext(m)*(m/2.)/(s0*atorflux)
+              drorbisdpsi(n,m)=(rmns_b(imn,is1)-rmns_b(imn,is0))/dpsi
+              dporbicdpsi(n,m)=(pmnc_b(imn,is1)-pmnc_b(imn,is0))/dpsi
+              dzorbicdpsi(n,m)=(zmnc_b(imn,is1)-zmnc_b(imn,is0))/dpsi
+           END IF
         END IF
      END IF
   END DO
-     
-  borbic0=borbic
-  borbis0=borbis
 
-  CALL FILL_NM()
+  IF(ALLOCATED(phi_b)) THEN
+     borbic(0,0)=borbic(0,0)+E_o_mu*ZFI*phi0/EFI
+     dborbicdpsi(0,0)=dborbicdpsi(0,0)+E_o_mu*ZFI*(phi_b(is1)-phi_b(is0))/(EFI*dpsi)
+  END IF
 
-  IF(s0.GE.s_b(js_b(1))) THEN
-     IF(ALLOCATED(Bmax_b)) THEN
+  IF(.NOT.KN_STELLOPT(9)) THEN
+     borbic0=borbic
+     borbis0=borbis
+     CALL FILL_NM()
+  END IF
+
+!  IF(s0.GE.s_b(js_b(1)).AND.ALLOCATED(Bmax_b)) THEN
+  IF(ALLOCATED(Bmax_b)) THEN
+     IF(Bmax_b(is1).GT.ALMOST_ZERO) THEN
         Bmax  =Bmax_b(is0)*fs0+Bmax_b(is1)*fs1
         Bmin  =Bmin_b(is0)*fs0+Bmin_b(is1)*fs1
+     ELSE
+        CALL FIND_BMIN_BMAX(-1,MAL,MAL,.TRUE.)
      END IF
   ELSE
      CALL FIND_BMIN_BMAX(-1,MAL,MAL,.TRUE.)
   END IF
-                          
+  
+  CALL CALC_ETA()
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INTERPOLATE_FIELD
@@ -1125,12 +1181,15 @@ SUBROUTINE FILL_NM()
         nm=nm+1
         bnmc(nm)     =borbic(n,m)     
         bnmc0(nm)    =borbic0(n,m)
+!        WRITE(iout,*) 'bmn1',bnmc(nm)        -bnmc0(nm)        
         dbnmcdpsi(nm)=dborbicdpsi(n,m)
         IF(STELL_ANTISYMMETRIC) THEN
            bnms(nm)     =borbis(n,m)     
            bnms0(nm)    =borbis0(n,m)     
            dbnmsdpsi(nm)=dborbisdpsi(n,m)
         END IF
+        enmc(nm)=etac(n,m)
+        enms(nm)=etas(n,m)
 !        phnmc(nm)=phorbicc(n,m)
 !        phnms(nm)=phorbics(n,m)
 !        pnm(nm)=porbis(n,m)
@@ -1140,14 +1199,14 @@ SUBROUTINE FILL_NM()
 !        ELSE
            np(nm)=n
            mp(nm)=m
-!        END IF
+           !        END IF
+!           WRITE(iout,*) 'nnm',nnm,ntorb,mpolb
      END DO
   END DO
   
   Nnm=nm                          !Nnm is the total number of modes
   bnmc1(1:Nnm)=bnmc(1:Nnm)-bnmc0(1:Nnm) !B1=B-B0, remember that B1<<B0
   bnms1(1:Nnm)=bnms(1:Nnm)-bnms0(1:Nnm)
-
   IF(QN.OR.TRACE_IMP) THEN
      Nnmp=2*Nnm
      DO nm=1,Nnmp
@@ -1172,7 +1231,7 @@ END SUBROUTINE FILL_NM
 
 SUBROUTINE CALCB(z,t,flag,flagB1,&
      & B_0,dBdz_0,dBdt_0,dBdpsi,hBpp,&
-     & B_1,dBdz_1,dBdt_1,Phi_1,dPhdz,dPhdt,vde)
+     & B_1,dBdz_1,dBdt_1,eta,dPhdz,dPhdt,vde)
 
 !-------------------------------------------------------------------------------------------------
 !Calculate magnetic field and derivatives at angular position (z,t)
@@ -1185,7 +1244,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
 !-IF(.NOT.flagB1) calculate only B_0 (usually B_1=0, so B=B_0) and its derivatives dBdz_0 and dBdt_0
 !-IF(flagB1) calculate also B_1 and their derivatives dBdz_1 and dBdt_1
 !------
-!Phi_1, dPhdz, and dPhdt not implemented (see older versions)
+!eta, dPhdz, and dPhdt not implemented (see older versions)
 !-------------------------------------------------------------------------------------------------
 
   USE GLOBAL
@@ -1197,7 +1256,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
   !Output
   REAL*8 B_0,dBdz_0,dBdt_0,dBdpsi,hBpp
   REAL*8 B_1,dBdz_1,dBdt_1
-  REAL*8 Phi_1,dPhdz,dPhdt,vde(Nnmp)
+  REAL*8 eta,dPhdz,dPhdt,vde(Nnmp)
   !Others
   INTEGER nm,nm2
   REAL*8 cosinex,sinex,d2Bdz2,d2Bdt2,d2Bdzt
@@ -1215,7 +1274,7 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
   dBdt_1=0
   dPhdz=0
   dPhdt=0
-  Phi_1=0
+  eta=0
 
 !!$  IF(flag.NE.0) THEN
 !!$     DO nm=1,Nnm
@@ -1267,7 +1326,10 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
         IF(flag.NE.1) THEN
            B_0=B_0+bnmc0(nm)*cosinex+bnms0(nm)*sinex
            IF(flagB1) B_1=B_1+bnmc1(nm)*cosinex+bnms1(nm)*sinex
-           IF(TANG_VM.AND.flag.GT.0) dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosinex+dbnmsdpsi(nm)*sinex
+           IF(TANG_VM.AND.flag.GT.0) THEN
+              dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosinex+dbnmsdpsi(nm)*sinex
+              eta=eta+enmc(nm)*cosinex+enms(nm)*sinex
+           END IF
            IF(flag.EQ.3) THEN
               d2Bdz2=d2Bdz2-bnmc0(nm)*cosinex*nzperiod*np(nm)*nzperiod*np(nm)&
                          & -bnms0(nm)*  sinex*nzperiod*np(nm)*nzperiod*np(nm)
@@ -1297,7 +1359,10 @@ SUBROUTINE CALCB(z,t,flag,flagB1,&
            cosinex=COS(mp(nm)*t+nzperiod*np(nm)*z)
            B_0=B_0+bnmc0(nm)*cosinex
            IF(flagB1) B_1=B_1+bnmc1(nm)*cosinex
-           IF(TANG_VM.AND.flag.GT.0) dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosinex
+           IF(TANG_VM.AND.flag.GT.0) THEN
+              dBdpsi=dBdpsi+dbnmcdpsi(nm)*cosinex
+              eta=eta+enmc(nm)*cosinex+enms(nm)*sinex
+           END IF
            IF(flag.EQ.3) THEN
               d2Bdz2=d2Bdz2-bnmc0(nm)*cosinex*nzperiod*np(nm)*nzperiod*np(nm)
               d2Bdzt=d2Bdzt-bnmc0(nm)*cosinex*nzperiod*np(nm)*mp(nm)
@@ -1358,7 +1423,7 @@ SUBROUTINE CHECK_JACSIGN(nz,nt,x1,x2,x3,Bzt,LeftHanded)
 
   k =0
   k2=0
-    
+  denom=0 
   etet=0
   !Calculate derivatives
   DO iz=1,nz
@@ -1478,6 +1543,147 @@ SUBROUTINE CALC_XYZ(s,z,t,x1,x2,x3,Bzt,flag_plot)
 
 END SUBROUTINE CALC_XYZ
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+SUBROUTINE CALC_ETA()
+
+!-------------------------------------------------------------------------------------------------
+!Calculate eta
+!-------------------------------------------------------------------------------------------------
+
+  USE GLOBAL
+  IMPLICIT NONE
+  !Input
+!  LOGICAL flag_plot
+!  REAL*8 s,z,t
+  !Output
+!  REAL*8 x1,x2,x3,Bzt
+  !Others
+  INTEGER, PARAMETER :: nt=128
+  INTEGER n,m,iz,it
+  REAL*8 dz,dt,zeta(nt),theta(nt),eta(nt,nt)
+  REAL*8 arg,th,zt,cosine,sine
+  REAL*8 B,R,p,x,y,z,cosp,sinp
+  REAL*8 dRdpsi,dpdpsi,dzdpsi
+  REAL*8 dRdz,dpdz,dzdz
+  REAL*8 dRdt,dpdt,dzdt
+  REAL*8 dxdpsi,dxdz,dxdt,dydpsi,dydz,dydt
+
+  
+  dz=TWOPI/nt/nzperiod
+  dt=TWOPI/nt
+  DO iz=1,nt
+     zeta(iz)=(iz-1.)*dz
+  END DO
+  DO it=1,nt
+     theta(it)=(it-1.)*dt
+  END DO
+
+  DO it=1,nt
+     th=theta(it)
+     DO iz=1,nt
+        zt=zeta(iz)
+        B=0
+        R=0
+        p=zt
+        z=0
+        dRdpsi=0
+        dpdpsi=0
+        dzdpsi=0
+        dRdz=0
+        dpdz=1
+        dzdz=0
+        dRdt=0
+        dpdt=0
+        dzdt=0
+        DO m=0,mpolb
+           DO n=-ntorb,ntorb 
+              arg=m*th+n*nzperiod*zt
+              cosine=COS(arg)
+              sine  =SIN(arg)
+              B=B+borbic(n,m)*cosine
+              R=R+rorbic(n,m)*cosine
+              p=p-porbis(n,m)*  sine
+              z=z+zorbis(n,m)*  sine
+              dRdpsi=dRdpsi+drorbicdpsi(n,m)*cosine
+              dpdpsi=dpdpsi-dporbisdpsi(n,m)*  sine
+              dzdpsi=dzdpsi+dzorbisdpsi(n,m)*  sine
+              dRdz=dRdz-n*nzperiod*rorbic(n,m)*  sine
+              dpdz=dpdz-n*nzperiod*porbis(n,m)*cosine
+              dzdz=dzdz+n*nzperiod*zorbis(n,m)*cosine
+              dRdt=dRdt         -m*rorbic(n,m)*  sine
+              dpdt=dpdt         -m*porbis(n,m)*cosine
+              dzdt=dzdt         +m*zorbis(n,m)*cosine
+              
+              IF(STELL_ANTISYMMETRIC) THEN
+                 B=B+borbis(n,m)*sine
+                 R=R+rorbis(n,m)*  sine
+                 p=p-porbic(n,m)*cosine
+                 z=z+zorbic(n,m)*cosine
+                 dRdz=dRdz+n*nzperiod*drorbisdpsi(n,m)*cosine
+                 dpdz=dpdz+n*nzperiod*dporbicdpsi(n,m)*  sine
+                 dzdz=dzdz-n*nzperiod*dzorbicdpsi(n,m)*  sine
+                 dRdt=dRdt         +m*rorbis(n,m)*cosine
+                 dpdt=dpdt         +m*porbic(n,m)*  sine
+                 dzdt=dzdt         -m*zorbic(n,m)*  sine
+                 dRdpsi=dRdpsi+drorbisdpsi(n,m)*  sine
+                 dpdpsi=dpdpsi-dporbicdpsi(n,m)*cosine
+                 dzdpsi=dzdpsi+dzorbicdpsi(n,m)*cosine              
+              END IF
+           END DO
+        END DO
+        cosp=COS(p)
+        sinp=SIN(p)
+        x=R*cosp
+        y=R*sinp
+        dxdpsi=dRdpsi*cosp-R*sinp*dpdpsi
+        dydpsi=dRdpsi*sinp+R*cosp*dpdpsi
+        dxdz=dRdz*cosp-R*sinp*dpdz
+        dydz=dRdz*sinp+R*cosp*dpdz
+        dxdt=dRdt*cosp-R*sinp*dpdt
+        dydt=dRdt*sinp+R*cosp*dpdt
+
+        eta(iz,it)=((dxdz+iota*dxdt)*dxdpsi+&
+        &    (dydz+iota*dydt)*dydpsi+&
+        &    (dzdz+iota*dzdt)*dzdpsi)*&
+        &    (B*B/iBtpBz)
+
+     END DO
+  END DO
+
+
+  etac=0
+  etas=0
+  DO m=0,mpolb
+     DO n=-ntorb,ntorb 
+        DO it=1,nt
+           th=theta(it)
+           DO iz=1,nt
+              zt=zeta(iz)
+              arg=m*th+n*nzperiod*zt
+              cosine=COS(arg)
+              sine  =SIN(arg)
+              etac(n,m)=etac(n,m)+eta(iz,it)*cosine
+              etas(n,m)=etas(n,m)+eta(iz,it)*sine
+           END DO
+        END DO
+        IF(m.EQ.0) THEN
+           IF(n.EQ.0) THEN
+              etac(n,m)=etac(n,m)/2.
+           ELSE IF(n.LT.0) THEN
+              etac(n,m)=0
+              etas(n,m)=0
+           END IF
+        END IF
+        etac(n,m)=etac(n,m)*2/REAL(nt*nt)
+        etas(n,m)=etas(n,m)*2/REAL(nt*nt)
+     END DO
+  END DO
+  
+
+END SUBROUTINE CALC_ETA
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1809,18 +2015,40 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   INTEGER nz,nt
   REAL*8 s
   !Others
-  INTEGER iz,it,ifile
+  CHARACTER*64 filename
+  INTEGER iz,it,ifile,iostat
   REAL*8 dz,dt,zeta(nz),theta(nt),Bzt(nz,nt),Jac(nz,nt),vds_Bzt(Nnmp,nz,nt)
-  REAL*8 FSA
+  REAL*8 FSA,ftr
   
   Bmax=0
-  IF(KN_STELLOPT(9)) THEN
-     ifile=iout
-  ELSE IF(flagB1) THEN
+!  IF(KN_STELLOPT(9)) THEN
+!     ifile=iout
+  IF(flagB1) THEN
      ifile=1200+myrank
+     IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN 
+        filename='B.map.'//TRIM(KN_EXT)
+     ELSE
+        IF(numprocs.EQ.1) THEN
+           filename="B.map"
+        ELSE
+           WRITE(filename,'("B.map.",I2.2)') myrank
+        END IF
+     END IF
   ELSE 
      ifile=1300+myrank
+     IF(KNOSOS_STELLOPT.AND.LEN(TRIM(KN_EXT)).NE.0) THEN 
+        filename='B0.map.'//TRIM(KN_EXT)
+     ELSE
+        IF(numprocs.EQ.1) THEN
+           filename="B0.map"
+        ELSE
+           WRITE(filename,'("B0.map.",I2.2)') myrank
+        END IF
+     END IF
   END IF
+  OPEN(unit=ifile,file=filename,form='formatted',action='write',iostat=iostat)
+  WRITE(ifile,&
+       & '("s \zeta_{Boozer}  \theta_{Boozer}(right-handed)  B[T]  (v_B.\nabla\psi)[A.U.]")')
 
   dz=TWOPI/nz/nzperiod
   dt=TWOPI/nt
@@ -1843,16 +2071,19 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   END DO
   avB =FSA(nz,nt,Bzt    ,Jac,1)
   avB2=FSA(nz,nt,Bzt*Bzt,Jac,1)
-
-  IF(.NOT.KNOSOS_STELLOPT.OR.KN_STELLOPT(9).OR.DEBUG) THEN
-     IF(.NOT.KNOSOS_STELLOPT) OPEN(unit=ifile,form='formatted',action='write')
+!  ftr=FSA(nz,nt,sqrt(1.-Bzt/Bmax),Jac,1)
+!  WRITE(iout,*) 'ftr',s,ftr
+!  IF(.NOT.KNOSOS_STELLOPT.OR.KN_STELLOPT(9).OR.DEBUG) THEN
+!     IF(.NOT.KNOSOS_STELLOPT) OPEN(unit=ifile,form='formatted',action='write')
      DO iz=1,nz
         DO it=1,nt
            WRITE(ifile,'(5(1pe13.5),L)') s,zeta(iz),theta(it),Bzt(iz,it),vds_Bzt(1,iz,it),flagB1
         END DO
      END DO
-  END IF
-  
+!  END IF
+
+     CLOSE(ifile)
+     
   CALL CALC_ABSNABLAPSI(MAL,zeta,theta,absnablar)
   absnablar=SQRT(absnablar*Bzt*Bzt)/psip
   
@@ -1997,7 +2228,6 @@ SUBROUTINE FIND_BMIN_BMAX(is,nz,nt,flagb1)
   REAL*8 dz,dt,zeta,theta,B,dBdz,dBdt,dummy,vdummy(Nnmp)
   REAL*8 dzeta,dtheta,dBdz_old,dBdt_old,zmin,tmin
 
-  
   Bmax=borbic(0,0)
   Bmin=borbic(0,0)
   dz=TWOPI/nz/nzperiod
@@ -2031,7 +2261,7 @@ SUBROUTINE FIND_BMIN_BMAX(is,nz,nt,flagb1)
      dtheta=dzeta*dBdt/dBdz
      dBdz_old=dBdz
      dBdt_old=dBdt
-     DO iz=1,10
+     DO iz=1,20
         zeta =zeta +dzeta
         theta=theta+dtheta
         CALL CALCB(zeta,theta,2,flagb1,B,dBdz,dBdt,dummy,dummy,dummy,dummy,dummy,dummy,dummy,dummy,vdummy)
