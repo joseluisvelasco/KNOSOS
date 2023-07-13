@@ -433,7 +433,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
        & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV,lambda,&
        & BI7,BI3,BI3b,BI3f,dlambda_lm1,dlambda_lp1)
 #ifdef MPIandPETSc
-  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+  CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
 #endif
   !CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
   DEALLOCATE(connected,bottom,z1,t1,B1,hBpp1,vd1,zb,tb,Bb,hBppb,vdb,&
@@ -548,7 +548,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   IF(DEBUG) CALL FLUSH(3200+myrank)
   !CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 #ifdef MPIandPETSc 
-  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+  CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
   
   CALL MatAssemblyBegin(matCOL,MAT_FINAL_ASSEMBLY,ierr)
   CALL MatAssemblyEnd(  matCOL,MAT_FINAL_ASSEMBLY,ierr)
@@ -1273,8 +1273,8 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
 !!$     la(1,1)=lambdab
 !!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MAXLOC,MPI_COMM_WORLD,ierr)
 !!$     glambdab=la(1,1)
-     CALL MPI_BCAST(glambdac,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)
-     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)     
+     CALL MPI_BCAST(glambdac,1,MPI_REAL8,12,MPI_COMM_KNOSOS,ierr)
+     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_KNOSOS,ierr)     
 #endif
      dlambdap=(glambdab-glambdac)/nlambda
      lambda(1)=glambdac+INT((lambdac-glambdac)/dlambdap)*dlambdap

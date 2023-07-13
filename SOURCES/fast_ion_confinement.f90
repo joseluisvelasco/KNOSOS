@@ -1128,7 +1128,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
         irank(ipoint)=INT(ran*numprocs) !among numprocs processes
      END DO
   END IF
-  CALL MPI_BCAST(irank,npoint,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+  CALL MPI_BCAST(irank,npoint,MPI_INTEGER,0,MPI_COMM_KNOSOS,ierr)
   DO ipoint=2,npoint
      IF(irank(ipoint).EQ.myrank) THEN
         norbit=norbit+1
@@ -1460,7 +1460,7 @@ SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,lambdap,i_p,np
   DO ipoint=1,npoint
        IF(tau(ipoint).LT.0) tau(ipoint)=0
     END DO
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE,tau,npoint,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,ierr)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,tau,npoint,MPI_REAL8,MPI_SUM,MPI_COMM_KNOSOS,ierr)
   DO ipoint=1,npoint
      IF(tau(ipoint).LT.DTFI) tau(ipoint)=10*TENDFI
   END DO

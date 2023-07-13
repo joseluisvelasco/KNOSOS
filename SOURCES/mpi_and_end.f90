@@ -22,8 +22,9 @@ SUBROUTINE INITIALIZE_MPI()
   INCLUDE "mpif.h"
 
   CALL MPI_INIT(ierr)
-  CALL MPI_COMM_SIZE(MPI_COMM_WORLD,numprocs,ierr)
-  CALL MPI_COMM_RANK(MPI_COMM_WORLD,myrank,ierr)
+  CALL MPI_COMM_DUP(MPI_COMM_WORLD,MPI_COMM_KNOSOS,ier)
+  CALL MPI_COMM_SIZE(MPI_COMM_KNOSOS,numprocs,ierr)
+  CALL MPI_COMM_RANK(MPI_COMM_KNOSOS,myrank,ierr)
   iout=1000+MYRANK
 
 !  Can be used for splitting jobs  
@@ -42,6 +43,37 @@ SUBROUTINE INITIALIZE_MPI()
 
 END SUBROUTINE INITIALIZE_MPI
 
+SUBROUTINE SET_KNOSOS_COMM(COMM)
+  USE GLOBAL
+  IMPLICIT NONE
+  INTEGER :: COMM
+  INTEGER ierr
+#ifdef MPIandPETSc
+  CALL MPI_COMM_DUP(COMM,MPI_COMM_KNOSOS,ier)
+  CALL MPI_COMM_SIZE(MPI_COMM_KNOSOS,numprocs,ierr)
+  CALL MPI_COMM_RANK(MPI_COMM_KNOSOS,myrank,ierr)
+#endif
+END SUBROUTINE SET_KNOSOS_COMM
+
+SUBROUTINE MPI_INIT_PETSC(n1,n2,rank,COMM)
+#ifdef MPIandPETSc
+  USE petscsys
+#endif
+  USE GLOBAL
+  IMPLICIT NONE
+  INTEGER :: n1, n2
+  INTEGER :: rank(n1,n2)
+  INTEGER :: COMM
+#ifdef IPPorNIFS
+! INCLUDE "mpif.h"
+#include <petsc/finclude/petscsys.h>
+#endif
+  CALL DISTRIBUTE_MPI(n1,rank)
+#ifdef MPIandPETSc
+  CALL MPI_COMM_SPLIT(COMM,myrank,myrank,PETSC_COMM_WORLD,ierr)
+  CALL PETSCINITIALIZE(PETSC_NULL_CHARACTER,ierr)
+#endif
+END SUBROUTINE MPI_INIT_PETSC
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -129,7 +161,7 @@ SUBROUTINE REAL_ALLREDUCE(arrayr,narrayr)
   INTEGER mpierr
   INCLUDE "mpif.h"
 
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE,arrayr,narrayr,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,mpierr)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,arrayr,narrayr,MPI_REAL8,MPI_SUM,MPI_COMM_KNOSOS,mpierr)
   
 END SUBROUTINE REAL_ALLREDUCE
 
@@ -157,7 +189,7 @@ SUBROUTINE END_ALL(serr,parallel)
 
   IF(parallel.OR.myrank.EQ.0) WRITE(iout,*) serr
   CALL FLUSH(iout)
-  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+  CALL MPI_BARRIER(MPI_COMM_KNOSOS,ierr)
   CALL PETSCFINALIZE(ierr)
   CALL MPI_FINALIZE(ierr)
 
