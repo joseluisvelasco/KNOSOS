@@ -3,10 +3,6 @@
 
 The KiNetic Orbit-averaging SOlver for Stellarators (KNOSOS), [J. L. Velasco, I. Calvo, F. I. Parra and J. M. García-Regaña, KNOSOS: a fast orbit-averaging neoclassical code for arbitrary stellarator geometry, submitted to J. Comp. Phys, arXiv:1908.11615 [physics.plasm-ph]](https://arxiv.org/abs/1908.11615), is a freely available, open-source code that calculates neoclassical transport in low-collisionality plasmas of three-dimensional magnetic confinement devices by solving the radially local drift-kinetic and quasineutrality equations. The main feature of KNOSOS is that it relies on orbit-averaging to solve the drift-kinetic equation very fast. KNOSOS treats rigorously the effect of the component of the magnetic drift that is tangent to magnetic surfaces, and of the component of the electrostatic potential that varies on the flux surface, φ1. Furthermore, the equation solved is linear in φ1, which permits an efficient solution of the quasineutrality equation. As long as the radially local approach is valid, KNOSOS can be applied to the calculation of neoclassical transport in stellarators (helias, heliotrons, heliacs, etc.) and tokamaks with broken axisymmetry.
 
-This is the official repository of KNOSOS (versions with limited functionalities can be found at other repositories)
-
-KNOSOS is distributed under a Creative Commons License (CC BY-NC-ND 2.0) https://www.creativecommons.org/licenses/by-nc-nd/2.0/legalcode
-
 ------------------------------------------------------------------------
 
 ### Theory
