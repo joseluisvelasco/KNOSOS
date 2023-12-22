@@ -11,36 +11,10 @@ The theory behind the code is described in section 2 of the paper, as well as in
 
 ------------------------------------------------------------------------
 
-### Installation and compilation
+### How to use the code
 
-Chapter 5 of the user manual explains how to install and compile the code.
+In order to obtain permission to use KNOSOS and to receive an updated user manual and working examples, contact CIEMAT at joseluis.velasco.at.ciemat.es.
 
-------------------------------------------------------------------------
 
-### Input Data Format
 
-Chapter 7 of the user manual explains how the input data is organized. Chapters 8 and 9 provide more details.
 
-------------------------------------------------------------------------
-
-### Execution
-
-Chapter 6 of the user manual explains how to execute the code and what it produces.
-
-------------------------------------------------------------------------
-
-### Output Data Format
-
-Chapter 10 of the user manual explains how the output data is formatted.
-
-------------------------------------------------------------------------
-
-### Visualization
-
-The data can be visualized with the gnuplot scripts available in folder KNOSOS/PLT/.
-
-------------------------------------------------------------------------
-
-### Tutorials
-
-The user manual can be found in folder KNOSOS/MANUAL/.
